@@ -9,6 +9,8 @@
  * screens depend on — keep them stable and nothing in `app/` needs to change.
  */
 
+import { supportsHairType } from '@/lib/hairTypes';
+
 import { mockCatalog } from './mockCatalog';
 import type {
   Catalog,
@@ -16,6 +18,8 @@ import type {
   GeneratedLook,
   GenerationStep,
   Gender,
+  HairType,
+  HairTypeId,
   Hairstyle,
   TryOnOptions,
 } from './types';
@@ -47,9 +51,29 @@ export async function fetchCatalog(): Promise<Catalog> {
   return mockCatalog;
 }
 
+/** The orders the catalog can be read in. Labels belong to the screen. */
+export type SortId = 'popular' | 'az' | 'upkeep';
+
+const UPKEEP_ORDER: Record<Hairstyle['maintenance'], number> = { Low: 0, Medium: 1, High: 2 };
+
+const SORTS: Record<SortId, (a: Hairstyle, b: Hairstyle) => number> = {
+  popular: (a, b) => b.popularity - a.popularity,
+  az: (a, b) => a.name.localeCompare(b.name),
+  // Popularity breaks the tie, so each upkeep band still reads best-first.
+  upkeep: (a, b) => UPKEEP_ORDER[a.maintenance] - UPKEEP_ORDER[b.maintenance] || b.popularity - a.popularity,
+};
+
 export interface HairstyleQuery {
   gender?: Gender | null;
+  /**
+   * The user's hair type. `null` is "All Types" and filters nothing — the
+   * catalog's primary dimension is also the one dimension the user is allowed
+   * to decline.
+   */
+  hairType?: HairTypeId | null;
   categoryId?: string | null;
+  /** Result order. Defaults to `popular`, which is how the catalog reads. */
+  sort?: SortId | null;
   search?: string | null;
   tag?: string | null;
   limit?: number;
@@ -57,18 +81,22 @@ export interface HairstyleQuery {
 
 export async function fetchHairstyles(query: HairstyleQuery = {}): Promise<Hairstyle[]> {
   assertMocks();
-  // TODO(backend): GET /hairstyles?gender=&category=&q=
+  // TODO(backend): GET /hairstyles?gender=&hairType=&category=&q=
   await networkDelay();
   return filterHairstyles(mockCatalog.hairstyles, query);
 }
 
 /** Pure filter, exported so screens can re-filter a cached catalog without a round trip. */
 export function filterHairstyles(source: Hairstyle[], query: HairstyleQuery): Hairstyle[] {
-  const { gender, categoryId, search, tag, limit } = query;
+  const { gender, hairType, categoryId, sort, search, tag, limit } = query;
   const needle = search?.trim().toLowerCase() ?? '';
 
   const result = source
     .filter((style) => (gender ? style.genders.includes(gender) : true))
+    // A style with no variant for this type is not a thinner version of itself,
+    // it is a different head of hair — so it is not offered rather than shown
+    // with the wrong render. See `variants` in mockCatalog.ts.
+    .filter((style) => supportsHairType(style, hairType))
     .filter((style) => (categoryId && categoryId !== 'all' ? style.categoryIds.includes(categoryId) : true))
     .filter((style) => (tag ? style.tags.includes(tag) : true))
     .filter((style) => {
@@ -79,7 +107,7 @@ export function filterHairstyles(source: Hairstyle[], query: HairstyleQuery): Ha
         style.description.toLowerCase().includes(needle)
       );
     })
-    .sort((a, b) => b.popularity - a.popularity);
+    .sort(SORTS[sort ?? 'popular']);
 
   return typeof limit === 'number' ? result.slice(0, limit) : result;
 }
@@ -96,6 +124,7 @@ export function recommendationsFor(
   styleId: string,
   gender: Gender | null,
   limit = 6,
+  hairType: HairTypeId | null = null,
 ): Hairstyle[] {
   const seed = source.find((style) => style.id === styleId);
   if (!seed) return source.slice(0, limit);
@@ -103,6 +132,7 @@ export function recommendationsFor(
   return source
     .filter((style) => style.id !== styleId)
     .filter((style) => (gender ? style.genders.includes(gender) : true))
+    .filter((style) => supportsHairType(style, hairType))
     .map((style) => {
       const shared = style.categoryIds.filter((c) => seed.categoryIds.includes(c)).length;
       const sharedTags = style.tags.filter((t) => seed.tags.includes(t)).length;
@@ -119,6 +149,11 @@ export function categoriesFor(categories: Category[], gender: Gender | null): Ca
     .sort((a, b) => a.order - b.order);
 }
 
+/** Types 1 to 4, in order. Catalog data, so the picker is server-driven. */
+export function hairTypesFor(hairTypes: HairType[]): HairType[] {
+  return [...hairTypes].sort((a, b) => a.order - b.order);
+}
+
 // ---------------------------------------------------------------------------
 // Preview generation (simulated)
 // ---------------------------------------------------------------------------
@@ -132,6 +167,8 @@ export const GENERATION_STEPS: GenerationStep[] = [
 export interface GenerateRequest {
   hairstyle: Hairstyle;
   gender: Gender;
+  /** The type the preview is for; null when the user browsed "All Types". */
+  hairType: HairTypeId | null;
   photoUri: string | null;
   options: TryOnOptions;
 }
@@ -181,6 +218,7 @@ export function generateLook(
           hairstyleId: request.hairstyle.id,
           hairstyleName: request.hairstyle.name,
           gender: request.gender,
+          hairType: request.hairType,
           sourcePhotoUri: request.photoUri,
           resultUri: request.photoUri,
           options: request.options,

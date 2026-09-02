@@ -1,11 +1,21 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
-import type { GeneratedLook, Gender, TryOnOptions } from '@/api/types';
+import type { GeneratedLook, Gender, HairTypeId, TryOnOptions } from '@/api/types';
 
 /** Everything the user has chosen during the current try-on run. */
 export interface Session {
   photoUri: string | null;
   gender: Gender | null;
+  /**
+   * The user's hair type, or null for "All Types".
+   *
+   * Chosen before the catalog is browsed, because it is not a filter laid over
+   * the catalog so much as a statement about which catalog the user is looking
+   * at: it decides which styles are offered and which render of each one is
+   * shown. Like `colorId` it is session-wide rather than per style, so two
+   * cards side by side still differ only by their cut.
+   */
+  hairTypeId: HairTypeId | null;
   categoryId: string | null;
   hairstyleId: string | null;
   /**
@@ -26,6 +36,7 @@ export interface Session {
 const emptySession: Session = {
   photoUri: null,
   gender: null,
+  hairTypeId: null,
   categoryId: null,
   hairstyleId: null,
   colorId: null,
@@ -36,6 +47,7 @@ const emptySession: Session = {
 interface SessionState extends Session {
   setPhoto: (uri: string | null) => void;
   setGender: (gender: Gender) => void;
+  setHairType: (hairTypeId: HairTypeId | null) => void;
   setCategory: (categoryId: string | null) => void;
   setColor: (colorId: string | null) => void;
   setHairstyle: (hairstyleId: string, options: TryOnOptions) => void;
@@ -58,6 +70,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const setGender = useCallback((gender: Gender) => {
     setSession((prev) => (prev.gender === gender ? prev : { ...prev, gender, categoryId: null }));
+  }, []);
+
+  // Changing hair type changes which styles exist, so a style chosen under the
+  // old type cannot be assumed to survive it.
+  const setHairType = useCallback((hairTypeId: HairTypeId | null) => {
+    setSession((prev) =>
+      prev.hairTypeId === hairTypeId ? prev : { ...prev, hairTypeId, hairstyleId: null, look: null },
+    );
   }, []);
 
   const setCategory = useCallback((categoryId: string | null) => {
@@ -95,6 +115,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       ...session,
       setPhoto,
       setGender,
+      setHairType,
       setCategory,
       setColor,
       setHairstyle,
@@ -108,6 +129,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       session,
       setPhoto,
       setGender,
+      setHairType,
       setCategory,
       setColor,
       setHairstyle,

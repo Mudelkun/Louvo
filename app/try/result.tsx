@@ -4,7 +4,8 @@ import React, { useMemo } from 'react';
 import { Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { recommendationsFor } from '@/api/client';
-import { Button, IconButton } from '@/components/Button';
+import { Button } from '@/components/Button';
+import { FavouriteHeart } from '@/components/FavouriteHeart';
 import { EmptyState, Pill } from '@/components/Feedback';
 import { MannequinBadge } from '@/components/Mannequin';
 import { PhotoFrame } from '@/components/PhotoFrame';
@@ -13,6 +14,7 @@ import { StyleCard } from '@/components/StyleCard';
 import { useHairColor, useLookColor } from '@/hooks/useHairColor';
 import { useLookDownload } from '@/hooks/useLookDownload';
 import { DEMO_PHOTO } from '@/lib/constants';
+import { textureFor, variantCandidates } from '@/lib/hairTypes';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { useSession } from '@/state/SessionContext';
@@ -27,7 +29,7 @@ const RAIL_CARD_WIDTH = Math.min(136, (width - spacing.xl * 2 - spacing.md * 2) 
 export default function ResultScreen() {
   const router = useRouter();
   const { hairstyles, styleById } = useCatalog();
-  const { look, gender, restartStyleChoice } = useSession();
+  const { look, gender, hairTypeId, restartStyleChoice } = useSession();
   const lookColor = useLookColor(look);
   const browsingColor = useHairColor();
   const { isFavourite, toggleFavourite, favouriteIds } = useLibrary();
@@ -41,8 +43,8 @@ export default function ResultScreen() {
   const hairstyle = styleById(look?.hairstyleId);
 
   const related = useMemo(
-    () => recommendationsFor(hairstyles, hairstyle?.id ?? '', gender, 8),
-    [hairstyles, hairstyle?.id, gender],
+    () => recommendationsFor(hairstyles, hairstyle?.id ?? '', gender, 8, hairTypeId),
+    [hairstyles, hairstyle?.id, gender, hairTypeId],
   );
 
   if (!look || !hairstyle) {
@@ -61,6 +63,11 @@ export default function ResultScreen() {
   }
 
   const favourite = isFavourite(hairstyle.id);
+  // The look's own type, not the session's: a saved look is a picture of a
+  // decision already made, and keeps the hair it was generated for even after
+  // the user has switched types to browse something else.
+  const lookVariants = variantCandidates(hairstyle, look.hairType);
+  const lookShape = { ...hairstyle.shape, texture: textureFor(hairstyle, look.hairType) };
 
   const openStyle = (id: string) => {
     restartStyleChoice();
@@ -81,11 +88,10 @@ export default function ResultScreen() {
       <Header
         title="Your new look"
         right={
-          <IconButton
-            icon={favourite ? 'heart' : 'heart-outline'}
+          <FavouriteHeart
             accessibilityLabel={favourite ? 'Remove from favourites' : 'Add to favourites'}
-            active={favourite}
-            onPress={() => toggleFavourite(hairstyle.id)}
+            favourite={favourite}
+            onToggle={() => toggleFavourite(hairstyle.id)}
           />
         }
       />
@@ -95,15 +101,16 @@ export default function ResultScreen() {
           uri={look.resultUri}
           tint={look.resultUri && look.resultUri !== DEMO_PHOTO ? 'rgba(255,90,60,0.08)' : null}
           style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT }}
-          demo={{ styleId: hairstyle.id, shape: hairstyle.shape, color: lookColor, gender }}
+          demo={{ styleId: hairstyle.id, shape: lookShape, color: lookColor, gender, variants: lookVariants }}
           demoWidth={STAGE_HEIGHT * 0.8}
         >
           <View style={styles.styleTag}>
             <MannequinBadge
               styleId={hairstyle.id}
-              shape={hairstyle.shape}
+              shape={lookShape}
               color={lookColor}
               gender={gender}
+              variants={lookVariants}
               size={34}
             />
             <Text style={[type.caption, { color: colors.onDark, fontWeight: '700' }]}>
@@ -148,6 +155,7 @@ export default function ResultScreen() {
                     compact
                     color={browsingColor}
                     gender={gender}
+                    hairType={hairTypeId}
                     favourite={favouriteIds.includes(style.id)}
                     onToggleFavourite={() => toggleFavourite(style.id)}
                     onPress={() => openStyle(style.id)}

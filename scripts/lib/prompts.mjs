@@ -21,7 +21,7 @@ const HAIR_RESTRAINT =
   "It is a real barber's haircut at realistic scale, worn close to the head: no inflated volume, no wig-like mass, no loose flyaway strands, no glossy editorial sheen.";
 
 /**
- * The one shade the whole catalog is shot in, and the one hair type.
+ * The one shade the whole catalog is shot in.
  *
  * Deliberately not per style. Colour is not generated at all any more: the app
  * grades this render to whatever shade the user picks (`src/lib/colorGrade.ts`),
@@ -35,7 +35,91 @@ const HAIR_RESTRAINT =
  * for here.
  */
 export const HAIR_COLOUR = 'Espresso brown — #33231B';
-const HAIR_TYPE = 'Type 3A–3B curly';
+
+/**
+ * The shade each variant is shot in.
+ *
+ * This is the one place the "colour is a grade, not a generation" rule bends,
+ * and it bends for a reason rather than for a colour: espresso reads as a muddy
+ * mid-brown on type 4 coils, because a dense zig-zag texture is mostly
+ * self-shadow and there is very little lit surface left to carry the hue. Black
+ * is what type 4 hair is photographed in, so that is what it is shot in.
+ *
+ * It is still not a colour *choice* — nobody picks these, and no style has its
+ * own. There are two anchors instead of one, and the app grades from whichever
+ * one the render it is showing was shot in (`baseHairColor()` in
+ * `src/lib/constants.ts`). Adding a shade a user can pick is still a row in the
+ * catalog's colour list and still costs no generation.
+ *
+ * Change one of these and the matching anchor has to be re-measured from the new
+ * renders: `node scripts/measure-hair-tone.mjs` prints one mean per variant.
+ */
+export const HAIR_COLOURS = {
+  any: HAIR_COLOUR,
+  straight: HAIR_COLOUR,
+  wavy: HAIR_COLOUR,
+  curly: HAIR_COLOUR,
+  coily: 'Natural black — #131110',
+};
+
+/** The shade a given variant is generated in. */
+export const hairColour = (variant) => HAIR_COLOURS[variant ?? 'any'] ?? HAIR_COLOUR;
+
+/**
+ * The other variable, and the only other one.
+ *
+ * Hair type *is* generated, unlike colour — a coily textured crop is a
+ * different silhouette, not a recolour of the curly one, and no filter gets you
+ * from one to the other. So the catalog is shot per variant of the hairstyle ×
+ * hair type matrix (`variants` in the catalog, `lib/variants.mjs`), and this is
+ * the one sentence that changes between two shots of the same cut. Everything
+ * else in the prompt — the head, the material, the light, the crop, the colour
+ * — is identical by construction.
+ *
+ * `any` is the variant for a cut the matrix says needs only one render: a buzz
+ * cut, a flat-ironed blowout, box braids. It states no hair type at all, which
+ * is the honest instruction — the cut is what decides the texture there, and
+ * naming a type would only make one arbitrary reading of it the catalog's.
+ *
+ * The wording is deliberately the typing system's own, in the same register as
+ * `HAIR_COLOUR`: the model reads "Type 4 coily" far more reliably than any
+ * description of coils written out longhand.
+ */
+export const HAIR_TYPES = {
+  any: null,
+  straight: 'Type 1 straight — poker straight, no bend or curl at all, lying flat to the head',
+  wavy: 'Type 2A–2C wavy — loose S-shaped waves, no defined curls',
+  curly: 'Type 3A–3B curly — defined springy curls and loops',
+  coily: 'Type 4A–4C coily — tight coils and zig-zag kinks, dense and shrunken',
+};
+
+/** The variant the pre-matrix catalog was shot in, kept for the record. */
+export const LEGACY_HAIR_TYPE = 'curly';
+
+/**
+ * The bare label the catalog's `Hair type:` line is written from.
+ *
+ * Deliberately shorter than `HAIR_TYPES` above. Those descriptions exist to make
+ * four textures come back visibly different from each other *within one image* —
+ * the picker's example sheet draws all four side by side and has to be told how
+ * they differ. A catalog sheet draws one texture and needs no such contrast, and
+ * the curly catalog already on disk was shot with exactly this bare form. Adding
+ * prose here would make the coily batch a different prompt from the curly one it
+ * has to sit beside, which is the one thing a consistency contract cannot allow.
+ */
+export const HAIR_TYPE_LABELS = {
+  any: null,
+  straight: 'Type 1 straight',
+  wavy: 'Type 2A–2C wavy',
+  curly: 'Type 3A–3B curly',
+  coily: 'Type 4A–4C coily',
+};
+
+/** The `Hair type:` line for a variant, or nothing at all for `any`. */
+export function hairTypeLine(variant) {
+  const label = HAIR_TYPE_LABELS[variant ?? 'any'];
+  return label ? `Hair type: ${label}` : null;
+}
 
 const HAIR_SENTENCE = [
   'The hair is photorealistic, cleanly styled and lit, and is the only thing in the frame that draws attention.',
@@ -53,23 +137,48 @@ const HAIR_SENTENCE = [
  * upper left on white. Colours below are sampled from that file — highlight
  * #E9E8E6, mid-tone #E2E1DE, shadow #D4D1CD, background #FFFFFF.
  */
+/**
+ * The three sentences that describe the *object* rather than the shot: a blank
+ * face, matte white plastic in named values, and high-key light on white.
+ *
+ * Exported one by one because the hair-type example sheet
+ * (`lib/hairTypePrompts.mjs`) is a different photograph of the same object — a
+ * tight texture specimen, not a catalog card — and the material is the part that
+ * has to match exactly for the two sets of imagery to read as one app. The crop
+ * and framing are the part that deliberately does not, so they stay below.
+ */
+export const BLANK_FACE =
+  'The face is a completely smooth, blank plane: no eyes, no nose, no mouth, no eyebrows, no eyelashes, no facial features of any kind, no makeup, no skin pores, no identifiable ethnicity. The ears are sculpted and clearly visible.';
+export const MATERIAL =
+  'Material: matte white mannequin plastic — highlights #E9E8E6, mid-tone #E2E1DE, shadows #D4D1CD. A cool, near-neutral white with soft grey shading; not cream, not beige, not skin-toned. No gloss, no specular hotspots, no mould seams, no text or branding.';
+export const LIGHTING =
+  'Lighting: soft, diffuse, high-key studio light from the upper left. Shading only under the jaw and down one side of the neck; no hard shadows, no dark areas, no cast shadow on the background.';
+export const BACKDROP =
+  'Background: flat pure white #FFFFFF, completely plain — no gradient, no vignette, no props, no text, no watermark.';
+
 export const HOUSE_STYLE = [
   'Studio product photograph of a faceless white display mannequin — the head and neck only.',
   "Crop: the head, the neck and the top of the mannequin's flat display base fill the frame. The neck flares outwards at the bottom into a wide, flat, angled base plate that runs off the left and right edges of the frame and is cut by the bottom edge — exactly like a shop display head. It is a flat sculpted plate, never a rounded bust: no real shoulders, no collarbones, no arms, no chest, no torso, no stand or pedestal.",
-  'The face is a completely smooth, blank plane: no eyes, no nose, no mouth, no eyebrows, no eyelashes, no facial features of any kind, no makeup, no skin pores, no identifiable ethnicity. The ears are sculpted and clearly visible.',
-  'Material: matte white mannequin plastic — highlights #E9E8E6, mid-tone #E2E1DE, shadows #D4D1CD. A cool, near-neutral white with soft grey shading; not cream, not beige, not skin-toned. No gloss, no specular hotspots, no mould seams, no text or branding.',
-  'Lighting: soft, diffuse, high-key studio light from the upper left. Shading only under the jaw and down one side of the neck; no hard shadows, no dark areas, no cast shadow on the background.',
-  'Background: flat pure white #FFFFFF, completely plain — no gradient, no vignette, no props, no text, no watermark.',
+  BLANK_FACE,
+  MATERIAL,
+  LIGHTING,
+  BACKDROP,
   'Framing: centred in a square frame, camera at eye level, the head occupying the middle 70-75% of the frame at exactly the same scale in every image.',
   HAIR_SENTENCE,
 ].join(' ');
 
 /**
- * Four angles. `half` — the three-quarter turn — is the hero: the one view where
- * the taper, the ear and the nape all read at once, and the angle the hero in
- * `App-reference.png` is shot at. It is not described in words here, because
- * words do not work for it (see KEEP_REFERENCE_ANGLE); it is inherited from the
- * reference image instead.
+ * Four angles. `half` — the gentle three-quarter turn — is the hero: it is
+ * `HERO_ANGLE` in the app, so it is the image on every catalog card and at the
+ * top of every style screen, and it is the one view where the taper, the ear and
+ * the nape all read at once.
+ *
+ * It used to be inherited from `scripts/reference-head.png` rather than
+ * described, on the theory that the reference was already at the wanted angle.
+ * It is not: the reference is turned far enough that the face plane is edge-on
+ * and you are looking at the back-right of the skull. So the base head faithfully
+ * reproduced a *rear* three-quarter, every style inherited it, and the catalog
+ * ended up with two profiles and no hero. See `baseHalfFromFrontPrompt`.
  */
 const ANGLE_DIRECTION = {
   front:
@@ -80,17 +189,39 @@ const ANGLE_DIRECTION = {
 };
 
 /**
- * The reference is already a three-quarter view at exactly the angle the catalog
- * wants, so for `half` the instruction is to leave the pose alone rather than
- * describe it. Describing the turn in words does not work: "three-quarter hero
- * view, about 30 degrees" comes back at 50-60 degrees every time, because the
- * model reads "three-quarter" as far closer to a profile than a barber would.
- * The other three angles have to be described — the reference cannot show them.
+ * The hero head, made by turning the approved dead-on front head.
+ *
+ * Describing this angle from scratch does not work — "three-quarter, about 30
+ * degrees" comes back at 50-60 every time, because the model reads
+ * "three-quarter" as far closer to a profile than a barber would — and
+ * inheriting it from the reference does not work either, because the reference
+ * is itself a rear three-quarter.
+ *
+ * So it is neither described nor inherited: it is a *rotation of an image that
+ * is already right*. `_base/<gender>-front.png` is an approved, dead-on,
+ * correctly framed and lit bald head, and the only instruction is to turn it a
+ * little. That makes the angle a small delta from a known-good starting point
+ * instead of an absolute the model has to hit blind, and it carries the
+ * material, the crop, the light and the scale over pixel-for-pixel — the same
+ * reason every hairstyle is an edit of a base head rather than a fresh render.
+ *
+ * The negative clauses are doing real work. Left to itself the model overshoots
+ * this rotation every time, so what is wrong is spelled out as explicitly as
+ * what is wanted.
  */
-const KEEP_REFERENCE_ANGLE =
-  'Keep the head at exactly the same angle and pose as the reference image: the same gentle three-quarter turn, the same position in the frame, the same amount of face and ear showing. Do not rotate, turn, tilt or re-pose the head at all, and do not turn it further towards a profile — the reference angle is the approved one and must be preserved exactly.';
+export function baseHalfFromFrontPrompt(gender) {
+  return [
+    'Edit the first image. It is the approved dead-on front view of this mannequin, and everything about it except the rotation of the head is correct and must be preserved exactly.',
+    'Change one thing only: rotate the head a little to its own right, about 25 to 30 degrees — a gentle three-quarter turn that is much closer to the front view you have been given than to a profile.',
+    'The whole blank face plane must still face the camera and remain fully visible, angled slightly towards the left of the frame. The near ear and the taper above it come into view on the right; the far side of the face is still shown.',
+    'Do not overshoot. This must not become a profile, a 45-degree turn, a three-quarter view from behind, or any view in which the face plane is edge-on, foreshortened away, or hidden. The back of the skull and the nape must not be the subject. If in doubt, turn it less.',
+    'Keep the face completely blank — no eyes, no nose, no mouth, no eyebrows, no facial features of any kind — and keep the sculpted ears. The mannequin stays completely bald: smooth hairless scalp, no hair, no wig cap, no stubble, no hairline drawn on.',
+    GENDER_PROPORTIONS[gender],
+    'Everything else is unchanged: the same head and neck sculpt, the same matte white material and shading, the same soft high-key light from the upper left, the same flat white background, the same wide flat display base, the same crop, the same scale and the same position in the frame.',
+  ].join(' ');
+}
 
-const GENDER_PROPORTIONS = {
+export const GENDER_PROPORTIONS = {
   male: 'Masculine proportions: a squarer jaw line, a slightly wider neck and a straight, slightly lower hairline. Still completely featureless.',
   female: 'Feminine proportions: a softer, narrower jaw line and a slimmer, slightly longer neck. Still completely featureless.',
 };
@@ -140,16 +271,17 @@ const FRINGE = [
 
 /**
  * Human-readable hair description built entirely from the catalog record, in
- * the catalog's one shade.
+ * the catalog's one shade and the variant's hair type.
  *
- * Texture is deliberately not stated. `shape.texture` used to open this sentence
- * ("defined springy curls, worn as a low taper fade") and it dominated the
- * render — every cut came back as a curly mass. The name of the cut already
- * implies its texture, so the prompt names the cut and leaves texture alone;
- * `shape.texture` stays what it is elsewhere, the descriptor the placeholder
- * mannequin is drawn from.
+ * `shape.texture` is still not what states the texture, and never was: it used
+ * to open this sentence ("defined springy curls, worn as a low taper fade") and
+ * it dominated the render — every cut came back as a curly mass. The hair type
+ * now arrives as its own labelled line at the end instead, which the model
+ * treats as a specification rather than as the subject of the image, and it is
+ * the variant's type rather than the style's own. `shape.texture` stays what it
+ * always was: the descriptor the placeholder mannequin is drawn from.
  */
-export function describeHair(style) {
+export function describeHair(style, variant = 'any') {
   const { shape } = style;
   const parts = [
     `a ${style.name.toLowerCase()}`,
@@ -164,7 +296,8 @@ export function describeHair(style) {
   if (shape.knot) parts.push('the length gathered into a knot/bun at the crown');
   if (shape.tail) parts.push('the length gathered into a tied ponytail');
 
-  return `${parts.join(', ')}. Hair colour: ${HAIR_COLOUR}. ${style.description}`;
+  const type = hairTypeLine(variant);
+  return `${parts.join(', ')}. Hair colour: ${hairColour(variant)}.${type ? ` ${type}.` : ''} ${style.description}`;
 }
 
 /**
@@ -179,7 +312,7 @@ export function baseHeadFromReferencePrompt(gender, angle) {
     'Remove all of the hair: the mannequin is completely bald, with a smooth hairless scalp, no hair, no wig cap, no stubble and no hairline drawn on.',
     'Keep the face completely blank — no eyes, no nose, no mouth, no eyebrows, no facial features of any kind — and keep the sculpted ears.',
     GENDER_PROPORTIONS[gender],
-    angle === 'half' ? KEEP_REFERENCE_ANGLE : ANGLE_DIRECTION[angle],
+    ANGLE_DIRECTION[angle],
     'Change nothing else: same material, same light, same background, same scale.',
   ].join(' ');
 }
@@ -200,10 +333,10 @@ export function baseHeadPrompt(gender, angle) {
  * Prompt for one hairstyle, phrased as an edit of the approved base head so the
  * head itself is carried over pixel-for-pixel instead of re-invented per style.
  */
-export function stylePrompt({ style, gender, angle, extra }) {
+export function stylePrompt({ style, gender, angle, variant = 'any', extra }) {
   const lines = [
     'Edit the first image. Keep the mannequin exactly as it is: same head and neck shape, same blank featureless face, same matte white material and shading, same white background, same lighting, same camera angle, same crop and same scale. Do not add eyes, a nose, a mouth or any facial feature. Do not turn it into a real person. Do not zoom out and do not re-frame: keep the neck and the wide flat display base exactly as they are, and never turn that base into shoulders, a chest or a torso.',
-    `Change only one thing: give the mannequin ${describeHair(style)}`,
+    `Change only one thing: give the mannequin ${describeHair(style, variant)}`,
     ANGLE_DIRECTION[angle],
     GENDER_PROPORTIONS[gender],
     'The hair sits on the scalp with a believable hairline and realistic strand detail, photographed in the same studio setup.',
@@ -214,12 +347,12 @@ export function stylePrompt({ style, gender, angle, extra }) {
 }
 
 /** Fallback when there is no base head to edit: one-shot text-to-image. */
-export function standaloneStylePrompt({ style, gender, angle, extra }) {
+export function standaloneStylePrompt({ style, gender, angle, variant = 'any', extra }) {
   const lines = [
     HOUSE_STYLE,
     GENDER_PROPORTIONS[gender],
     ANGLE_DIRECTION[angle],
-    `The mannequin wears ${describeHair(style)}`,
+    `The mannequin wears ${describeHair(style, variant)}`,
   ];
   if (extra) lines.push(extra);
   return lines.join(' ');
@@ -244,10 +377,11 @@ export function standaloneStylePrompt({ style, gender, angle, extra }) {
  * over-rotated three-quarters; a sentence cannot pin a camera angle as well as
  * the pixels already can.
  */
-export function styleSheetPrompt({ style, extra, missing = [] }) {
+export function styleSheetPrompt({ style, variant = 'any', extra, missing = [] }) {
   const name = style.name;
   const count = SHEET.cells.length;
   const panels = SHEET.positions.join(', ');
+  const type = hairTypeLine(variant);
 
   const lines = [
     `Use the provided image as the exact visual reference. It contains ${count} views of the same mannequin wearing the same hairstyle, one per quadrant: ${panels}. Recreate the image while applying the requested ${name} to the mannequins.`,
@@ -261,8 +395,8 @@ export function styleSheetPrompt({ style, extra, missing = [] }) {
     'Hair specifications:',
     '',
     `Hairstyle: ${name}`,
-    `Hair color: ${HAIR_COLOUR}`,
-    `Hair type: ${HAIR_TYPE}`,
+    `Hair color: ${hairColour(variant)}`,
+    ...(type ? [type] : []),
     '',
     'Reference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.',
     '',

@@ -1,4 +1,4 @@
-import type { HairColor, HairShape } from '@/api/types';
+import type { HairColor, HairShape, VariantId } from '@/api/types';
 
 /**
  * Sentinel photo uri used by the "use a sample photo" path.
@@ -20,24 +20,46 @@ export const DEMO_BASE_SHAPE: HairShape = {
 };
 
 /**
- * The shade the whole catalog is drawn and rendered in, and the anchor every
- * colour grade starts from.
+ * The shade a render was *shot* in, and the anchor its colour grade starts from.
  *
- * `hex` is not a design choice. It is the mean colour of the hair pixels across
- * every render in `assets/mannequins`, measured with the same luma threshold the
- * generator uses to tell hair from mannequin. The generator asks for espresso
- * #33231B (`HAIR_COLOUR` in `scripts/lib/prompts.mjs`) and gets back something a
- * shade warmer than that; what a grade has to start from is what actually came
- * back, not what was asked for. Re-measure this if the catalog is ever re-shot.
+ * These are not design choices. Each `hex` is the mean colour of the hair pixels
+ * across the renders shot in that shade, measured with the same luma threshold
+ * the generator uses to tell hair from mannequin — the generator asks for one
+ * colour and gets back something a shade off it, and what a grade has to start
+ * from is what actually came back. `node scripts/measure-hair-tone.mjs` prints
+ * one mean per variant; re-measure after re-shooting anything.
  *
- * Picking this shade in the app is therefore a no-op: `hairGrade()` returns null
- * for it and the render is shown untouched. See `src/lib/colorGrade.ts`.
+ * There are two of them rather than one because the coily variant is shot in
+ * black: espresso reads as a muddy mid-brown on type 4 coils, which are mostly
+ * self-shadow with very little lit surface to carry a hue. See `HAIR_COLOURS` in
+ * `scripts/lib/prompts.mjs`. This is still not colour-per-style — no hairstyle
+ * has its own shade, and a shade the *user* can pick is still a row in the
+ * catalog's colour list costing no generation. It just means the grade has two
+ * starting points, and has to be told which render it is looking at.
+ *
+ * Picking the anchor shade in the app is a no-op: `hairGrade()` returns null for
+ * it and the render is shown untouched. See `src/lib/colorGrade.ts`.
  */
-export const BASE_HAIR_COLOR: HairColor = {
-  id: 'espresso',
-  name: 'Espresso',
-  hex: '#392D24',
-  shade: '#241B15',
+export const BASE_HAIR_COLORS: Record<VariantId, HairColor> = {
+  any: { id: 'espresso', name: 'Espresso', hex: '#3B2C24', shade: '#241B15' },
+  straight: { id: 'espresso', name: 'Espresso', hex: '#392D24', shade: '#241B15' },
+  wavy: { id: 'espresso', name: 'Espresso', hex: '#392D24', shade: '#241B15' },
+  curly: { id: 'espresso', name: 'Espresso', hex: '#392D24', shade: '#241B15' },
+  // Measured across the four coily renders on disk (`measure-hair-tone.mjs`),
+  // replacing the value extrapolated from espresso's drift before any coily
+  // render existed. Re-measure when the coily batch grows past low-taper-fade.
+  coily: { id: 'jet', name: 'Jet Black', hex: '#232220', shade: '#151413' },
 };
 
-export const TRY_ON_STEPS = 4;
+/**
+ * The shade the catalog is drawn in when nothing more specific is known — the
+ * procedural mannequin, the sample photo, the welcome screen.
+ */
+export const BASE_HAIR_COLOR: HairColor = BASE_HAIR_COLORS.any;
+
+/** The anchor for one render, by the variant it was shot as. */
+export const baseHairColor = (variant: VariantId | null | undefined): HairColor =>
+  BASE_HAIR_COLORS[variant ?? 'any'] ?? BASE_HAIR_COLOR;
+
+/** photo, gender, hair type, category+catalog, style detail. */
+export const TRY_ON_STEPS = 5;

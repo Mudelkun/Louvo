@@ -35,8 +35,18 @@ import { fileURLToPath } from 'node:url';
 
 import { loadCatalog } from './lib/catalog.mjs';
 import { writeRenderModule } from './lib/renders.mjs';
+import {
+  HAIR_TYPE_IDS,
+  VARIANT_IDS,
+  isUnclassified,
+  matrixOf,
+  typesForVariant,
+  unsupportedTypes,
+  variantsOf,
+} from './lib/variants.mjs';
 import { fetchImageBytes, firstImage, runModel, withRetry } from './lib/fal.mjs';
 import {
+  baseHalfFromFrontPrompt,
   baseHeadFromReferencePrompt,
   baseHeadPrompt,
   standaloneStylePrompt,
@@ -75,6 +85,14 @@ function parseArgs(argv) {
     styles: null,
     genders: GENDERS,
     angles: ANGLES,
+    /**
+     * Which variants of the hairstyle × hair type matrix to generate. `null` is
+     * "whatever each style's `variants` row asks for" — the normal case, and
+     * the one that makes hairstyle count × hair type smaller than four times
+     * the catalog. Naming types narrows a run to a batch: `--hair-type coily`
+     * generates only the renders type 4 users would be shown.
+     */
+    variants: null,
     model: process.env.FAL_MODEL ?? 'fal-ai/nano-banana',
     editModel: process.env.FAL_EDIT_MODEL ?? 'fal-ai/nano-banana/edit',
     catalogUrl: process.env.CATALOG_URL ?? null,
@@ -90,6 +108,7 @@ function parseArgs(argv) {
     inset: 0,
     sheetRetries: 2,
     check: false,
+    matrix: false,
     noEdit: false,
     dryRun: false,
     force: false,
@@ -116,6 +135,12 @@ function parseArgs(argv) {
         break;
       }
       case '--angle': case '--angles': options.angles = list(next()); break;
+      case '--hair-type': case '--hair-types': case '--type': case '--types': {
+        const value = next();
+        options.variants = value === 'all' ? VARIANT_IDS : list(value);
+        break;
+      }
+      case '--matrix': options.matrix = true; break;
       case '--model': options.model = next(); break;
       case '--edit-model': options.editModel = next(); break;
       case '--catalog-url': options.catalogUrl = next(); break;
@@ -143,6 +168,8 @@ function parseArgs(argv) {
   if (badAngle) fail(`unknown angle "${badAngle}" — expected ${ANGLES.join(', ')}`);
   const badGender = options.genders.find((gender) => !GENDERS.includes(gender));
   if (badGender) fail(`unknown gender "${badGender}" — expected male, female or both`);
+  const badVariant = options.variants?.find((variant) => !VARIANT_IDS.includes(variant));
+  if (badVariant) fail(`unknown hair type "${badVariant}" — expected ${VARIANT_IDS.join(', ')} or all`);
   if (!Number.isFinite(options.concurrency) || options.concurrency < 1) fail('--concurrency must be a positive number');
   if (!Number.isFinite(options.inset) || options.inset < 0) fail('--sheet-inset must be zero or more pixels');
   if (!Number.isFinite(options.sheetRetries) || options.sheetRetries < 0) fail('--sheet-retries must be zero or more');
@@ -161,6 +188,9 @@ function usage() {
       '  --style <ids>        comma-separated hairstyle ids (default: every style)',
       '  --gender <g>         male | female | both            (default: both)',
       '  --angle <a>          front,half,side,back            (default: all four)',
+      '  --hair-type <t>      straight,wavy,curly,coily,any | all',
+      '                       (default: every variant the catalog matrix asks for)',
+      '  --matrix             print the hairstyle x hair type matrix and stop — free, no key',
       '  --limit <n>          stop after the n most popular styles — cheap sampling',
       '  --base-only          generate just the bald base heads and stop',
       '  --compose-base       tile the approved base heads into a 2x2 sheet — free, calls nothing',
@@ -241,10 +271,42 @@ const relative = (options, file) => path.relative(options.out, file).split(path.
 
 const baseFile = (options, gender, angle) => path.join(options.out, '_base', `${gender}-${angle}.png`);
 const baseSheetFile = (options, gender) => path.join(options.out, '_base', `${gender}-sheet.png`);
-const styleFile = (options, styleId, gender, angle) =>
-  path.join(options.out, styleId, `${gender}-${angle}.png`);
-const styleSheetFile = (options, styleId, gender) =>
-  path.join(options.out, styleId, `${gender}-sheet.png`);
+/**
+ * `<style>/<variant>/<gender>-<angle>.png`.
+ *
+ * The variant directory is the hairstyle × hair type matrix on disk. A style
+ * the matrix says needs one render has a single `any/`; a style whose curly and
+ * coily versions differ has `curly/` and `coily/` and nothing else. The app
+ * reads the same layout back (scripts/lib/renders.mjs).
+ */
+const styleFile = (options, styleId, variant, gender, angle) =>
+  path.join(options.out, styleId, variant, `${gender}-${angle}.png`);
+const styleSheetFile = (options, styleId, variant, gender) =>
+  path.join(options.out, styleId, variant, `${gender}-sheet.png`);
+
+/**
+ * Which variants of one style this run should produce.
+ *
+ * With no `--hair-type` that is every variant the style's matrix row asks for.
+ * With one, the flag is read as a *hair type* rather than as a directory name:
+ * `--hair-type coily` means "everything a type 4 user would be shown", so a cut
+ * whose coily version is the same render as its curly one resolves to `curly`
+ * and is skipped as already generated, instead of being shot a second time
+ * under a different name. That is the whole economy of the matrix, and it would
+ * be lost if the flag matched directories.
+ */
+function variantsForRun(style, options) {
+  const all = variantsOf(style);
+  if (!options.variants) return all;
+
+  const matrix = matrixOf(style);
+  const wanted = new Set();
+  for (const entry of options.variants) {
+    if (entry === 'any') wanted.add('any');
+    else if (matrix[entry]) wanted.add(matrix[entry]);
+  }
+  return all.filter((variant) => wanted.has(variant));
+}
 
 /**
  * Tiles the approved base heads into one sheet. No model, no cost: the four
@@ -354,22 +416,58 @@ async function ensureBaseHeads(options, manifest, needed, key) {
   const missing = missingBases(options, manifest, needed);
   if (!missing.length) return;
 
-  console.log(`\nBase heads: generating ${missing.length} of ${needed.length}`);
+  console.log(`
+Base heads: generating ${missing.length} of ${needed.length}`);
 
-  for (const { gender, angle } of missing) {
-    const fromReference = options.hasReference;
-    const prompt = fromReference ? baseHeadFromReferencePrompt(gender, angle) : baseHeadPrompt(gender, angle);
+  // `half` is made by turning the approved front head, so front has to exist
+  // first. ANGLES already orders them that way; sorting makes it not depend on
+  // that, since a run can ask for any subset in any order.
+  const order = [...missing].sort((x, y) => Number(x.angle === 'half') - Number(y.angle === 'half'));
+
+  for (const { gender, angle } of order) {
     const file = baseFile(options, gender, angle);
+    const front = baseFile(options, gender, 'front');
+
+    /**
+     * Three ways to make a base head, in order of how much they carry over
+     * rather than describe:
+     *
+     *   half  — an edit of this gender's approved front head, turned. The angle
+     *           is a small delta from an image already accepted, which is the
+     *           only thing that reliably lands it (see baseHalfFromFrontPrompt).
+     *   other — an edit of the look reference, which carries the material,
+     *           lighting, crop and background over from the mockup.
+     *   none  — described from scratch, when there is no reference at all.
+     */
+    const fromFront = angle === 'half' && existsSync(front);
+    const fromReference = !fromFront && options.hasReference;
+    const prompt = fromFront
+      ? baseHalfFromFrontPrompt(gender)
+      : fromReference
+        ? baseHeadFromReferencePrompt(gender, angle)
+        : baseHeadPrompt(gender, angle);
+
+    if (angle === 'half' && !fromFront) {
+      console.warn(
+        `  ! no ${relative(options, front)} to turn — falling back to describing the hero angle, ` +
+          'which lands it badly. Generate the front head first.',
+      );
+    }
 
     if (options.dryRun) {
-      console.log(`\n[dry-run] base ${gender}/${angle} -> ${relative(options, file)}\n  ${prompt}`);
+      console.log(`
+[dry-run] base ${gender}/${angle} -> ${relative(options, file)}
+  ${prompt}`);
       continue;
     }
 
+    const seed = fromFront ? await dataUri(front) : options.referenceUri;
+
     const image = await withRetry(`base ${gender}/${angle}`, 3, async () => {
-      const result = fromReference
-        ? await runModel(options.editModel, imageInput(options, prompt, { image_urls: [options.referenceUri] }), { key })
-        : await runModel(options.model, imageInput(options, prompt), { key });
+      const result =
+        fromFront || fromReference
+          ? await runModel(options.editModel, imageInput(options, prompt, { image_urls: [seed] }), { key })
+          : await runModel(options.model, imageInput(options, prompt), { key });
       return firstImage(result);
     });
 
@@ -398,7 +496,7 @@ async function baseImageRef(options, manifest, gender, angle) {
 }
 
 async function generateStyleImage(job, options, manifest, key) {
-  const { style, gender, angle, file } = job;
+  const { style, gender, angle, variant, file } = job;
 
   if (options.sheet) {
     const base = baseSheetFile(options, gender);
@@ -406,7 +504,7 @@ async function generateStyleImage(job, options, manifest, key) {
       throw new Error(`no base sheet for ${gender} — run --compose-base --gender ${gender} first`);
     }
 
-    if (options.dryRun) return { prompt: styleSheetPrompt({ style, extra: job.extra }), dryRun: true };
+    if (options.dryRun) return { prompt: styleSheetPrompt({ style, variant, extra: job.extra }), dryRun: true };
 
     const baseUri = await dataUri(base);
 
@@ -418,7 +516,7 @@ async function generateStyleImage(job, options, manifest, key) {
     let missing = [];
 
     for (let attempt = 0; attempt <= options.sheetRetries; attempt += 1) {
-      const prompt = styleSheetPrompt({ style, extra: job.extra, missing });
+      const prompt = styleSheetPrompt({ style, variant, extra: job.extra, missing });
       const image = await withRetry(job.label, 3, async () => {
         const result = await runModel(
           options.editModel,
@@ -459,7 +557,7 @@ async function generateStyleImage(job, options, manifest, key) {
   }
 
   if (options.noEdit) {
-    const prompt = standaloneStylePrompt({ style, gender, angle, extra: job.extra });
+    const prompt = standaloneStylePrompt({ style, gender, angle, variant, extra: job.extra });
     if (options.dryRun) return { prompt, dryRun: true };
 
     const image = await withRetry(job.label, 3, async () => {
@@ -470,7 +568,7 @@ async function generateStyleImage(job, options, manifest, key) {
     return { prompt, url: image.url };
   }
 
-  const prompt = stylePrompt({ style, gender, angle, extra: job.extra });
+  const prompt = stylePrompt({ style, gender, angle, variant, extra: job.extra });
   if (options.dryRun) return { prompt, dryRun: true };
 
   const base = await baseImageRef(options, manifest, gender, angle);
@@ -506,24 +604,29 @@ function buildJobs(catalog, options, overrides) {
 
   const jobs = [];
   for (const style of styles) {
-    for (const gender of style.genders) {
-      if (!options.genders.includes(gender)) continue;
+    for (const variant of variantsForRun(style, options)) {
+      for (const gender of style.genders) {
+        if (!options.genders.includes(gender)) continue;
 
-      // One sheet covers every angle, so sheet mode plans per gender and the
-      // angles come out of the crop rather than out of separate generations.
-      for (const angle of options.sheet ? [null] : options.angles) {
-        const file = options.sheet
-          ? styleSheetFile(options, style.id, gender)
-          : styleFile(options, style.id, gender, angle);
-        jobs.push({
-          style,
-          gender,
-          angle,
-          file,
-          extra: overrides[style.id] ?? null,
-          label: options.sheet ? `${style.id} ${gender}` : `${style.id} ${gender}/${angle}`,
-          exists: existsSync(file),
-        });
+        // One sheet covers every angle, so sheet mode plans per gender and the
+        // angles come out of the crop rather than out of separate generations.
+        for (const angle of options.sheet ? [null] : options.angles) {
+          const file = options.sheet
+            ? styleSheetFile(options, style.id, variant, gender)
+            : styleFile(options, style.id, variant, gender, angle);
+          jobs.push({
+            style,
+            variant,
+            gender,
+            angle,
+            file,
+            extra: overrides[style.id] ?? null,
+            label: options.sheet
+              ? `${style.id} ${variant}/${gender}`
+              : `${style.id} ${variant}/${gender}/${angle}`,
+            exists: existsSync(file),
+          });
+        }
       }
     }
   }
@@ -585,6 +688,105 @@ function dedupe(pairs) {
 }
 
 // ---------------------------------------------------------------------------
+// The hairstyle x hair type matrix
+// ---------------------------------------------------------------------------
+
+/**
+ * Prints the matrix and what it costs, and generates nothing.
+ *
+ * This is the report to read before committing to a batch: it is the catalog's
+ * own `variants` rows laid out as the table the plan asks for, so the answer to
+ * "which images do we still need" comes out of the data rather than out of a
+ * spreadsheet kept beside it. Free, needs no key.
+ *
+ * A cell is the variant a type resolves to; two types sharing a name share one
+ * render. A dash is a style not offered for that type at all.
+ */
+async function printMatrix(options, catalog) {
+  const styles = catalog.hairstyles
+    .filter((style) => (options.styles ? options.styles.includes(style.id) : true))
+    .filter((style) => style.genders.some((gender) => options.genders.includes(gender)));
+
+  const pad = (text, width) => String(text).padEnd(width);
+  const idWidth = Math.max(9, ...styles.map((style) => style.id.length));
+  const cellWidth = 9;
+
+  console.log(
+    `\n${pad('hairstyle', idWidth)}  ${HAIR_TYPE_IDS.map((type) => pad(type, cellWidth)).join('')}` +
+      'renders  on disk',
+  );
+  console.log('-'.repeat(idWidth + cellWidth * HAIR_TYPE_IDS.length + 19));
+
+  let renders = 0;
+  let generations = 0;
+  let onDisk = 0;
+  const unclassified = [];
+  const todo = new Set();
+
+  for (const style of styles) {
+    const genders = style.genders.filter((gender) => options.genders.includes(gender));
+    const variants = variantsOf(style);
+    const matrix = matrixOf(style);
+
+    // "On disk" counts generations, not files: one sheet per variant per gender
+    // is what a run actually pays for.
+    let have = 0;
+    for (const variant of variants) {
+      for (const gender of genders) {
+        const done = ANGLES.every((angle) => existsSync(styleFile(options, style.id, variant, gender, angle)));
+        if (done) have += 1;
+        else todo.add(style.id);
+      }
+    }
+
+    const want = variants.length * genders.length;
+    renders += variants.length;
+    generations += want;
+    onDisk += have;
+    if (isUnclassified(style)) unclassified.push(style.id);
+
+    console.log(
+      `${pad(style.id, idWidth)}  ` +
+        HAIR_TYPE_IDS.map((type) => pad(matrix[type] ?? '-', cellWidth)).join('') +
+        `${pad(variants.length, 9)}${have}/${want}`,
+    );
+  }
+
+  const naive = styles.length * HAIR_TYPE_IDS.length;
+  console.log(
+    `\n${styles.length} style(s): ${renders} distinct render(s) instead of ${naive} ` +
+      `(one per type) — ${naive - renders} generation(s) the matrix says would show the same image.`,
+  );
+  console.log(
+    `Across ${options.genders.join(' and ')}: ${generations} generation(s), ${onDisk} already on disk, ` +
+      `${generations - onDisk} to go (roughly $${((generations - onDisk) * APPROX_COST_PER_IMAGE).toFixed(2)}).`,
+  );
+
+  const missingTypes = styles
+    .map((style) => ({ id: style.id, types: unsupportedTypes(style) }))
+    .filter((entry) => entry.types.length);
+  if (missingTypes.length) {
+    console.log(`\nNot offered for every type (a dash above):`);
+    for (const entry of missingTypes) console.log(`  ${pad(entry.id, idWidth)}  no ${entry.types.join(', ')}`);
+  }
+
+  if (unclassified.length) {
+    console.error(
+      `\n${unclassified.length} style(s) have no \`variants\` row and fell back to a single ` +
+        `\`any\` render — classify them in the catalog:\n  ${unclassified.join(', ')}`,
+    );
+    process.exitCode = 1;
+  }
+
+  if (todo.size) {
+    console.log(
+      `\nNext, one hair type at a time:\n\n` +
+        `  node scripts/generate-mannequins.mjs --sheet --gender ${options.genders[0]} --hair-type coily`,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Auditing what is already on disk
 // ---------------------------------------------------------------------------
 
@@ -600,17 +802,19 @@ async function checkSheets(options, manifest, catalog) {
 
   for (const style of catalog.hairstyles) {
     if (wanted && !wanted.has(style.id)) continue;
-    for (const gender of style.genders) {
-      if (!options.genders.includes(gender)) continue;
-      const file = styleSheetFile(options, style.id, gender);
-      if (!existsSync(file)) continue;
-      const { coverage, bald } = inspectSheet(await readFile(file), { angles: options.angles });
-      rows.push({ id: style.id, gender, coverage, bald });
+    for (const variant of variantsForRun(style, options)) {
+      for (const gender of style.genders) {
+        if (!options.genders.includes(gender)) continue;
+        const file = styleSheetFile(options, style.id, variant, gender);
+        if (!existsSync(file)) continue;
+        const { coverage, bald } = inspectSheet(await readFile(file), { angles: options.angles });
+        rows.push({ id: style.id, variant, gender, coverage, bald });
 
-      // Record the verdict so the contact sheet flags these too — sheets
-      // generated before the check existed carry no coverage of their own.
-      const entry = manifest.styles?.[style.id]?.[gender]?.sheet;
-      if (entry) Object.assign(entry, { coverage, bald });
+        // Record the verdict so the contact sheet flags these too — sheets
+        // generated before the check existed carry no coverage of their own.
+        const entry = manifest.styles?.[style.id]?.[variant]?.[gender]?.sheet;
+        if (entry) Object.assign(entry, { coverage, bald });
+      }
     }
   }
 
@@ -619,12 +823,13 @@ async function checkSheets(options, manifest, catalog) {
     return;
   }
 
-  const width = Math.max(...rows.map(({ id, gender }) => `${id} ${gender}`.length));
+  const name = ({ id, variant, gender }) => `${id} ${variant}/${gender}`;
+  const width = Math.max(...rows.map((row) => name(row).length));
   console.log(`\nChecking ${rows.length} sheet(s) for bald views:\n`);
-  for (const { id, gender, coverage, bald } of rows) {
+  for (const row of rows) {
     console.log(
-      `  ${bald.length ? '✗' : '✓'} ${`${id} ${gender}`.padEnd(width)}  ${formatCoverage(coverage, options.angles)}` +
-        `${bald.length ? `   <- ${bald.join(', ')} bald` : ''}`,
+      `  ${row.bald.length ? '✗' : '✓'} ${name(row).padEnd(width)}  ${formatCoverage(row.coverage, options.angles)}` +
+        `${row.bald.length ? `   <- ${row.bald.join(', ')} bald` : ''}`,
     );
   }
 
@@ -673,14 +878,30 @@ async function writeContactSheet(options, manifest, catalog) {
     cells.map((angle) => cell(manifest.base?.[gender]?.[angle], `${gender} · ${angle}`)),
   ).join('');
 
+  // One block per variant, because the whole point of a contact sheet is
+  // judging consistency, and the coily shot of a cut has to be looked at beside
+  // its straight shot rather than filed under the same heading.
+  const typesFor = (id, variant) => {
+    const style = catalog.hairstyles.find((entry) => entry.id === id);
+    const types = style ? typesForVariant(style, variant) : [];
+    return types.length ? ` — ${types.join(', ')}` : '';
+  };
+
   const styleSections = Object.keys(manifest.styles)
     .sort()
-    .map((id) => {
-      const rows = GENDERS.flatMap((gender) =>
-        cells.map((angle) => cell(manifest.styles[id]?.[gender]?.[angle], `${gender} · ${angle}`)),
-      ).join('');
-      return section(`${nameFor(id)} <code>${id}</code>`, rows);
-    })
+    .flatMap((id) =>
+      VARIANT_IDS.filter((variant) => manifest.styles[id]?.[variant]).map((variant) => {
+        const rows = GENDERS.flatMap((gender) =>
+          cells.map((angle) =>
+            cell(manifest.styles[id]?.[variant]?.[gender]?.[angle], `${gender} · ${angle}`),
+          ),
+        ).join('');
+        return section(
+          `${nameFor(id)} <code>${id}</code> <b>${variant}</b><small>${typesFor(id, variant)}</small>`,
+          rows,
+        );
+      }),
+    )
     .join('\n');
 
   const html = `<!doctype html>
@@ -691,6 +912,8 @@ async function writeContactSheet(options, manifest, catalog) {
   h1 { font-size: 20px; }
   h2 { font-size: 15px; font-weight: 600; margin: 28px 0 8px; }
   code { font-size: 12px; color: #8A7C6E; }
+  h2 b { font-size: 12px; color: #C4462F; }
+  h2 small { font-size: 12px; font-weight: 400; color: #8A7C6E; }
   .row { display: flex; flex-wrap: wrap; gap: 12px; }
   figure { margin: 0; width: 160px; }
   img { width: 160px; height: 160px; object-fit: cover; border-radius: 12px; background: #EFE9E1; display: block; }
@@ -723,8 +946,8 @@ async function syncRenders(options) {
   if (options.dryRun) return;
   const result = await writeRenderModule({ root: ROOT, out: options.out });
   console.log(
-    `App renders: ${result.relativeFile} — ${result.images} view(s) across ${result.styles} style(s)` +
-      `${result.changed ? ' (updated)' : ' (unchanged)'}`,
+    `App renders: ${result.relativeFile} — ${result.images} view(s) across ${result.variants} variant(s) ` +
+      `of ${result.styles} style(s)${result.changed ? ' (updated)' : ' (unchanged)'}`,
   );
 }
 
@@ -736,7 +959,7 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   const key = await readKey();
 
-  if (!key && !options.dryRun && !options.check) {
+  if (!key && !options.dryRun && !options.check && !options.matrix) {
     console.error(
       'FAL_KEY is not set. Put it in .env.local at the repo root:\n\n  FAL_KEY=your-key-here\n\n' +
         '(.env*.local is already gitignored.) Use --dry-run to preview prompts without a key.',
@@ -751,6 +974,11 @@ async function main() {
   await mkdir(options.out, { recursive: true });
 
   console.log(`Catalog: ${catalog.hairstyles.length} styles from ${options.catalogUrl ?? 'src/api/mockCatalog.ts'}`);
+
+  if (options.matrix) {
+    await printMatrix(options, catalog);
+    return;
+  }
 
   if (options.check) {
     await checkSheets(options, manifest, catalog);
@@ -824,7 +1052,8 @@ async function main() {
       }
 
       manifest.styles[job.style.id] ??= {};
-      const byAngle = (manifest.styles[job.style.id][job.gender] ??= {});
+      const byVariant = (manifest.styles[job.style.id][job.variant] ??= {});
+      const byAngle = (byVariant[job.gender] ??= {});
       const entry = { file: relative(options, job.file), url: result.url, prompt: result.prompt };
 
       if (options.sheet) {
@@ -832,7 +1061,9 @@ async function main() {
         if (result.bald.length) incomplete.push({ job, bald: result.bald });
         Object.assign(
           byAngle,
-          await slicePanels(options, job.file, (angle) => styleFile(options, job.style.id, job.gender, angle)),
+          await slicePanels(options, job.file, (angle) =>
+            styleFile(options, job.style.id, job.variant, job.gender, angle),
+          ),
         );
       } else {
         byAngle[job.angle] = entry;

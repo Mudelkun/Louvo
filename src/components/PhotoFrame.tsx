@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import React from 'react';
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import type { Gender, HairColor, HairShape, TryOnOptions } from '@/api/types';
+import type { Gender, HairColor, HairShape, TryOnOptions, VariantId } from '@/api/types';
 import { Mannequin } from '@/components/Mannequin';
 import { DEMO_PHOTO } from '@/lib/constants';
 import { colors, radii, spacing, type } from '@/theme/theme';
@@ -12,9 +12,11 @@ export interface DemoSubject {
   /** The style being tried on, so the generated render is used when there is one. */
   styleId?: string | null;
   shape: HairShape;
-  color?: HairColor;
+  color?: HairColor | null;
   options?: TryOnOptions;
   gender?: Gender | null;
+  /** Which renders of the style are acceptable — see `<Mannequin variants>`. */
+  variants?: VariantId[] | null;
 }
 
 interface PhotoFrameProps {
@@ -61,6 +63,7 @@ export function PhotoFrame({
               options={demo.options}
               color={demo.color}
               gender={demo.gender}
+              variants={demo.variants}
               size={demoWidth}
               backdrop={null}
             />

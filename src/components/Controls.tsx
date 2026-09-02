@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  ImageSourcePropType,
   LayoutChangeEvent,
+  Modal,
   PanResponder,
   Platform,
   Pressable,
@@ -12,6 +15,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radii, spacing, type } from '@/theme/theme';
 
@@ -90,7 +94,187 @@ export function ChipRow({
 }
 
 // ---------------------------------------------------------------------------
+// Filter select
+//
+// A whole dimension of the catalog collapsed into one control that states its
+// current answer and opens its options only when asked. The catalog used to
+// carry two chip rows — every option of both dimensions on screen at once,
+// above the grid that is the actual content — and this is the same filtering
+// with the options put away.
+//
+// The first option is the neutral one ("All", "All types", the default sort):
+// while it is selected the control shows `placeholder` and reads as unset, and
+// any other choice tints it, so an active filter is visible without listing
+// what was not chosen.
+// ---------------------------------------------------------------------------
+
+export interface SelectOption {
+  id: string;
+  label: string;
+  /**
+   * Optional picture of what the option means, shown in the sheet beside its
+   * label. The hair-type filter carries the picker's generated example of each
+   * texture through it, so the question "which of these is my hair" is answered
+   * the same way here as it was on `app/try/hair-type.tsx`.
+   *
+   * A list is illustrated or it is not: as soon as one option carries an image
+   * every row gets a tile of the same size, and the ones with nothing to show
+   * (the neutral "All" at the top) get the control's own icon in it rather than
+   * a hole in the column.
+   */
+  image?: ImageSourcePropType;
+}
+
+export function FilterSelect({
+  placeholder,
+  icon,
+  options,
+  value,
+  onChange,
+  variant = 'pill',
+  style,
+}: {
+  placeholder: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  options: SelectOption[];
+  value: string;
+  onChange: (id: string) => void;
+  /** `plain` drops the pill and is used where the control sits inline in a row. */
+  variant?: 'pill' | 'plain';
+  style?: ViewStyle;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((option) => option.id === value);
+  const neutral = !selected || selected.id === options[0]?.id;
+  const label = neutral ? placeholder : (selected as SelectOption).label;
+  const tint = neutral ? colors.inkSoft : colors.accentInk;
+
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={neutral ? placeholder : `${placeholder}: ${label}`}
+        accessibilityState={{ expanded: open }}
+        onPress={() => {
+          tap();
+          setOpen(true);
+        }}
+        style={({ pressed }) => [
+          variant === 'pill' ? styles.select : styles.selectPlain,
+          variant === 'pill' && !neutral && styles.selectActive,
+          pressed && { opacity: 0.75 },
+          style,
+        ]}
+      >
+        {icon ? <Ionicons name={icon} size={16} color={neutral ? colors.inkSoft : colors.accent} /> : null}
+        <Text
+          style={[type.label, variant === 'pill' && { flex: 1 }, { color: tint }]}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+        <Ionicons name="chevron-down" size={15} color={neutral ? colors.muted : colors.accent} />
+      </Pressable>
+
+      <SelectSheet
+        title={placeholder}
+        icon={icon}
+        open={open}
+        options={options}
+        value={value}
+        onClose={() => setOpen(false)}
+        onChoose={(id) => {
+          tap();
+          setOpen(false);
+          onChange(id);
+        }}
+      />
+    </>
+  );
+}
+
+function SelectSheet({
+  title,
+  icon,
+  open,
+  options,
+  value,
+  onClose,
+  onChoose,
+}: {
+  title: string;
+  /** Stands in for any option that has no image of its own. */
+  icon?: keyof typeof Ionicons.glyphMap;
+  open: boolean;
+  options: SelectOption[];
+  value: string;
+  onClose: () => void;
+  onChoose: (id: string) => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const illustrated = options.some((option) => option.image);
+
+  return (
+    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.sheetRoot}>
+        <Pressable accessibilityLabel="Close" style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
+          <View style={styles.sheetGrabber} />
+          <Text style={[type.heading, styles.sheetTitle]}>{title}</Text>
+          {options.map((option) => {
+            const selected = option.id === value;
+            return (
+              <Pressable
+                key={option.id}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                onPress={() => onChoose(option.id)}
+                style={({ pressed }) => [
+                  styles.sheetRow,
+                  illustrated && styles.sheetRowIllustrated,
+                  pressed && { backgroundColor: colors.surfaceAlt },
+                ]}
+              >
+                {illustrated ? (
+                  option.image ? (
+                    <Image
+                      source={option.image}
+                      style={[styles.sheetThumb, selected && styles.sheetThumbSelected]}
+                      contentFit="cover"
+                      accessibilityIgnoresInvertColors
+                    />
+                  ) : (
+                    <View style={[styles.sheetThumb, styles.sheetThumbEmpty]}>
+                      {icon ? (
+                        <Ionicons
+                          name={icon}
+                          size={18}
+                          color={selected ? colors.accent : colors.muted}
+                        />
+                      ) : null}
+                    </View>
+                  )
+                ) : null}
+                <Text style={[type.body, { flex: 1, color: selected ? colors.accentInk : colors.ink }]}>
+                  {option.label}
+                </Text>
+                {selected ? <Ionicons name="checkmark" size={18} color={colors.accent} /> : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Colour swatches
+//
+// Nothing renders this at the moment — the colour picker is out of the UI while
+// the catalog settles on one shade. Kept because the grade behind it is live
+// (`src/lib/colorGrade.ts`) and putting the choice back is this row plus the
+// session's `setColor`.
 // ---------------------------------------------------------------------------
 
 export function SwatchRow({
@@ -281,6 +465,57 @@ const styles = StyleSheet.create({
     borderColor: colors.hairline,
   },
   chipSelected: { backgroundColor: colors.ink, borderColor: colors.ink },
+  select: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    height: 52,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+  },
+  selectActive: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
+  selectPlain: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: spacing.xs },
+  sheetRoot: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.scrim },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    paddingTop: spacing.sm,
+  },
+  sheetGrabber: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: radii.pill,
+    backgroundColor: colors.hairlineStrong,
+    marginBottom: spacing.lg,
+  },
+  sheetTitle: { color: colors.ink, paddingHorizontal: spacing.xl, marginBottom: spacing.sm },
+  sheetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+  },
+  sheetRowIllustrated: { gap: spacing.lg, paddingVertical: spacing.sm },
+  /**
+   * A rounded square rather than a circle, and the same size the hair-type
+   * picker uses: these are heads of hair, and a circle crops the silhouette the
+   * row is there to show.
+   */
+  sheetThumb: {
+    width: 52,
+    height: 52,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    backgroundColor: colors.surfaceAlt,
+  },
+  sheetThumbSelected: { borderColor: colors.accent },
+  sheetThumbEmpty: { alignItems: 'center', justifyContent: 'center' },
   segment: {
     flexDirection: 'row',
     backgroundColor: colors.surfaceAlt,

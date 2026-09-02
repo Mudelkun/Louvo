@@ -6,18 +6,43 @@
  * never require touching a screen.
  */
 
-import type { Catalog, Category, HairColor, Hairstyle, HairShape, TextureKind } from './types';
+import type {
+  Catalog,
+  Category,
+  HairColor,
+  HairType,
+  HairTypeVariants,
+  Hairstyle,
+  HairShape,
+  TextureKind,
+  VariantId,
+} from './types';
 
 const categories: Category[] = [
   { id: 'short', name: 'Short Cuts', tagline: 'Clean, sharp and low effort', icon: 'cut-outline', genders: ['male', 'female'], order: 1 },
   { id: 'medium', name: 'Medium Cuts', tagline: 'Versatile everyday lengths', icon: 'layers-outline', genders: ['male', 'female'], order: 2 },
   { id: 'long', name: 'Long Hair', tagline: 'Flow, layers and movement', icon: 'water-outline', genders: ['male', 'female'], order: 3 },
-  { id: 'curly', name: 'Curly', tagline: 'Coils, curls and volume', icon: 'sync-outline', genders: ['male', 'female'], order: 4 },
-  { id: 'wavy', name: 'Wavy', tagline: 'Soft, natural bends', icon: 'pulse-outline', genders: ['male', 'female'], order: 5 },
-  { id: 'straight', name: 'Straight', tagline: 'Sleek and polished', icon: 'remove-outline', genders: ['male', 'female'], order: 6 },
-  { id: 'fades', name: 'Fades', tagline: 'Tapers, skins and blends', icon: 'trending-down-outline', genders: ['male', 'female'], order: 7 },
-  { id: 'updo', name: 'Braids & Updos', tagline: 'Tied back and out of the way', icon: 'git-merge-outline', genders: ['male', 'female'], order: 8 },
-  { id: 'trendy', name: 'Trending', tagline: 'What people are asking for now', icon: 'flame-outline', genders: ['male', 'female'], order: 9 },
+  { id: 'fades', name: 'Fades', tagline: 'Tapers, skins and blends', icon: 'trending-down-outline', genders: ['male', 'female'], order: 4 },
+  { id: 'updo', name: 'Braids & Updos', tagline: 'Tied back and out of the way', icon: 'git-merge-outline', genders: ['male', 'female'], order: 5 },
+  { id: 'trendy', name: 'Trending', tagline: 'What people are asking for now', icon: 'flame-outline', genders: ['male', 'female'], order: 6 },
+];
+
+
+/**
+ * The four hair types, types 1 to 4 — the catalog's primary dimension.
+ *
+ * This is the axis the user is asked about first, before any category, because
+ * it decides which hairstyles are on offer at all and which render of each one
+ * they are shown (`variants` on every row below). `Straight`, `Wavy` and
+ * `Curly` used to also be browse *categories*; they are not any more, because
+ * asking the same question on two axes only produces empty intersections.
+ * Categories are about length and shape now, hair type is about texture.
+ */
+const hairTypes: HairType[] = [
+  { id: 'straight', tier: 'Type 1', name: 'Straight', description: 'Falls straight with little or no curl', icon: 'remove-outline', order: 1 },
+  { id: 'wavy', tier: 'Type 2', name: 'Wavy', description: 'Forms loose S-shaped waves', icon: 'pulse-outline', order: 2 },
+  { id: 'curly', tier: 'Type 3', name: 'Curly', description: 'Forms defined curls or loops', icon: 'sync-outline', order: 3 },
+  { id: 'coily', tier: 'Type 4', name: 'Coily', description: 'Forms tight coils, kinks or zig-zag patterns', icon: 'ellipse-outline', order: 4 },
 ];
 
 /**
@@ -51,13 +76,35 @@ const shape = (
   extra: Partial<HairShape> = {},
 ): HairShape => ({ top, sides, back, fringe, texture, ...extra });
 
+/**
+ * One row of the hairstyle × hair type matrix: which render each of the four
+ * types is shown. Reading `v('straight', 'straight', 'curly', 'coily')`: three
+ * renders cover four types, because this cut's wavy version is indistinguishable
+ * from its straight one. `null` means the style is not offered for that type.
+ *
+ * The classification is a judgement about the haircut, so it lives beside the
+ * haircut. `src/lib/hairTypes.ts` reads it; nothing there decides it.
+ */
+const v = (
+  straight: VariantId | null,
+  wavy: VariantId | null,
+  curly: VariantId | null,
+  coily: VariantId | null,
+): HairTypeVariants => ({ straight, wavy, curly, coily });
+
+/** Hair-type independent: one render serves everyone. */
+const anyType = (): HairTypeVariants => v('any', 'any', 'any', 'any');
+
+/** Fully hair-type dependent: four renders, one per type. */
+const perType = (): HairTypeVariants => v('straight', 'wavy', 'curly', 'coily');
+
 type Row = Omit<Hairstyle, 'imageUrl'>;
 
 const hairstyles: Row[] = [
   {
     id: 'buzz-cut',
     name: 'Buzz Cut',
-    categoryIds: ['short', 'straight'],
+    categoryIds: ['short'],
     genders: ['male', 'female'],
     tags: ['low maintenance', 'summer', 'classic'],
     description: 'A single clipper length all over. Nothing to style and nothing to hide behind, so it lives or dies on your head shape.',
@@ -65,12 +112,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Square'],
     popularity: 78,
     adjustments: ['length', 'color'],
+    // One clipper length all over — no texture survives it.
+    variants: anyType(),
     shape: shape(0.06, 0.1, 0, 0.08, 'straight'),
   },
   {
     id: 'crew-cut',
     name: 'Crew Cut',
-    categoryIds: ['short', 'straight'],
+    categoryIds: ['short'],
     genders: ['male'],
     tags: ['classic', 'office', 'easy'],
     description: 'Short and tapered on the sides with a little length left on top. The default good haircut.',
@@ -78,6 +127,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Round', 'Square'],
     popularity: 84,
     adjustments: ['length', 'fade', 'color'],
+    // At this length type 1 and 2 sit identically.
+    variants: v('straight', 'straight', 'curly', 'coily'),
     shape: shape(0.2, 0.16, 0, 0.15, 'straight'),
   },
   {
@@ -91,6 +142,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Long'],
     popularity: 93,
     adjustments: ['length', 'fade', 'color'],
+    // The cut is texture; all four read apart.
+    variants: perType(),
     shape: shape(0.33, 0.14, 0, 0.45, 'spiky'),
   },
   {
@@ -104,12 +157,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Square'],
     popularity: 81,
     adjustments: ['fade', 'color'],
+    // The fringe only stays blunt on type 1 and 2.
+    variants: v('straight', 'straight', 'curly', 'coily'),
     shape: shape(0.24, 0.12, 0, 0.62, 'straight'),
   },
   {
     id: 'caesar-cut',
     name: 'Caesar Cut',
-    categoryIds: ['short', 'straight'],
+    categoryIds: ['short'],
     genders: ['male'],
     tags: ['fringe', 'retro'],
     description: 'Short, horizontally cut fringe combed forward. Forgiving on a receding hairline.',
@@ -117,12 +172,14 @@ const hairstyles: Row[] = [
     bestFor: ['Round', 'Oval'],
     popularity: 62,
     adjustments: ['length', 'color'],
+    // A forward fringe behaves differently once it coils.
+    variants: v('straight', 'straight', 'curly', 'coily'),
     shape: shape(0.18, 0.18, 0, 0.55, 'straight'),
   },
   {
     id: 'ivy-league',
     name: 'Ivy League',
-    categoryIds: ['short', 'medium', 'straight'],
+    categoryIds: ['short', 'medium'],
     genders: ['male'],
     tags: ['smart', 'side part', 'office'],
     description: 'A crew cut grown out enough to take a side part. Smart without looking fussy.',
@@ -130,6 +187,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Square'],
     popularity: 70,
     adjustments: ['length', 'fade', 'color'],
+    // Type 1 and 2 comb into the same side sweep.
+    variants: v('straight', 'straight', 'curly', 'coily'),
     shape: shape(0.3, 0.2, 0, 0.3, 'straight', { part: 'side' }),
   },
   {
@@ -143,6 +202,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Round', 'Heart'],
     popularity: 97,
     adjustments: ['length', 'fade', 'color'],
+    // The fade is constant; the top is not.
+    variants: v('straight', 'straight', 'curly', 'coily'),
     shape: shape(0.36, 0.13, 0, 0.35, 'curly'),
   },
   {
@@ -156,6 +217,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Square'],
     popularity: 90,
     adjustments: ['length', 'fade', 'color'],
+    // The fade is constant; the top is not.
+    variants: v('straight', 'straight', 'curly', 'coily'),
     shape: shape(0.34, 0.09, 0, 0.3, 'straight'),
   },
   {
@@ -169,12 +232,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Long'],
     popularity: 88,
     adjustments: ['length', 'fade', 'color'],
+    // Sides are skin, so only the island on top varies.
+    variants: v('straight', 'straight', 'curly', 'coily'),
     shape: shape(0.42, 0.04, 0, 0.3, 'straight'),
   },
   {
     id: 'burst-fade',
     name: 'Burst Fade',
-    categoryIds: ['fades', 'trendy', 'curly'],
+    categoryIds: ['fades', 'trendy'],
     genders: ['male'],
     tags: ['curly friendly', 'street'],
     description: 'The fade radiates around the ear and leaves weight at the back. Made for curly and coily hair.',
@@ -182,6 +247,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Diamond'],
     popularity: 86,
     adjustments: ['fade', 'color'],
+    // Enough length left on top for all four to read apart.
+    variants: perType(),
     shape: shape(0.48, 0.1, 0.06, 0.32, 'coily'),
   },
   {
@@ -195,6 +262,8 @@ const hairstyles: Row[] = [
     bestFor: ['Square', 'Oval', 'Round'],
     popularity: 85,
     adjustments: ['length', 'fade', 'color'],
+    // A quiff is built out of whatever the texture is.
+    variants: perType(),
     shape: shape(0.68, 0.22, 0, 0.06, 'wavy'),
   },
   {
@@ -208,12 +277,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Square'],
     popularity: 74,
     adjustments: ['length', 'fade', 'color'],
+    // Combed and set, so type 1 and 2 converge.
+    variants: v('straight', 'straight', 'curly', 'coily'),
     shape: shape(0.85, 0.2, 0, 0.02, 'straight'),
   },
   {
     id: 'side-part',
     name: 'Classic Side Part',
-    categoryIds: ['medium', 'straight'],
+    categoryIds: ['medium'],
     genders: ['male'],
     tags: ['timeless', 'office'],
     description: 'A hard or natural parting with the bulk combed to one side. Always appropriate.',
@@ -221,6 +292,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Round', 'Heart'],
     popularity: 76,
     adjustments: ['length', 'fade', 'color'],
+    // The part needs hair that lies down; on type 4 it is cut in.
+    variants: v('straight', 'straight', 'curly', 'coily'),
     shape: shape(0.4, 0.24, 0, 0.22, 'straight', { part: 'side' }),
   },
   {
@@ -234,12 +307,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Long'],
     popularity: 82,
     adjustments: ['length', 'color'],
+    // Messy is the texture doing the work.
+    variants: perType(),
     shape: shape(0.42, 0.32, 0.04, 0.78, 'wavy'),
   },
   {
     id: 'curtain-bangs',
     name: 'Curtain Bangs',
-    categoryIds: ['medium', 'wavy', 'trendy'],
+    categoryIds: ['medium', 'trendy'],
     genders: ['female', 'male'],
     tags: ['soft', 'face framing'],
     description: 'A centre-parted fringe that sweeps away on both sides to frame the face.',
@@ -247,12 +322,14 @@ const hairstyles: Row[] = [
     bestFor: ['Round', 'Square', 'Heart'],
     popularity: 94,
     adjustments: ['length', 'color'],
+    // How the curtain falls is entirely the texture.
+    variants: perType(),
     shape: shape(0.3, 0.6, 0.55, 0.55, 'wavy', { part: 'middle' }),
   },
   {
     id: 'blunt-bob',
     name: 'Blunt Bob',
-    categoryIds: ['medium', 'straight', 'trendy'],
+    categoryIds: ['medium', 'trendy'],
     genders: ['female'],
     tags: ['sharp', 'chic'],
     description: 'One length, cut clean at the jaw with no layers. Graphic and very deliberate.',
@@ -260,12 +337,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Heart'],
     popularity: 91,
     adjustments: ['length', 'color'],
+    // Four genuinely different bobs.
+    variants: perType(),
     shape: shape(0.22, 0.72, 0.3, 0.35, 'straight'),
   },
   {
     id: 'textured-lob',
     name: 'Textured Lob',
-    categoryIds: ['medium', 'wavy'],
+    categoryIds: ['medium'],
     genders: ['female'],
     tags: ['easy', 'everyday'],
     description: 'A long bob with soft internal layers, sitting just past the collarbone.',
@@ -273,6 +352,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Round', 'Square'],
     popularity: 89,
     adjustments: ['length', 'color'],
+    // Texture is in the name.
+    variants: perType(),
     shape: shape(0.28, 0.85, 0.5, 0.3, 'wavy', { part: 'middle' }),
   },
   {
@@ -286,12 +367,14 @@ const hairstyles: Row[] = [
     bestFor: ['Heart', 'Oval'],
     popularity: 79,
     adjustments: ['length', 'color'],
+    // Cut to the texture, but type 1 and 2 pixies read alike.
+    variants: v('straight', 'straight', 'curly', 'coily'),
     shape: shape(0.38, 0.24, 0.02, 0.5, 'spiky', { part: 'side' }),
   },
   {
     id: 'long-layers',
     name: 'Long Layers',
-    categoryIds: ['long', 'straight'],
+    categoryIds: ['long'],
     genders: ['female'],
     tags: ['movement', 'classic'],
     description: 'Length kept long with layers cut through the mid-lengths so it moves instead of hanging flat.',
@@ -299,12 +382,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Round', 'Long'],
     popularity: 92,
     adjustments: ['length', 'color'],
+    // Layers hang differently in every type.
+    variants: perType(),
     shape: shape(0.26, 0.95, 0.92, 0.25, 'straight', { part: 'middle' }),
   },
   {
     id: 'beach-waves',
     name: 'Beach Waves',
-    categoryIds: ['long', 'wavy'],
+    categoryIds: ['long'],
     genders: ['female'],
     tags: ['relaxed', 'summer'],
     description: 'Loose, undone S-waves through the length. Looks effortless, takes forty minutes.',
@@ -312,12 +397,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Square', 'Heart'],
     popularity: 95,
     adjustments: ['length', 'color'],
+    // A set look — the same waves whatever the base.
+    variants: anyType(),
     shape: shape(0.34, 0.95, 0.88, 0.22, 'wavy', { part: 'middle' }),
   },
   {
     id: 'sleek-straight',
     name: 'Sleek & Straight',
-    categoryIds: ['long', 'straight'],
+    categoryIds: ['long'],
     genders: ['female'],
     tags: ['polished', 'glossy'],
     description: 'Pressed flat and glossy from root to tip with a razor-clean centre part.',
@@ -325,12 +412,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Heart'],
     popularity: 80,
     adjustments: ['length', 'color'],
+    // Flat-ironed; every base ends up in the same place.
+    variants: anyType(),
     shape: shape(0.14, 1, 0.95, 0.2, 'straight', { part: 'middle' }),
   },
   {
     id: 'shoulder-flow',
     name: 'Shoulder Flow',
-    categoryIds: ['long', 'wavy'],
+    categoryIds: ['long'],
     genders: ['male'],
     tags: ['grown out', 'relaxed'],
     description: 'Grown-out length swept back off the face and falling to the shoulders.',
@@ -338,6 +427,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Square'],
     popularity: 72,
     adjustments: ['length', 'color'],
+    // Worn loose, so the silhouette is the texture.
+    variants: perType(),
     shape: shape(0.4, 0.8, 0.6, 0.1, 'wavy', { part: 'middle' }),
   },
   {
@@ -351,6 +442,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Square'],
     popularity: 68,
     adjustments: ['fade', 'color'],
+    // Gathered — only the bulk of the knot changes.
+    variants: v('straight', 'straight', 'curly', 'curly'),
     shape: shape(0.3, 0.3, 0.12, 0.08, 'straight', { knot: true }),
   },
   {
@@ -364,12 +457,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Diamond'],
     popularity: 66,
     adjustments: ['fade', 'color'],
+    // Gathered — only the bulk of the knot changes.
+    variants: v('straight', 'straight', 'curly', 'curly'),
     shape: shape(0.26, 0.06, 0, 0.05, 'straight', { knot: true }),
   },
   {
     id: 'curly-top',
     name: 'Curly Top',
-    categoryIds: ['curly', 'medium'],
+    categoryIds: ['medium'],
     genders: ['male'],
     tags: ['natural curl', 'volume'],
     description: 'Curls left long on top with the sides cut back so the curl pattern reads clearly.',
@@ -377,12 +472,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Square'],
     popularity: 87,
     adjustments: ['length', 'fade', 'color'],
+    // Not a type 1 cut; type 2 reads as a loose version of the curly one.
+    variants: v(null, 'curly', 'curly', 'coily'),
     shape: shape(0.62, 0.16, 0, 0.3, 'curly'),
   },
   {
     id: 'afro',
     name: 'Afro',
-    categoryIds: ['curly', 'trendy'],
+    categoryIds: ['trendy'],
     genders: ['male', 'female'],
     tags: ['natural', 'volume', 'statement'],
     description: 'Coils grown out evenly in every direction and shaped into a round silhouette.',
@@ -390,12 +487,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Square', 'Heart'],
     popularity: 83,
     adjustments: ['length', 'color'],
+    // Needs the texture to exist at all.
+    variants: v(null, null, 'curly', 'coily'),
     shape: shape(0.95, 0.55, 0.1, 0.2, 'coily'),
   },
   {
     id: 'twist-out',
     name: 'Twist Out',
-    categoryIds: ['curly', 'medium'],
+    categoryIds: ['medium'],
     genders: ['female', 'male'],
     tags: ['natural', 'defined coils'],
     description: 'Two-strand twists taken down for defined, springy coils with plenty of body.',
@@ -403,12 +502,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Round'],
     popularity: 84,
     adjustments: ['length', 'color'],
+    // A technique for coils, not a cut.
+    variants: v(null, null, 'curly', 'coily'),
     shape: shape(0.72, 0.62, 0.24, 0.28, 'coily'),
   },
   {
     id: 'curly-shag',
     name: 'Curly Shag',
-    categoryIds: ['curly', 'trendy', 'medium'],
+    categoryIds: ['trendy', 'medium'],
     genders: ['female'],
     tags: ['layered', 'rock'],
     description: 'Heavy layering through curly hair with a full fringe. Deliberately shaggy.',
@@ -416,12 +517,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Long'],
     popularity: 88,
     adjustments: ['length', 'color'],
+    // Not a type 1 cut; the other three shags each differ.
+    variants: v(null, 'wavy', 'curly', 'coily'),
     shape: shape(0.58, 0.8, 0.55, 0.7, 'curly'),
   },
   {
     id: 'loose-curls',
     name: 'Loose Curls',
-    categoryIds: ['curly', 'long'],
+    categoryIds: ['long'],
     genders: ['female'],
     tags: ['soft', 'romantic'],
     description: 'Wide barrel curls through long hair, brushed out so they fall soft rather than tight.',
@@ -429,12 +532,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Square', 'Heart'],
     popularity: 90,
     adjustments: ['length', 'color'],
+    // A set look — curled to the same result from any base.
+    variants: anyType(),
     shape: shape(0.44, 0.95, 0.85, 0.25, 'curly', { part: 'side' }),
   },
   {
     id: 'wolf-cut',
     name: 'Wolf Cut',
-    categoryIds: ['trendy', 'wavy', 'medium'],
+    categoryIds: ['trendy', 'medium'],
     genders: ['female', 'male'],
     tags: ['layered', 'internet famous'],
     description: 'A shag and a mullet met halfway: heavy top layers, wispy ends, plenty of attitude.',
@@ -442,12 +547,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Round'],
     popularity: 89,
     adjustments: ['length', 'color'],
+    // Shag layers exaggerate whatever the texture is.
+    variants: perType(),
     shape: shape(0.55, 0.7, 0.62, 0.68, 'wavy'),
   },
   {
     id: 'butterfly-cut',
     name: 'Butterfly Cut',
-    categoryIds: ['trendy', 'long', 'wavy'],
+    categoryIds: ['trendy', 'long'],
     genders: ['female'],
     tags: ['face framing', 'bouncy'],
     description: 'Short face-framing layers over long length, so it reads as two haircuts at once.',
@@ -455,6 +562,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Long', 'Square'],
     popularity: 93,
     adjustments: ['length', 'color'],
+    // A blowout, so type 1 and 2 land in the same place.
+    variants: v('straight', 'straight', 'curly', 'coily'),
     shape: shape(0.5, 0.92, 0.8, 0.42, 'wavy', { part: 'middle' }),
   },
   {
@@ -468,6 +577,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Diamond'],
     popularity: 71,
     adjustments: ['length', 'fade', 'color'],
+    // The back reads completely differently per type.
+    variants: perType(),
     shape: shape(0.4, 0.18, 0.55, 0.35, 'wavy'),
   },
   {
@@ -481,6 +592,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Long'],
     popularity: 55,
     adjustments: ['fade', 'color'],
+    // The strip is set, so type 1 and 2 spike alike.
+    variants: v('straight', 'straight', 'curly', 'coily'),
     shape: shape(0.9, 0.02, 0, 0.1, 'spiky'),
   },
   {
@@ -494,12 +607,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Round', 'Heart'],
     popularity: 86,
     adjustments: ['length', 'color'],
+    // Installed — the braid is the braid.
+    variants: anyType(),
     shape: shape(0.3, 0.95, 0.9, 0.2, 'coily', { part: 'middle' }),
   },
   {
     id: 'high-ponytail',
     name: 'High Ponytail',
-    categoryIds: ['updo', 'straight'],
+    categoryIds: ['updo'],
     genders: ['female'],
     tags: ['sleek', 'quick'],
     description: 'Everything pulled up tight and gathered high at the crown.',
@@ -507,12 +622,14 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Heart', 'Round'],
     popularity: 77,
     adjustments: ['length', 'color'],
+    // Gathered; type 3 and 4 both read as a puff.
+    variants: v('straight', 'straight', 'curly', 'curly'),
     shape: shape(0.2, 0.12, 0.6, 0.1, 'straight', { tail: true }),
   },
   {
     id: 'slick-back',
     name: 'Slick Back',
-    categoryIds: ['medium', 'straight', 'trendy'],
+    categoryIds: ['medium', 'trendy'],
     genders: ['male'],
     tags: ['sharp', 'formal'],
     description: 'Everything combed straight back off the face with product holding it in place.',
@@ -520,6 +637,8 @@ const hairstyles: Row[] = [
     bestFor: ['Oval', 'Square', 'Diamond'],
     popularity: 83,
     adjustments: ['length', 'fade', 'color'],
+    // Product does the work up to type 3.
+    variants: v('straight', 'straight', 'curly', 'coily'),
     shape: shape(0.45, 0.26, 0.12, 0.0, 'straight'),
   },
 ];
@@ -534,6 +653,7 @@ const highlights = [
 
 export const mockCatalog: Catalog = {
   categories,
+  hairTypes,
   colors,
   highlights,
   hairstyles: hairstyles.map((row) => ({ ...row, imageUrl: null })),

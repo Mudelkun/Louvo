@@ -3,6 +3,11 @@
  * Rebuilds `src/api/mannequinRenders.generated.ts` from whatever mannequin PNGs
  * are on disk, so the app shows every style that has been generated.
  *
+ * "Whatever is on disk" is now per variant of the hairstyle × hair type matrix
+ * — `<style>/<variant>/<gender>-<angle>.png` — so a catalog part-way through a
+ * hair-type batch shows the variants it has and falls back to the procedural
+ * drawing for the ones it does not.
+ *
  * The generator calls this itself at the end of a run; it is also wired to
  * `prestart`, so a `npm start` picks up renders that arrived some other way
  * (a teammate's commit, a hand-dropped file). It calls no model and costs
@@ -30,7 +35,7 @@ const result = await writeRenderModule({ root: ROOT, out });
 if (!quiet) {
   const masks = result.maskedNow ? `, ${result.maskedNow} hair mask(s) written` : '';
   console.log(
-    `${result.relativeFile}: ${result.images} render(s) across ${result.styles} style(s)` +
-      `${masks}${result.changed ? '' : ' (unchanged)'}`,
+    `${result.relativeFile}: ${result.images} render(s) across ${result.variants} variant(s) ` +
+      `of ${result.styles} style(s)${masks}${result.changed ? '' : ' (unchanged)'}`,
   );
 }
