@@ -20,9 +20,15 @@ const categories: Category[] = [
   { id: 'trendy', name: 'Trending', tagline: 'What people are asking for now', icon: 'flame-outline', genders: ['male', 'female'], order: 9 },
 ];
 
+/**
+ * The shades any style can be put in. The first entry a style is shown in is
+ * `BASE_HAIR_COLOR` — espresso, the shade the catalog imagery is rendered in —
+ * and every other entry is reached by grading that render in the app, so this
+ * list can grow without generating a single new image.
+ */
 const colors: HairColor[] = [
   { id: 'jet', name: 'Jet Black', hex: '#171313', shade: '#000000' },
-  { id: 'espresso', name: 'Espresso', hex: '#33231B', shade: '#1C120C' },
+  { id: 'espresso', name: 'Espresso', hex: '#392D24', shade: '#241B15' },
   { id: 'chestnut', name: 'Chestnut', hex: '#5E3D26', shade: '#3B2415' },
   { id: 'auburn', name: 'Auburn', hex: '#8A4326', shade: '#5E2B16' },
   { id: 'caramel', name: 'Caramel', hex: '#A9743F', shade: '#7A4E26' },
@@ -60,7 +66,6 @@ const hairstyles: Row[] = [
     popularity: 78,
     adjustments: ['length', 'color'],
     shape: shape(0.06, 0.1, 0, 0.08, 'straight'),
-    defaultColorId: 'espresso',
   },
   {
     id: 'crew-cut',
@@ -74,7 +79,6 @@ const hairstyles: Row[] = [
     popularity: 84,
     adjustments: ['length', 'fade', 'color'],
     shape: shape(0.2, 0.16, 0, 0.15, 'straight'),
-    defaultColorId: 'espresso',
   },
   {
     id: 'textured-crop',
@@ -88,7 +92,6 @@ const hairstyles: Row[] = [
     popularity: 93,
     adjustments: ['length', 'fade', 'color'],
     shape: shape(0.33, 0.14, 0, 0.45, 'spiky'),
-    defaultColorId: 'chestnut',
   },
   {
     id: 'french-crop',
@@ -102,7 +105,6 @@ const hairstyles: Row[] = [
     popularity: 81,
     adjustments: ['fade', 'color'],
     shape: shape(0.24, 0.12, 0, 0.62, 'straight'),
-    defaultColorId: 'jet',
   },
   {
     id: 'caesar-cut',
@@ -116,7 +118,6 @@ const hairstyles: Row[] = [
     popularity: 62,
     adjustments: ['length', 'color'],
     shape: shape(0.18, 0.18, 0, 0.55, 'straight'),
-    defaultColorId: 'espresso',
   },
   {
     id: 'ivy-league',
@@ -130,7 +131,6 @@ const hairstyles: Row[] = [
     popularity: 70,
     adjustments: ['length', 'fade', 'color'],
     shape: shape(0.3, 0.2, 0, 0.3, 'straight', { part: 'side' }),
-    defaultColorId: 'chestnut',
   },
   {
     id: 'low-taper-fade',
@@ -144,7 +144,6 @@ const hairstyles: Row[] = [
     popularity: 97,
     adjustments: ['length', 'fade', 'color'],
     shape: shape(0.36, 0.13, 0, 0.35, 'curly'),
-    defaultColorId: 'espresso',
   },
   {
     id: 'mid-fade',
@@ -158,7 +157,6 @@ const hairstyles: Row[] = [
     popularity: 90,
     adjustments: ['length', 'fade', 'color'],
     shape: shape(0.34, 0.09, 0, 0.3, 'straight'),
-    defaultColorId: 'jet',
   },
   {
     id: 'high-skin-fade',
@@ -172,7 +170,6 @@ const hairstyles: Row[] = [
     popularity: 88,
     adjustments: ['length', 'fade', 'color'],
     shape: shape(0.42, 0.04, 0, 0.3, 'straight'),
-    defaultColorId: 'jet',
   },
   {
     id: 'burst-fade',
@@ -186,7 +183,6 @@ const hairstyles: Row[] = [
     popularity: 86,
     adjustments: ['fade', 'color'],
     shape: shape(0.48, 0.1, 0.06, 0.32, 'coily'),
-    defaultColorId: 'jet',
   },
   {
     id: 'quiff',
@@ -200,7 +196,6 @@ const hairstyles: Row[] = [
     popularity: 85,
     adjustments: ['length', 'fade', 'color'],
     shape: shape(0.68, 0.22, 0, 0.06, 'wavy'),
-    defaultColorId: 'chestnut',
   },
   {
     id: 'pompadour',
@@ -214,7 +209,6 @@ const hairstyles: Row[] = [
     popularity: 74,
     adjustments: ['length', 'fade', 'color'],
     shape: shape(0.85, 0.2, 0, 0.02, 'straight'),
-    defaultColorId: 'jet',
   },
   {
     id: 'side-part',
@@ -228,7 +222,6 @@ const hairstyles: Row[] = [
     popularity: 76,
     adjustments: ['length', 'fade', 'color'],
     shape: shape(0.4, 0.24, 0, 0.22, 'straight', { part: 'side' }),
-    defaultColorId: 'chestnut',
   },
   {
     id: 'messy-fringe',
@@ -242,7 +235,6 @@ const hairstyles: Row[] = [
     popularity: 82,
     adjustments: ['length', 'color'],
     shape: shape(0.42, 0.32, 0.04, 0.78, 'wavy'),
-    defaultColorId: 'caramel',
   },
   {
     id: 'curtain-bangs',
@@ -256,7 +248,6 @@ const hairstyles: Row[] = [
     popularity: 94,
     adjustments: ['length', 'color'],
     shape: shape(0.3, 0.6, 0.55, 0.55, 'wavy', { part: 'middle' }),
-    defaultColorId: 'caramel',
   },
   {
     id: 'blunt-bob',
@@ -270,7 +261,6 @@ const hairstyles: Row[] = [
     popularity: 91,
     adjustments: ['length', 'color'],
     shape: shape(0.22, 0.72, 0.3, 0.35, 'straight'),
-    defaultColorId: 'jet',
   },
   {
     id: 'textured-lob',
@@ -284,7 +274,6 @@ const hairstyles: Row[] = [
     popularity: 89,
     adjustments: ['length', 'color'],
     shape: shape(0.28, 0.85, 0.5, 0.3, 'wavy', { part: 'middle' }),
-    defaultColorId: 'chestnut',
   },
   {
     id: 'pixie-cut',
@@ -298,7 +287,6 @@ const hairstyles: Row[] = [
     popularity: 79,
     adjustments: ['length', 'color'],
     shape: shape(0.38, 0.24, 0.02, 0.5, 'spiky', { part: 'side' }),
-    defaultColorId: 'platinum',
   },
   {
     id: 'long-layers',
@@ -312,7 +300,6 @@ const hairstyles: Row[] = [
     popularity: 92,
     adjustments: ['length', 'color'],
     shape: shape(0.26, 0.95, 0.92, 0.25, 'straight', { part: 'middle' }),
-    defaultColorId: 'espresso',
   },
   {
     id: 'beach-waves',
@@ -326,7 +313,6 @@ const hairstyles: Row[] = [
     popularity: 95,
     adjustments: ['length', 'color'],
     shape: shape(0.34, 0.95, 0.88, 0.22, 'wavy', { part: 'middle' }),
-    defaultColorId: 'caramel',
   },
   {
     id: 'sleek-straight',
@@ -340,7 +326,6 @@ const hairstyles: Row[] = [
     popularity: 80,
     adjustments: ['length', 'color'],
     shape: shape(0.14, 1, 0.95, 0.2, 'straight', { part: 'middle' }),
-    defaultColorId: 'jet',
   },
   {
     id: 'shoulder-flow',
@@ -354,7 +339,6 @@ const hairstyles: Row[] = [
     popularity: 72,
     adjustments: ['length', 'color'],
     shape: shape(0.4, 0.8, 0.6, 0.1, 'wavy', { part: 'middle' }),
-    defaultColorId: 'chestnut',
   },
   {
     id: 'man-bun',
@@ -368,7 +352,6 @@ const hairstyles: Row[] = [
     popularity: 68,
     adjustments: ['fade', 'color'],
     shape: shape(0.3, 0.3, 0.12, 0.08, 'straight', { knot: true }),
-    defaultColorId: 'espresso',
   },
   {
     id: 'top-knot',
@@ -382,7 +365,6 @@ const hairstyles: Row[] = [
     popularity: 66,
     adjustments: ['fade', 'color'],
     shape: shape(0.26, 0.06, 0, 0.05, 'straight', { knot: true }),
-    defaultColorId: 'jet',
   },
   {
     id: 'curly-top',
@@ -396,7 +378,6 @@ const hairstyles: Row[] = [
     popularity: 87,
     adjustments: ['length', 'fade', 'color'],
     shape: shape(0.62, 0.16, 0, 0.3, 'curly'),
-    defaultColorId: 'espresso',
   },
   {
     id: 'afro',
@@ -410,7 +391,6 @@ const hairstyles: Row[] = [
     popularity: 83,
     adjustments: ['length', 'color'],
     shape: shape(0.95, 0.55, 0.1, 0.2, 'coily'),
-    defaultColorId: 'jet',
   },
   {
     id: 'twist-out',
@@ -424,7 +404,6 @@ const hairstyles: Row[] = [
     popularity: 84,
     adjustments: ['length', 'color'],
     shape: shape(0.72, 0.62, 0.24, 0.28, 'coily'),
-    defaultColorId: 'espresso',
   },
   {
     id: 'curly-shag',
@@ -438,7 +417,6 @@ const hairstyles: Row[] = [
     popularity: 88,
     adjustments: ['length', 'color'],
     shape: shape(0.58, 0.8, 0.55, 0.7, 'curly'),
-    defaultColorId: 'auburn',
   },
   {
     id: 'loose-curls',
@@ -452,7 +430,6 @@ const hairstyles: Row[] = [
     popularity: 90,
     adjustments: ['length', 'color'],
     shape: shape(0.44, 0.95, 0.85, 0.25, 'curly', { part: 'side' }),
-    defaultColorId: 'chestnut',
   },
   {
     id: 'wolf-cut',
@@ -466,7 +443,6 @@ const hairstyles: Row[] = [
     popularity: 89,
     adjustments: ['length', 'color'],
     shape: shape(0.55, 0.7, 0.62, 0.68, 'wavy'),
-    defaultColorId: 'smoke',
   },
   {
     id: 'butterfly-cut',
@@ -480,7 +456,6 @@ const hairstyles: Row[] = [
     popularity: 93,
     adjustments: ['length', 'color'],
     shape: shape(0.5, 0.92, 0.8, 0.42, 'wavy', { part: 'middle' }),
-    defaultColorId: 'honey',
   },
   {
     id: 'modern-mullet',
@@ -494,7 +469,6 @@ const hairstyles: Row[] = [
     popularity: 71,
     adjustments: ['length', 'fade', 'color'],
     shape: shape(0.4, 0.18, 0.55, 0.35, 'wavy'),
-    defaultColorId: 'chestnut',
   },
   {
     id: 'mohawk',
@@ -508,7 +482,6 @@ const hairstyles: Row[] = [
     popularity: 55,
     adjustments: ['fade', 'color'],
     shape: shape(0.9, 0.02, 0, 0.1, 'spiky'),
-    defaultColorId: 'jet',
   },
   {
     id: 'box-braids',
@@ -522,7 +495,6 @@ const hairstyles: Row[] = [
     popularity: 86,
     adjustments: ['length', 'color'],
     shape: shape(0.3, 0.95, 0.9, 0.2, 'coily', { part: 'middle' }),
-    defaultColorId: 'jet',
   },
   {
     id: 'high-ponytail',
@@ -536,7 +508,6 @@ const hairstyles: Row[] = [
     popularity: 77,
     adjustments: ['length', 'color'],
     shape: shape(0.2, 0.12, 0.6, 0.1, 'straight', { tail: true }),
-    defaultColorId: 'espresso',
   },
   {
     id: 'slick-back',
@@ -550,7 +521,6 @@ const hairstyles: Row[] = [
     popularity: 83,
     adjustments: ['length', 'fade', 'color'],
     shape: shape(0.45, 0.26, 0.12, 0.0, 'straight'),
-    defaultColorId: 'jet',
   },
 ];
 

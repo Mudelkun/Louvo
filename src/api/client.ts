@@ -11,13 +11,11 @@
 
 import { mockCatalog } from './mockCatalog';
 import type {
-  Adjustment,
   Catalog,
   Category,
   GeneratedLook,
   GenerationStep,
   Gender,
-  HairColor,
   Hairstyle,
   TryOnOptions,
 } from './types';
@@ -119,80 +117,6 @@ export function categoriesFor(categories: Category[], gender: Gender | null): Ca
   return categories
     .filter((category) => (gender ? category.genders.includes(gender) : true))
     .sort((a, b) => a.order - b.order);
-}
-
-// ---------------------------------------------------------------------------
-// Adjustments
-// ---------------------------------------------------------------------------
-
-const LENGTH_OPTIONS = [
-  { id: 'short', label: 'Short' },
-  { id: 'medium', label: 'Medium' },
-  { id: 'long', label: 'Long' },
-];
-
-const FADE_OPTIONS = [
-  { id: 'none', label: 'None' },
-  { id: 'low', label: 'Low' },
-  { id: 'mid', label: 'Mid' },
-  { id: 'high', label: 'High' },
-];
-
-/**
- * The Customize screen renders whatever this returns — it has no knowledge of
- * which controls exist for which style. Later this becomes part of the
- * hairstyle record served by the API.
- */
-export function adjustmentsFor(style: Hairstyle): Adjustment[] {
-  const defs: Adjustment[] = [];
-
-  if (style.adjustments.includes('length')) {
-    defs.push({
-      id: 'length',
-      kind: 'choice',
-      label: 'Hair length',
-      hint: 'How much length is left after the cut',
-      options: LENGTH_OPTIONS,
-      defaultValue: style.shape.top > 0.55 ? 'long' : style.shape.top > 0.28 ? 'medium' : 'short',
-    });
-  }
-
-  if (style.adjustments.includes('fade')) {
-    defs.push({
-      id: 'fade',
-      kind: 'choice',
-      label: 'Fade level',
-      hint: 'How high the fade climbs the side',
-      options: FADE_OPTIONS,
-      defaultValue: style.shape.sides < 0.08 ? 'high' : style.shape.sides < 0.16 ? 'low' : 'none',
-    });
-  }
-
-  if (style.adjustments.includes('color')) {
-    defs.push({
-      id: 'color',
-      kind: 'color',
-      label: 'Hair colour',
-      hint: 'Tap a shade to preview it',
-      defaultValue: style.defaultColorId,
-    });
-  }
-
-  return defs;
-}
-
-export function defaultOptionsFor(style: Hairstyle): TryOnOptions {
-  const options: TryOnOptions = {};
-  for (const adjustment of adjustmentsFor(style)) {
-    if (adjustment.id === 'color') options.color = adjustment.defaultValue;
-    else if (adjustment.id === 'length') options.length = adjustment.defaultValue;
-    else if (adjustment.id === 'fade') options.fade = adjustment.defaultValue;
-  }
-  return options;
-}
-
-export function colorById(colors: HairColor[], id: string | undefined): HairColor | undefined {
-  return colors.find((color) => color.id === id);
 }
 
 // ---------------------------------------------------------------------------
