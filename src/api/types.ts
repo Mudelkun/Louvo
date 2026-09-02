@@ -12,6 +12,56 @@ export type Gender = 'male' | 'female';
 export type TextureKind = 'straight' | 'wavy' | 'curly' | 'coily' | 'spiky';
 
 /**
+ * The four hair types, the catalog's primary dimension alongside gender.
+ *
+ * This is what the user *has*, not what a hairstyle *is*: it is chosen once,
+ * before browsing, and it decides both which hairstyles are offered and which
+ * render of each one is shown. `null` anywhere a `HairTypeId` is expected means
+ * "All Types" — the user browsing without declaring one.
+ */
+export type HairTypeId = 'straight' | 'wavy' | 'curly' | 'coily';
+
+/**
+ * One generated render of a hairstyle.
+ *
+ * Not one per hair type: a hairstyle is only shot again for a type whose
+ * texture actually changes how the cut looks. `any` is the id of the single
+ * render that serves every type, used for cuts too short, too set or too
+ * constructed for the natural texture to read at all — a buzz cut, a
+ * flat-ironed blowout, box braids.
+ */
+export type VariantId = 'any' | HairTypeId;
+
+/**
+ * The hairstyle x hair type matrix, one row.
+ *
+ * Every type maps to the variant that should be *shown* for it, which is how
+ * one render can serve several types: `{ straight: 'straight', wavy:
+ * 'straight', curly: 'curly', coily: 'coily' }` is a cut whose wavy version is
+ * indistinguishable from its straight one, so three renders cover four types.
+ * `null` means the hairstyle is not offered for that type at all — an afro on
+ * type 1 hair is not a haircut, it is a different head of hair.
+ */
+export type HairTypeVariants = Record<HairTypeId, VariantId | null>;
+
+/**
+ * A hair type as catalog data, so the picker is server-driven like everything
+ * else. Ordered `straight, wavy, curly, coily` — types 1 to 4.
+ */
+export interface HairType {
+  id: HairTypeId;
+  /** "Type 1" — the number people recognise from the typing system. */
+  tier: string;
+  /** "Straight". */
+  name: string;
+  /** One line describing the pattern, shown under the name. */
+  description: string;
+  /** Ionicons glyph name — chosen by the backend so hair types stay data. */
+  icon: string;
+  order: number;
+}
+
+/**
  * Procedural description of a hairstyle silhouette, used to draw the neutral
  * faceless mannequin locally while the AI-generated catalog imagery does not
  * exist yet. When the backend starts serving real mannequin renders, each
@@ -92,6 +142,14 @@ export interface Hairstyle {
   popularity: number;
   /** Which adjustments this style exposes on the Customize screen. */
   adjustments: AdjustmentId[];
+  /**
+   * Which render to show for each hair type, and which types this style is
+   * offered for at all. See `HairTypeVariants` — this row *is* the catalog's
+   * hairstyle x hair type matrix, which is why it is data rather than a rule
+   * in the app: whether a curly textured crop needs its own shot is a judgement
+   * about that haircut, and the only place it belongs is beside the haircut.
+   */
+  variants: HairTypeVariants;
   shape: HairShape;
   /** Populated later by the backend with the AI-generated mannequin render. */
   imageUrl?: string | null;
@@ -114,6 +172,13 @@ export interface GeneratedLook {
   hairstyleId: string;
   hairstyleName: string;
   gender: Gender;
+  /**
+   * The hair type the look was generated for, or null when the user browsed
+   * "All Types". Sits beside `gender` rather than in `options` on purpose: it
+   * describes the subject, not an adjustment made to the cut, and a saved look
+   * has to keep the type it was made for after the session has moved on.
+   */
+  hairType: HairTypeId | null;
   /** The user's original photo (local uri in the prototype). */
   sourcePhotoUri: string | null;
   /** The generated result. Null while image generation is not wired up yet. */
@@ -134,6 +199,8 @@ export interface LookJob {
   hairstyleId: string;
   hairstyleName: string;
   gender: Gender;
+  /** As on `GeneratedLook` — the type the preview is being generated for. */
+  hairType: HairTypeId | null;
   sourcePhotoUri: string | null;
   options: TryOnOptions;
   createdAt: number;
@@ -144,6 +211,7 @@ export interface LookJob {
 
 export interface Catalog {
   categories: Category[];
+  hairTypes: HairType[];
   hairstyles: Hairstyle[];
   colors: HairColor[];
   /** Server-driven copy for the "why you'll love it" panel on the welcome screen. */

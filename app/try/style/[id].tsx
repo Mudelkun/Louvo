@@ -1,10 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import {
+  Dimensions,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-import { Button, IconButton } from '@/components/Button';
-import { SwatchRow } from '@/components/Controls';
+import type { Gender, HairTypeId, Hairstyle } from '@/api/types';
+import { Button } from '@/components/Button';
+import { ChipRow } from '@/components/Controls';
+import { FavouriteHeart } from '@/components/FavouriteHeart';
 import { EmptyState, LoadingState } from '@/components/Feedback';
 import { Mannequin } from '@/components/Mannequin';
 import { PhotoFrame } from '@/components/PhotoFrame';
@@ -13,6 +24,15 @@ import { useHairColor } from '@/hooks/useHairColor';
 import { usePhotoPicker } from '@/hooks/usePhotoPicker';
 import { DEMO_BASE_SHAPE, DEMO_PHOTO, TRY_ON_STEPS } from '@/lib/constants';
 import { HERO_ANGLE, VIEW_ANGLES, type ViewAngle } from '@/lib/hairShape';
+import {
+  HAIR_TYPE_IDS,
+  parseHairType,
+  textureFor,
+  typesForVariant,
+  variantCandidates,
+  variantsOf,
+} from '@/lib/hairTypes';
+import { renderVariant } from '@/lib/mannequinRender';
 import { useCatalog } from '@/state/CatalogContext';
 import { useGeneration } from '@/state/GenerationContext';
 import { useLibrary } from '@/state/LibraryContext';
@@ -20,6 +40,12 @@ import { useSession } from '@/state/SessionContext';
 import { colors, radii, shadow, spacing, type } from '@/theme/theme';
 
 const { width } = Dimensions.get('window');
+/**
+ * One page of the angle pager, so a swipe moves exactly one angle. It is the
+ * hero card's *inner* width — the card's own hairline border on each side, or
+ * the pages drift out of step with the snap by 2px a page.
+ */
+const HERO_PAGE = width - spacing.xl * 2 - 2;
 const THUMB_WIDTH = (width - spacing.xl * 2 - spacing.sm * 3) / 4;
 const THUMB_HEIGHT = THUMB_WIDTH * 0.86 + 18;
 
@@ -32,16 +58,44 @@ const ANGLE_LABELS: Record<ViewAngle, { short: string; long: string }> = {
 };
 
 /**
- * Step 4 — the last stop before generation: the style from four angles, the
+ * Which hair type to open the preview chips on when the user arrived without
+ * declaring one — an unfiltered grid, a deep link, a saved look.
+ *
+ * The chips used to carry an "All types" entry for this case. As a *display*
+ * choice it said nothing the types themselves do not: it only meant "whichever
+ * render of this cut exists", which is a fact about what has been generated
+ * rather than an answer about hair. So the opening chip is a real type, picked
+ * as the one standing behind the image the grid card just showed — resolve the
+ * card's own render and name the first type it stands in for, so the detail
+ * screen never disagrees with the card that opened it. A style with no render
+ * yet opens on the first type it is offered for.
+ */
+function openingType(hairstyle: Hairstyle, gender: Gender | null): HairTypeId | null {
+  const shown = renderVariant(
+    hairstyle.id,
+    gender,
+    HERO_ANGLE,
+    variantCandidates(hairstyle, null),
+  );
+  const fromRender = shown ? typesForVariant(hairstyle, shown)[0] : undefined;
+  return fromRender ?? HAIR_TYPE_IDS.find((entry) => hairstyle.variants[entry]) ?? null;
+}
+
+/**
+ * Step 5 — the last stop before generation: the style from four angles, the
  * photo it goes on, and the generate button. Nothing about the cut is
  * adjustable; the cut is the product.
  */
 export default function StyleDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { styleById, colors: hairColors, loading } = useCatalog();
+  const { id, hairType } = useLocalSearchParams<{ id: string; hairType?: string }>();
+  const { styleById, hairTypes, loading } = useCatalog();
   const { isFavourite, toggleFavourite } = useLibrary();
-  const { gender, photoUri, colorId, setPhoto, setColor, setHairstyle } = useSession();
+  const { gender, hairTypeId, photoUri, setPhoto, setHairstyle } = useSession();
+  // The shade every mannequin is drawn in. There is no colour picker at the
+  // moment, so this is the shade the catalog was rendered in for everyone —
+  // the grade is an identity and the renders are shown untouched. Bringing the
+  // choice back is a `<SwatchRow>` bound to `setColor`; nothing below changes.
   const color = useHairColor();
   const { start } = useGeneration();
   // Arriving here from the Styles tab skips the photo step, so the photo is
@@ -50,6 +104,26 @@ export default function StyleDetailScreen() {
 
   const hairstyle = styleById(id);
   const [angle, setAngle] = useState<ViewAngle>(HERO_ANGLE);
+  /**
+   * Which hair type the mannequin is being shown on, and only a preview:
+   * switching it here compares the cut across textures without changing what
+   * the rest of the app thinks the user's hair does. The generated look uses
+   * the session's type, not this.
+   *
+   * It opens on whatever the grid was filtered to, which arrives on the tap —
+   * the Styles tab browses a hair type locally and never writes it to the
+   * session, so following the session here would land on a different texture
+   * than the card the user just pressed. Browsed with no type declared it is
+   * null and `openingType()` picks the chip; reached without the param at all
+   * (a deep link, a saved look) it falls back to the session's type.
+   */
+  const browsedAs = parseHairType(hairType);
+  const [preview, setPreview] = useState<HairTypeId | null>(
+    browsedAs === undefined ? hairTypeId : browsedAs,
+  );
+  const pager = useRef<ScrollView>(null);
+  /** The pager starts on `HERO_ANGLE`, which is not page 0 — set once, on first layout. */
+  const positioned = useRef(false);
 
   if (loading && !hairstyle) {
     return (
@@ -76,19 +150,52 @@ export default function StyleDetailScreen() {
   }
 
   const favourite = isFavourite(hairstyle.id);
+  // The types this cut is actually offered for, and the renders behind them.
+  const offered = HAIR_TYPE_IDS.filter((entry) => hairstyle.variants[entry]);
+  // Always a type: the chips are the types the cut is offered for, and one of
+  // them is selected even when the user declared nothing on the way in.
+  const shownAs =
+    (preview && hairstyle.variants[preview] ? preview : null) ??
+    openingType(hairstyle, gender);
+  const variants = variantCandidates(hairstyle, shownAs);
+  const shape = { ...hairstyle.shape, texture: textureFor(hairstyle, shownAs) };
+  const typeName = (entry: HairTypeId) => hairTypes.find((t) => t.id === entry)?.name ?? entry;
+
+  const scrollToAngle = (next: ViewAngle, animated: boolean) =>
+    pager.current?.scrollTo({ x: VIEW_ANGLES.indexOf(next) * HERO_PAGE, y: 0, animated });
+
+  /** Tapping a thumbnail drives the same pager a swipe does, so the two never disagree. */
+  const goToAngle = (next: ViewAngle) => {
+    setAngle(next);
+    scrollToAngle(next, true);
+  };
+
+  const onPagerSettle = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const index = Math.round(event.nativeEvent.contentOffset.x / HERO_PAGE);
+    const next = VIEW_ANGLES[Math.min(Math.max(index, 0), VIEW_ANGLES.length - 1)];
+    if (next !== angle) setAngle(next);
+  };
+
+  const positionPager = () => {
+    if (positioned.current) return;
+    positioned.current = true;
+    scrollToAngle(angle, false);
+  };
 
   /**
    * Generation runs in the background — the user is sent straight to My looks,
    * where the preview shows as a processing tile and notifies when it is ready.
    */
   const generate = () => {
-    // The colour goes onto the look, not just onto the screen: a saved look has
-    // to keep the shade it was generated in after the picker has moved on.
-    const options = { color: color.id };
+    // The colour still goes onto the look rather than being left implicit: a
+    // saved look has to keep the shade it was generated in, whether the user
+    // chose it or it is the catalog default.
+    const options = color ? { color: color.id } : {};
     setHairstyle(hairstyle.id, options);
     start({
       hairstyle,
       gender: gender ?? hairstyle.genders[0],
+      hairType: hairTypeId,
       photoUri,
       options,
     });
@@ -112,18 +219,46 @@ export default function StyleDetailScreen() {
         )
       }
     >
-      <Header step={{ current: 4, total: TRY_ON_STEPS }} />
+      <Header step={{ current: 5, total: TRY_ON_STEPS }} />
 
+      {/* The four angles are pages, swiped like a carousel. The thumbnails
+          below are the same pager by another name — tapping one and swiping to
+          it land in the same place. */}
       <View style={styles.hero}>
-        <Mannequin
-          styleId={hairstyle.id}
-          shape={hairstyle.shape}
-          color={color}
-          gender={gender}
-          angle={angle}
-          size={width * 0.68}
-          backdrop={null}
-        />
+        <ScrollView
+          ref={pager}
+          horizontal
+          pagingEnabled
+          decelerationRate="fast"
+          showsHorizontalScrollIndicator={false}
+          onLayout={positionPager}
+          onMomentumScrollEnd={onPagerSettle}
+        >
+          {VIEW_ANGLES.map((entry) => (
+            <View
+              key={entry}
+              style={styles.heroPage}
+              accessibilityLabel={ANGLE_LABELS[entry].long}
+            >
+              <Mannequin
+                styleId={hairstyle.id}
+                shape={shape}
+                color={color}
+                gender={gender}
+                variants={variants}
+                angle={entry}
+                size={width * 0.68}
+                backdrop={null}
+              />
+            </View>
+          ))}
+        </ScrollView>
+
+        <View style={styles.dots} pointerEvents="none">
+          {VIEW_ANGLES.map((entry) => (
+            <View key={entry} style={[styles.dot, entry === angle && styles.dotActive]} />
+          ))}
+        </View>
       </View>
 
       <View style={styles.body}>
@@ -131,13 +266,31 @@ export default function StyleDetailScreen() {
           <Text style={[type.title, { color: colors.ink, flex: 1 }]} numberOfLines={2}>
             {hairstyle.name}
           </Text>
-          <IconButton
-            icon={favourite ? 'heart' : 'heart-outline'}
+          <FavouriteHeart
             accessibilityLabel={favourite ? 'Remove from favourites' : 'Add to favourites'}
-            active={favourite}
-            onPress={() => toggleFavourite(hairstyle.id)}
+            favourite={favourite}
+            onToggle={() => toggleFavourite(hairstyle.id)}
           />
         </View>
+
+        {/* How the cut sits on each texture. Only the types this style is
+            offered for appear, and two types that share a render show the same
+            image on purpose — that is the matrix saying they look alike. */}
+        {offered.length > 1 ? (
+          <View style={styles.typeBlock}>
+            <Text style={[type.caption, { color: colors.muted, paddingHorizontal: spacing.xl }]}>
+              {variantsOf(hairstyle).length === 1
+                ? 'This cut looks the same on every hair type'
+                : 'Shown on'}
+            </Text>
+            <ChipRow
+              items={offered.map((entry) => ({ id: entry, label: typeName(entry) }))}
+              value={shownAs}
+              onChange={(next) => setPreview(next as HairTypeId)}
+              contentPaddingHorizontal={spacing.xl}
+            />
+          </View>
+        ) : null}
 
         {/* The same style from four angles — the fringe reads dead-on, the taper
             and the ear from the half turn, the fade in profile, the nape from
@@ -149,7 +302,7 @@ export default function StyleDetailScreen() {
               accessibilityRole="radio"
               accessibilityLabel={ANGLE_LABELS[entry].long}
               accessibilityState={{ selected: entry === angle }}
-              onPress={() => setAngle(entry)}
+              onPress={() => goToAngle(entry)}
               style={({ pressed }) => [
                 styles.thumb,
                 entry === angle && styles.thumbSelected,
@@ -158,9 +311,10 @@ export default function StyleDetailScreen() {
             >
               <Mannequin
                 styleId={hairstyle.id}
-                shape={hairstyle.shape}
+                shape={shape}
                 color={color}
                 gender={gender}
+                variants={variants}
                 angle={entry}
                 size={THUMB_WIDTH * 0.82}
                 backdrop={null}
@@ -172,24 +326,6 @@ export default function StyleDetailScreen() {
             </Pressable>
           ))}
         </View>
-
-        {/* Colour is the app's, not the generator's: every style is rendered in
-            one shade and graded to the chosen one here, so a swatch costs a
-            catalog row rather than a re-shoot of the catalog. */}
-        {hairColors.length ? (
-          <View style={styles.colorSection}>
-            <View style={styles.colorHeader}>
-              <Text style={[type.label, { color: colors.ink }]}>Colour</Text>
-              <Text style={[type.caption, { color: colors.muted }]}>{color.name}</Text>
-            </View>
-            <SwatchRow
-              items={hairColors}
-              value={colorId ?? color.id}
-              onChange={setColor}
-              contentPaddingHorizontal={0}
-            />
-          </View>
-        ) : null}
 
         {/* The photo, in place — the cut and the face it goes on are the only
             two things this screen asks for. */}
@@ -268,20 +404,36 @@ export default function StyleDetailScreen() {
 
 const styles = StyleSheet.create({
   hero: {
-    alignItems: 'center',
-    justifyContent: 'flex-end',
     marginHorizontal: spacing.xl,
     marginTop: spacing.lg,
     borderRadius: radii.xl,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.hairline,
-    paddingTop: spacing.lg,
     overflow: 'hidden',
     ...shadow.card,
   },
+  heroPage: {
+    width: HERO_PAGE,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  dots: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.hairline },
+  dotActive: { width: 18, backgroundColor: colors.accent },
   body: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  typeBlock: { gap: spacing.sm, marginTop: spacing.lg, marginHorizontal: -spacing.xl },
   angleRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
   thumb: {
     width: THUMB_WIDTH,
@@ -301,8 +453,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     fontSize: 11,
   },
-  colorSection: { marginTop: spacing.lg, gap: spacing.sm },
-  colorHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   photoCard: {
     marginTop: spacing.lg,
     padding: spacing.lg,

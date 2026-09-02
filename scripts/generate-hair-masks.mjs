@@ -94,10 +94,14 @@ async function main() {
   }
 
   const files = [];
-  for (const [styleId, byGender] of Object.entries(renders)) {
+  for (const [styleId, byVariant] of Object.entries(renders)) {
     if (wanted && !wanted.has(styleId)) continue;
-    for (const [gender, views] of Object.entries(byGender)) {
-      for (const [angle, file] of Object.entries(views)) files.push({ styleId, gender, angle, file });
+    for (const [variant, byGender] of Object.entries(byVariant)) {
+      for (const [gender, views] of Object.entries(byGender)) {
+        for (const [angle, file] of Object.entries(views)) {
+          files.push({ styleId, variant, gender, angle, file });
+        }
+      }
     }
   }
 
@@ -128,7 +132,8 @@ async function main() {
   // haircut, and is worth a name rather than a silent pass.
   for (const entry of suspect) {
     console.warn(
-      `  ! ${entry.styleId} ${entry.gender}/${entry.angle}: hair covers ${(entry.coverage * 100).toFixed(1)}% of the frame`,
+      `  ! ${entry.styleId} ${entry.variant}/${entry.gender}/${entry.angle}: ` +
+        `hair covers ${(entry.coverage * 100).toFixed(1)}% of the frame`,
     );
   }
 
