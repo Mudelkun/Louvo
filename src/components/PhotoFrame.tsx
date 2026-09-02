@@ -9,6 +9,8 @@ import { DEMO_PHOTO } from '@/lib/constants';
 import { colors, radii, spacing, type } from '@/theme/theme';
 
 export interface DemoSubject {
+  /** The style being tried on, so the generated render is used when there is one. */
+  styleId?: string | null;
   shape: HairShape;
   color?: HairColor;
   options?: TryOnOptions;
@@ -54,6 +56,7 @@ export function PhotoFrame({
         <View style={[StyleSheet.absoluteFill, styles.demo]}>
           {demo ? (
             <Mannequin
+              styleId={demo.styleId}
               shape={demo.shape}
               options={demo.options}
               color={demo.color}

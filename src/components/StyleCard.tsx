@@ -3,13 +3,16 @@ import { Image } from 'expo-image';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import type { HairColor, Hairstyle } from '@/api/types';
+import type { Gender, HairColor, Hairstyle } from '@/api/types';
 import { Mannequin } from '@/components/Mannequin';
+import { HERO_ANGLE } from '@/lib/hairShape';
 import { colors, radii, shadow, spacing, type } from '@/theme/theme';
 
 interface StyleCardProps {
   hairstyle: Hairstyle;
   color?: HairColor;
+  /** Picks the male or female render when the style has both. */
+  gender?: Gender | null;
   onPress?: () => void;
   onToggleFavourite?: () => void;
   favourite?: boolean;
@@ -23,6 +26,7 @@ interface StyleCardProps {
 export function StyleCard({
   hairstyle,
   color,
+  gender,
   onPress,
   onToggleFavourite,
   favourite,
@@ -52,7 +56,15 @@ export function StyleCard({
           // Real AI-generated mannequin renders slot in here once the backend serves them.
           <Image source={{ uri: hairstyle.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
         ) : (
-          <Mannequin shape={hairstyle.shape} color={color} size={width} backdrop={null} />
+          <Mannequin
+            styleId={hairstyle.id}
+            shape={hairstyle.shape}
+            color={color}
+            gender={gender}
+            angle={HERO_ANGLE}
+            size={width}
+            backdrop={null}
+          />
         )}
 
         {onToggleFavourite ? (

@@ -4,14 +4,12 @@ import React from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colorById } from '@/api/client';
 import { Button } from '@/components/Button';
 import { PhotoFrame } from '@/components/PhotoFrame';
 import { Screen } from '@/components/Screen';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { usePhotoPicker } from '@/hooks/usePhotoPicker';
-import { DEMO_BASE_SHAPE, DEMO_PHOTO } from '@/lib/constants';
-import { useCatalog } from '@/state/CatalogContext';
+import { BASE_HAIR_COLOR, DEMO_BASE_SHAPE, DEMO_PHOTO } from '@/lib/constants';
 import { useSession } from '@/state/SessionContext';
 import { colors, radii, spacing, type } from '@/theme/theme';
 
@@ -29,7 +27,7 @@ export default function TryOnHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { status } = useOnboarding();
-  const { colors: palette } = useCatalog();
+
   const { photoUri, setPhoto } = useSession();
   const { pickFromLibrary, takePhoto, busy } = usePhotoPicker(setPhoto);
 
@@ -61,7 +59,7 @@ export default function TryOnHomeScreen() {
               uri={photoUri}
               rounded={radii.lg}
               style={{ width: 168, height: 216, alignSelf: 'center' }}
-              demo={{ shape: DEMO_BASE_SHAPE, color: colorById(palette, 'chestnut') }}
+              demo={{ shape: DEMO_BASE_SHAPE, color: BASE_HAIR_COLOR }}
               demoWidth={220}
             />
             <Button label="Change photo" variant="ghost" size="md" onPress={pickFromLibrary} />

@@ -2,10 +2,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
 
-import { colorById, recommendationsFor } from '@/api/client';
+import { recommendationsFor } from '@/api/client';
 import { Button } from '@/components/Button';
 import { Header, Screen, SectionLabel } from '@/components/Screen';
 import { StyleCard } from '@/components/StyleCard';
+import { useHairColor } from '@/hooks/useHairColor';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { useSession } from '@/state/SessionContext';
@@ -18,9 +19,10 @@ const CARD_WIDTH = (width - spacing.xl * 2 - spacing.md) / 2;
 export default function MoreStylesScreen() {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from?: string }>();
-  const { hairstyles, colors: palette, styleById } = useCatalog();
+  const { hairstyles, styleById } = useCatalog();
   const { gender, restartStyleChoice } = useSession();
   const { favouriteIds, toggleFavourite } = useLibrary();
+  const color = useHairColor();
 
   const seed = styleById(from);
   const recommended = useMemo(
@@ -63,7 +65,8 @@ export default function MoreStylesScreen() {
               key={style.id}
               hairstyle={style}
               width={CARD_WIDTH}
-              color={colorById(palette, style.defaultColorId)}
+              color={color}
+              gender={gender}
               favourite={favouriteIds.includes(style.id)}
               onToggleFavourite={() => toggleFavourite(style.id)}
               onPress={() => open(style.id)}

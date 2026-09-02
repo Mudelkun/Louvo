@@ -3,11 +3,18 @@
   "version": "0.1.0",
   "main": "expo-router/entry",
   "scripts": {
+    "prestart": "npm run mannequins:sync --silent",
     "start": "expo start",
+    "preandroid": "npm run mannequins:sync --silent",
     "android": "expo start --android",
+    "preios": "npm run mannequins:sync --silent",
     "ios": "expo start --ios",
+    "preweb": "npm run mannequins:sync --silent",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "mannequins": "node scripts/generate-mannequins.mjs",
+    "mannequins:sync": "node scripts/sync-mannequin-renders.mjs",
+    "mannequins:masks": "node scripts/generate-hair-masks.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

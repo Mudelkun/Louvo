@@ -1,14 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { colorById } from '@/api/client';
+import { recommendationsFor } from '@/api/client';
 import { Button, IconButton } from '@/components/Button';
 import { EmptyState, Pill } from '@/components/Feedback';
 import { MannequinBadge } from '@/components/Mannequin';
 import { PhotoFrame } from '@/components/PhotoFrame';
-import { Header, Screen } from '@/components/Screen';
+import { Header, Screen, SectionLabel } from '@/components/Screen';
+import { StyleCard } from '@/components/StyleCard';
+import { useHairColor, useLookColor } from '@/hooks/useHairColor';
+import { useLookDownload } from '@/hooks/useLookDownload';
 import { DEMO_PHOTO } from '@/lib/constants';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
@@ -18,15 +21,29 @@ import { colors, radii, shadow, spacing, type } from '@/theme/theme';
 const { width } = Dimensions.get('window');
 const STAGE_WIDTH = width - spacing.xl * 2;
 const STAGE_HEIGHT = STAGE_WIDTH * 1.28;
+/** Cards in the "try next" rail — narrow enough that the next one peeks in. */
+const RAIL_CARD_WIDTH = Math.min(136, (width - spacing.xl * 2 - spacing.md * 2) / 2.4);
 
 export default function ResultScreen() {
   const router = useRouter();
-  const { styleById, colors: palette } = useCatalog();
-  const { look, gender } = useSession();
-  const { savedLooks, saveLook, isFavourite, toggleFavourite } = useLibrary();
-  const [justSaved, setJustSaved] = useState(false);
+  const { hairstyles, styleById } = useCatalog();
+  const { look, gender, restartStyleChoice } = useSession();
+  const lookColor = useLookColor(look);
+  const browsingColor = useHairColor();
+  const { isFavourite, toggleFavourite, favouriteIds } = useLibrary();
+  /**
+   * Downloading is its own action, not library membership — every finished look
+   * is written to the library by `GenerationProvider`, so that flag would read
+   * "Downloaded" before the user had touched anything.
+   */
+  const download = useLookDownload(look?.resultUri);
 
   const hairstyle = styleById(look?.hairstyleId);
+
+  const related = useMemo(
+    () => recommendationsFor(hairstyles, hairstyle?.id ?? '', gender, 8),
+    [hairstyles, hairstyle?.id, gender],
+  );
 
   if (!look || !hairstyle) {
     return (
@@ -43,32 +60,22 @@ export default function ResultScreen() {
     );
   }
 
-  const alreadySaved = savedLooks.some((entry) => entry.id === look.id);
-  const activeColor = colorById(palette, look.options.color ?? hairstyle.defaultColorId);
   const favourite = isFavourite(hairstyle.id);
 
-  const save = () => {
-    saveLook(look);
-    setJustSaved(true);
-  };
-
-  const tryAnother = () => {
-    router.push(`/try/more-styles?from=${hairstyle.id}`);
+  const openStyle = (id: string) => {
+    restartStyleChoice();
+    router.push(`/try/style/${id}`);
   };
 
   return (
     <Screen
       padded={false}
       footer={
-        <View style={{ gap: spacing.sm }}>
-          <Button label="Try another style" icon="repeat-outline" onPress={tryAnother} />
-          <Button
-            label="Done"
-            variant="ghost"
-            size="md"
-            onPress={() => router.replace('/(tabs)')}
-          />
-        </View>
+        <Button
+          label="Try another style"
+          icon="repeat-outline"
+          onPress={() => router.push(`/try/more-styles?from=${hairstyle.id}`)}
+        />
       }
     >
       <Header
@@ -88,45 +95,68 @@ export default function ResultScreen() {
           uri={look.resultUri}
           tint={look.resultUri && look.resultUri !== DEMO_PHOTO ? 'rgba(255,90,60,0.08)' : null}
           style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT }}
-          demo={{ shape: hairstyle.shape, options: look.options, color: activeColor, gender }}
+          demo={{ styleId: hairstyle.id, shape: hairstyle.shape, color: lookColor, gender }}
           demoWidth={STAGE_HEIGHT * 0.8}
         >
           <View style={styles.styleTag}>
-            <MannequinBadge shape={hairstyle.shape} color={activeColor} size={34} />
-            <View>
-              <Text style={[type.caption, { color: colors.onDark, fontWeight: '700' }]}>
-                {hairstyle.name}
-              </Text>
-              <Text style={[type.caption, { color: colors.onDarkMuted, fontSize: 11 }]}>
-                {activeColor?.name}
-              </Text>
-            </View>
+            <MannequinBadge
+              styleId={hairstyle.id}
+              shape={hairstyle.shape}
+              color={lookColor}
+              gender={gender}
+              size={34}
+            />
+            <Text style={[type.caption, { color: colors.onDark, fontWeight: '700' }]}>
+              {hairstyle.name}
+            </Text>
           </View>
         </PhotoFrame>
       </View>
 
       <View style={{ paddingHorizontal: spacing.xl, gap: spacing.lg }}>
         <View style={styles.pillRow}>
-          {look.options.length ? <Pill label={`Length: ${look.options.length}`} /> : null}
-          {look.options.fade ? <Pill label={`Fade: ${look.options.fade}`} /> : null}
           <Pill tone="jade" label="Simulated preview" />
         </View>
 
         <View style={styles.actionRow}>
           <ResultAction
-            icon={alreadySaved || justSaved ? 'checkmark-circle' : 'bookmark-outline'}
-            label={alreadySaved || justSaved ? 'Saved' : 'Save'}
-            active={alreadySaved || justSaved}
-            onPress={save}
+            icon={download.status === 'done' ? 'checkmark-circle' : 'download-outline'}
+            label={
+              download.status === 'done' ? 'Saved' : download.status === 'busy' ? 'Saving…' : 'Download'
+            }
+            active={download.status === 'done'}
+            onPress={download.download}
           />
           <ResultAction icon="share-social-outline" label="Share" onPress={() => router.push('/try/share')} />
           <ResultAction icon="git-compare-outline" label="Compare" onPress={() => router.push('/try/compare')} />
-          <ResultAction
-            icon="options-outline"
-            label="Adjust"
-            onPress={() => router.push(`/try/style/${hairstyle.id}`)}
-          />
         </View>
+
+        {related.length ? (
+          <View>
+            <SectionLabel>Try these next</SectionLabel>
+            <View style={styles.railBleed}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.railContent}
+              >
+                {related.map((style) => (
+                  <StyleCard
+                    key={style.id}
+                    hairstyle={style}
+                    width={RAIL_CARD_WIDTH}
+                    compact
+                    color={browsingColor}
+                    gender={gender}
+                    favourite={favouriteIds.includes(style.id)}
+                    onToggleFavourite={() => toggleFavourite(style.id)}
+                    onPress={() => openStyle(style.id)}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        ) : null}
 
         <View style={styles.explainer}>
           <Ionicons name="information-circle-outline" size={17} color={colors.inkSoft} />
@@ -192,6 +222,9 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   action: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: spacing.lg },
+  // The rail runs edge to edge, so it cancels the section gutter.
+  railBleed: { marginHorizontal: -spacing.xl },
+  railContent: { gap: spacing.md, paddingHorizontal: spacing.xl, paddingVertical: 4 },
   explainer: {
     flexDirection: 'row',
     gap: spacing.md,

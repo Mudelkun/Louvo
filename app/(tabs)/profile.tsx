@@ -5,14 +5,14 @@ import React, { useState } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colorById } from '@/api/client';
-import type { GeneratedLook, HairColor, HairShape, LookJob } from '@/api/types';
+import type { GeneratedLook, HairShape, LookJob } from '@/api/types';
 import { ChoiceRow } from '@/components/Controls';
 import { EmptyState } from '@/components/Feedback';
 import { PhotoFrame } from '@/components/PhotoFrame';
 import { ProgressRing } from '@/components/ProgressRing';
 import { Screen } from '@/components/Screen';
 import { StyleCard } from '@/components/StyleCard';
+import { useHairColor, useLookColor } from '@/hooks/useHairColor';
 import { DEMO_BASE_SHAPE } from '@/lib/constants';
 import { useCatalog } from '@/state/CatalogContext';
 import { useGeneration } from '@/state/GenerationContext';
@@ -36,8 +36,9 @@ export default function ProfileTab() {
   const [tab, setTab] = useState('looks');
   const { savedLooks, favouriteIds, toggleFavourite, removeLook } = useLibrary();
   const { jobs, cancel, retry } = useGeneration();
-  const { hairstyles, colors: palette, styleById } = useCatalog();
-  const { setLook } = useSession();
+  const { hairstyles, styleById } = useCatalog();
+  const { setLook, gender } = useSession();
+  const color = useHairColor();
 
   const favourites = hairstyles.filter((style) => favouriteIds.includes(style.id));
   const empty = jobs.length === 0 && savedLooks.length === 0;
@@ -93,7 +94,6 @@ export default function ProfileTab() {
                   <LookTile
                     key={look.id}
                     look={look}
-                    color={colorById(palette, look.options.color ?? style?.defaultColorId)}
                     shape={style?.shape}
                     onPress={() => openLook(look)}
                     onDelete={() => removeLook(look.id)}
@@ -117,7 +117,8 @@ export default function ProfileTab() {
                 key={style.id}
                 hairstyle={style}
                 width={CARD_WIDTH}
-                color={colorById(palette, style.defaultColorId)}
+                color={color}
+                gender={gender}
                 favourite
                 onToggleFavourite={() => toggleFavourite(style.id)}
                 onPress={() => router.push(`/try/style/${style.id}`)}
@@ -133,17 +134,19 @@ export default function ProfileTab() {
 /** A finished look: picture first, name only. */
 function LookTile({
   look,
-  color,
   shape,
   onPress,
   onDelete,
 }: {
   look: GeneratedLook;
-  color?: HairColor;
   shape?: HairShape;
   onPress: () => void;
   onDelete: () => void;
 }) {
+  // Each tile is a look that was generated in some shade, not necessarily the
+  // one the picker is on now, so the tile resolves its own.
+  const color = useLookColor(look);
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -156,6 +159,7 @@ function LookTile({
         rounded={radii.lg}
         style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}
         demo={{
+          styleId: look.hairstyleId,
           shape: shape ?? DEMO_BASE_SHAPE,
           options: look.options,
           color,

@@ -2,14 +2,14 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
 
-import { colorById } from '@/api/client';
 import { BeforeAfter } from '@/components/BeforeAfter';
 import { Button } from '@/components/Button';
 import { ChoiceRow } from '@/components/Controls';
 import { EmptyState } from '@/components/Feedback';
 import { PhotoFrame } from '@/components/PhotoFrame';
 import { Header, Screen } from '@/components/Screen';
-import { DEMO_BASE_SHAPE } from '@/lib/constants';
+import { useLookColor } from '@/hooks/useHairColor';
+import { BASE_HAIR_COLOR, DEMO_BASE_SHAPE } from '@/lib/constants';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { useSession } from '@/state/SessionContext';
@@ -26,7 +26,10 @@ const MODES = [
 export default function CompareScreen() {
   const router = useRouter();
   const { look, gender } = useSession();
-  const { styleById, colors: palette } = useCatalog();
+  const { styleById } = useCatalog();
+  // "Before" is the hair the subject walked in with, so it stays the neutral
+  // shade however the picker has been set since.
+  const color = useLookColor(look);
   const { saveLook, savedLooks } = useLibrary();
   const [mode, setMode] = useState('slider');
 
@@ -47,7 +50,6 @@ export default function CompareScreen() {
     );
   }
 
-  const activeColor = colorById(palette, look.options.color ?? hairstyle.defaultColorId);
   const saved = savedLooks.some((entry) => entry.id === look.id);
 
   return (
@@ -72,21 +74,21 @@ export default function CompareScreen() {
             beforeUri={look.sourcePhotoUri}
             afterUri={look.resultUri}
             height={STAGE_WIDTH * 1.24}
-            beforeDemo={{ shape: DEMO_BASE_SHAPE, color: colorById(palette, 'chestnut'), gender }}
-            afterDemo={{ shape: hairstyle.shape, options: look.options, color: activeColor, gender }}
+            beforeDemo={{ shape: DEMO_BASE_SHAPE, color: BASE_HAIR_COLOR, gender }}
+            afterDemo={{ shape: hairstyle.shape, color, gender }}
           />
         ) : (
           <View style={styles.splitRow}>
             <Column
               label="Before"
               uri={look.sourcePhotoUri}
-              demo={{ shape: DEMO_BASE_SHAPE, color: colorById(palette, 'chestnut'), gender }}
+              demo={{ shape: DEMO_BASE_SHAPE, color: BASE_HAIR_COLOR, gender }}
             />
             <Column
               label="After"
               uri={look.resultUri}
               tint="rgba(255,90,60,0.08)"
-              demo={{ shape: hairstyle.shape, options: look.options, color: activeColor, gender }}
+              demo={{ styleId: hairstyle.id, shape: hairstyle.shape, color, gender }}
             />
           </View>
         )}
@@ -94,7 +96,7 @@ export default function CompareScreen() {
         <Text style={[type.caption, { color: colors.muted, textAlign: 'center' }]}>
           {mode === 'slider'
             ? 'Drag the handle to wipe between your original photo and the new look.'
-            : `${hairstyle.name} · ${activeColor?.name}`}
+            : hairstyle.name}
         </Text>
       </View>
     </Screen>

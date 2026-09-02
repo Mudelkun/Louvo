@@ -364,7 +364,11 @@ function CameraPane({
 
   return (
     <View style={styles.cameraPane}>
-      <CameraView ref={camera} style={StyleSheet.absoluteFill} facing={facing} flash={flash} />
+      {/* The front lens previews mirrored, the way every selfie camera does, but
+          hands back an unmirrored file — so the photo the user gets is the reverse
+          of the one they framed. `mirror` keeps the capture matching the preview;
+          native applies it to the front lens only. */}
+      <CameraView ref={camera} style={StyleSheet.absoluteFill} facing={facing} flash={flash} mirror />
       <Animated.View
         pointerEvents="none"
         style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF', opacity: shutterFlash }]}
