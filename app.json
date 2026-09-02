@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "Hairify",
+    "slug": "hairify",
+    "scheme": "hairify",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F7F5F2"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.hairify.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Hairify needs access to your photos so you can try hairstyles on your own picture.",
+        "NSCameraUsageDescription": "Hairify needs your camera so you can take a selfie to try hairstyles on."
+      }
+    },
+    "android": {
+      "package": "com.hairify.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F5F2",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Hairify needs access to your photos so you can try hairstyles on your own picture.",
+          "cameraPermission": "Hairify needs your camera so you can take a selfie to try hairstyles on."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Hairify needs your camera so you can take a selfie to try hairstyles on."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Hairify needs access to your photos so you can try hairstyles on your own picture.",
+          "savePhotosPermission": "Hairify needs permission to save hairstyle previews to your photos.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
