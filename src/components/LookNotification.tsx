@@ -4,8 +4,8 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colorById } from '@/api/client';
 import { MannequinBadge } from '@/components/Mannequin';
+import { useHairColorById } from '@/hooks/useHairColor';
 import { useCatalog } from '@/state/CatalogContext';
 import { useGeneration } from '@/state/GenerationContext';
 import { useSession } from '@/state/SessionContext';
@@ -24,8 +24,9 @@ export function LookNotification() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { notification, dismissNotification } = useGeneration();
-  const { styleById, colors: palette } = useCatalog();
+  const { styleById } = useCatalog();
   const { setLook } = useSession();
+  const color = useHairColorById(notification?.options.color);
 
   const slide = useRef(new Animated.Value(0)).current;
 
@@ -47,7 +48,6 @@ export function LookNotification() {
   if (!notification) return null;
 
   const hairstyle = styleById(notification.hairstyleId);
-  const color = colorById(palette, notification.options.color ?? hairstyle?.defaultColorId);
 
   const open = () => {
     dismissNotification();
@@ -74,7 +74,13 @@ export function LookNotification() {
         style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]}
       >
         {hairstyle ? (
-          <MannequinBadge shape={hairstyle.shape} color={color} size={38} />
+          <MannequinBadge
+            styleId={hairstyle.id}
+            shape={hairstyle.shape}
+            color={color}
+            gender={notification.gender}
+            size={38}
+          />
         ) : (
           <View style={styles.fallbackBadge}>
             <Ionicons name="sparkles" size={17} color={colors.onDark} />

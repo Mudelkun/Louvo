@@ -7,6 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Mannequin } from '@/components/Mannequin';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { BASE_HAIR_COLOR } from '@/lib/constants';
+import { HERO_ANGLE } from '@/lib/hairShape';
 import { useCatalog } from '@/state/CatalogContext';
 import { colors, radii, spacing, type } from '@/theme/theme';
 
@@ -18,7 +20,7 @@ const HERO_COUNT = 3;
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { catalog, hairstyles, colors: palette } = useCatalog();
+  const { catalog, hairstyles } = useCatalog();
   const { complete } = useOnboarding();
 
   const heroStyles = [...hairstyles].sort((a, b) => b.popularity - a.popularity).slice(0, HERO_COUNT);
@@ -51,8 +53,10 @@ export default function WelcomeScreen() {
               ]}
             >
               <Mannequin
+                styleId={style.id}
                 shape={style.shape}
-                color={palette.find((entry) => entry.id === style.defaultColorId)}
+                color={BASE_HAIR_COLOR}
+                angle={HERO_ANGLE}
                 size={width / 3.6}
                 backdrop={null}
               />

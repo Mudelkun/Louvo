@@ -13,7 +13,6 @@ import {
   ViewStyle,
 } from 'react-native';
 
-import type { HairColor } from '@/api/types';
 import { colors, radii, spacing, type } from '@/theme/theme';
 
 const tap = () => {
@@ -91,6 +90,56 @@ export function ChipRow({
 }
 
 // ---------------------------------------------------------------------------
+// Colour swatches
+// ---------------------------------------------------------------------------
+
+export function SwatchRow({
+  items,
+  value,
+  onChange,
+  contentPaddingHorizontal = spacing.xl,
+}: {
+  items: { id: string; name: string; hex: string }[];
+  value: string | null;
+  onChange: (id: string) => void;
+  contentPaddingHorizontal?: number;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ gap: spacing.xs, paddingHorizontal: contentPaddingHorizontal }}
+    >
+      {items.map((item) => {
+        const selected = item.id === value;
+        return (
+          <Pressable
+            key={item.id}
+            accessibilityRole="radio"
+            // The swatch is the colour, so the name has to be spoken for it.
+            accessibilityLabel={item.name}
+            accessibilityState={{ selected }}
+            onPress={() => {
+              tap();
+              onChange(item.id);
+            }}
+            style={({ pressed }) => [
+              styles.swatchOuter,
+              selected && { borderColor: colors.accent },
+              pressed && { opacity: 0.75 },
+            ]}
+          >
+            <View style={[styles.swatch, { backgroundColor: item.hex }]}>
+              {selected ? <Ionicons name="checkmark" size={16} color={colors.onDark} /> : null}
+            </View>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Segmented choice
 // ---------------------------------------------------------------------------
 
@@ -128,54 +177,6 @@ export function ChoiceRow({
       })}
     </View>
   );
-}
-
-// ---------------------------------------------------------------------------
-// Colour swatches
-// ---------------------------------------------------------------------------
-
-export function ColorSwatches({
-  palette,
-  value,
-  onChange,
-}: {
-  palette: HairColor[];
-  value: string | undefined;
-  onChange: (id: string) => void;
-}) {
-  return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md, paddingVertical: 4 }}>
-      {palette.map((color) => {
-        const selected = color.id === value;
-        return (
-          <Pressable
-            key={color.id}
-            accessibilityRole="radio"
-            accessibilityLabel={color.name}
-            accessibilityState={{ selected }}
-            onPress={() => {
-              tap();
-              onChange(color.id);
-            }}
-            style={[styles.swatchOuter, selected && { borderColor: colors.ink }]}
-          >
-            <View style={[styles.swatch, { backgroundColor: color.hex }]}>
-              {selected ? <Ionicons name="checkmark" size={16} color={pickContrast(color.hex)} /> : null}
-            </View>
-          </Pressable>
-        );
-      })}
-    </ScrollView>
-  );
-}
-
-function pickContrast(hex: string): string {
-  const value = hex.replace('#', '');
-  const r = parseInt(value.slice(0, 2), 16);
-  const g = parseInt(value.slice(2, 4), 16);
-  const b = parseInt(value.slice(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.6 ? colors.ink : colors.onDark;
 }
 
 // ---------------------------------------------------------------------------

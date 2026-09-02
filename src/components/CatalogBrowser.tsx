@@ -2,11 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import { Dimensions, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { categoriesFor, colorById, filterHairstyles } from '@/api/client';
+import { categoriesFor, filterHairstyles } from '@/api/client';
 import type { Gender, Hairstyle } from '@/api/types';
 import { ChipRow } from '@/components/Controls';
 import { EmptyState, LoadingState } from '@/components/Feedback';
 import { StyleCard } from '@/components/StyleCard';
+import { useHairColor } from '@/hooks/useHairColor';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { colors, radii, spacing, type } from '@/theme/theme';
@@ -40,8 +41,11 @@ export function CatalogBrowser({
   header,
   bottomInset = spacing.xxxl,
 }: CatalogBrowserProps) {
-  const { hairstyles, categories, colors: palette, loading } = useCatalog();
+  const { hairstyles, categories, loading } = useCatalog();
   const { favouriteIds, toggleFavourite } = useLibrary();
+  // One shade for the whole grid, whichever one the user is browsing in: the
+  // cards still differ from each other only by their cut.
+  const color = useHairColor();
   const [search, setSearch] = useState('');
 
   const chips = useMemo(
@@ -118,7 +122,8 @@ export function CatalogBrowser({
         <StyleCard
           hairstyle={item}
           width={CARD_WIDTH}
-          color={colorById(palette, item.defaultColorId)}
+          color={color}
+          gender={gender}
           favourite={favouriteIds.includes(item.id)}
           selected={selectedId === item.id}
           onToggleFavourite={() => toggleFavourite(item.id)}

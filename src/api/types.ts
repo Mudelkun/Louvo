@@ -45,6 +45,14 @@ export interface Category {
   order: number;
 }
 
+/**
+ * A shade the user can put any hairstyle in.
+ *
+ * Colour is not a property of a hairstyle and never was one worth generating per
+ * style: the catalog is rendered once in `BASE_HAIR_COLOR` and the app grades
+ * that render to whichever of these the user picks (`src/lib/colorGrade.ts`).
+ * Adding a colour is therefore a row here, not a re-shoot of the catalog.
+ */
 export interface HairColor {
   id: string;
   name: string;
@@ -85,7 +93,6 @@ export interface Hairstyle {
   /** Which adjustments this style exposes on the Customize screen. */
   adjustments: AdjustmentId[];
   shape: HairShape;
-  defaultColorId: string;
   /** Populated later by the backend with the AI-generated mannequin render. */
   imageUrl?: string | null;
 }

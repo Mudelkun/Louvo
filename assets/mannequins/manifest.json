@@ -1,0 +1,1474 @@
+{
+  "generatedAt": "2026-09-02T15:56:27.802Z",
+  "models": {
+    "base": "fal-ai/nano-banana",
+    "edit": "fal-ai/nano-banana/edit"
+  },
+  "base": {
+    "male": {
+      "half": {
+        "file": "_base/male-half.png",
+        "url": "https://v3b.fal.media/files/b/0aa8d1cf/OLLfLIyRvGqiU-16pBncX_TQq0Cqyo.png",
+        "prompt": "Edit the first image. Keep the mannequin exactly as it is: the same matte white material and shading, the same soft high-key lighting from the upper left, the same white background and the same crop — head, neck and the wide flat flared display base exactly as they are in the reference, with no real shoulders and no torso. Remove all of the hair: the mannequin is completely bald, with a smooth hairless scalp, no hair, no wig cap, no stubble and no hairline drawn on. Keep the face completely blank — no eyes, no nose, no mouth, no eyebrows, no facial features of any kind — and keep the sculpted ears. Masculine proportions: a squarer jaw line, a slightly wider neck and a straight, slightly lower hairline. Still completely featureless. Keep the head at exactly the same angle and pose as the reference image: the same gentle three-quarter turn, the same position in the frame, the same amount of face and ear showing. Do not rotate, turn, tilt or re-pose the head at all, and do not turn it further towards a profile — the reference angle is the approved one and must be preserved exactly. Change nothing else: same material, same light, same background, same scale."
+      },
+      "side": {
+        "file": "_base/male-side.png",
+        "from": "_base/male-sheet.png",
+        "crop": {
+          "x": 0,
+          "y": 512,
+          "width": 512,
+          "height": 512
+        }
+      },
+      "back": {
+        "file": "_base/male-back.png",
+        "from": "_base/male-sheet.png",
+        "crop": {
+          "x": 512,
+          "y": 512,
+          "width": 512,
+          "height": 512
+        }
+      },
+      "sheet": {
+        "file": "_base/male-sheet.png",
+        "composedFrom": [
+          "_base/male-front.png",
+          "_base/male-half.png",
+          "_base/male-side.png",
+          "_base/male-back.png"
+        ],
+        "panel": 512
+      },
+      "front": {
+        "file": "_base/male-front.png",
+        "url": "https://v3b.fal.media/files/b/0aa8d203/J6StPJ918txTrr4BbnBkC_oeUgcgWT.png",
+        "prompt": "Edit the first image. Keep the mannequin exactly as it is: the same matte white material and shading, the same soft high-key lighting from the upper left, the same white background and the same crop — head, neck and the wide flat flared display base exactly as they are in the reference, with no real shoulders and no torso. Remove all of the hair: the mannequin is completely bald, with a smooth hairless scalp, no hair, no wig cap, no stubble and no hairline drawn on. Keep the face completely blank — no eyes, no nose, no mouth, no eyebrows, no facial features of any kind — and keep the sculpted ears. Masculine proportions: a squarer jaw line, a slightly wider neck and a straight, slightly lower hairline. Still completely featureless. Dead-on front view at eye level: the head faces the camera squarely, the blank face plane flat to the lens and perfectly symmetrical. Both ears are equally visible, the hairline runs level across the forehead, and the nape is hidden behind the head. No turn at all — not even a slight three-quarter angle. Change nothing else: same material, same light, same background, same scale."
+      }
+    },
+    "female": {
+      "half": {
+        "file": "_base/female-half.png",
+        "url": "https://v3b.fal.media/files/b/0aa8d1e7/gbW3o93kui2NzStzE6gib_1FNrFOjF.png",
+        "prompt": "Edit the first image. Keep the mannequin exactly as it is: the same matte white material and shading, the same soft high-key lighting from the upper left, the same white background and the same crop — head, neck and the wide flat flared display base exactly as they are in the reference, with no real shoulders and no torso. Remove all of the hair: the mannequin is completely bald, with a smooth hairless scalp, no hair, no wig cap, no stubble and no hairline drawn on. Keep the face completely blank — no eyes, no nose, no mouth, no eyebrows, no facial features of any kind — and keep the sculpted ears. Feminine proportions: a softer, narrower jaw line and a slimmer, slightly longer neck. Still completely featureless. Keep the head at exactly the same angle and pose as the reference image: the same gentle three-quarter turn, the same position in the frame, the same amount of face and ear showing. Do not rotate, turn, tilt or re-pose the head at all, and do not turn it further towards a profile — the reference angle is the approved one and must be preserved exactly. Change nothing else: same material, same light, same background, same scale."
+      },
+      "side": {
+        "file": "_base/female-side.png",
+        "url": "https://v3b.fal.media/files/b/0aa8d1be/mgm3N8vBudgQnt2ah0lH__EShft36t.png",
+        "prompt": "Edit the first image. Keep the mannequin exactly as it is: the same matte white material and shading, the same soft high-key lighting from the upper left, the same white background and the same crop — head, neck and the wide flat flared display base exactly as they are in the reference, with no real shoulders and no torso. Remove all of the hair: the mannequin is completely bald, with a smooth hairless scalp, no hair, no wig cap, no stubble and no hairline drawn on. Keep the face completely blank — no eyes, no nose, no mouth, no eyebrows, no facial features of any kind — and keep the sculpted ears. Feminine proportions: a softer, narrower jaw line and a slimmer, slightly longer neck. Still completely featureless. Exact 90-degree left profile: the head turned a full quarter turn so the blank face plane points straight at the left edge of the frame and is seen edge-on, with one full ear, the taper and the whole nape flat to the camera. A true profile — turn the head all the way, not the partial three-quarter turn of the reference. Change nothing else: same material, same light, same background, same scale."
+      },
+      "back": {
+        "file": "_base/female-back.png",
+        "url": "https://v3b.fal.media/files/b/0aa8d1bf/fNqaAWlIhIPPMZgUww__O_7Z8ffjm8.png",
+        "prompt": "Edit the first image. Keep the mannequin exactly as it is: the same matte white material and shading, the same soft high-key lighting from the upper left, the same white background and the same crop — head, neck and the wide flat flared display base exactly as they are in the reference, with no real shoulders and no torso. Remove all of the hair: the mannequin is completely bald, with a smooth hairless scalp, no hair, no wig cap, no stubble and no hairline drawn on. Keep the face completely blank — no eyes, no nose, no mouth, no eyebrows, no facial features of any kind — and keep the sculpted ears. Feminine proportions: a softer, narrower jaw line and a slimmer, slightly longer neck. Still completely featureless. Camera directly behind the head; only the back of the skull, the nape and the back of the neck are visible; no face and no front of the ears visible. Change nothing else: same material, same light, same background, same scale."
+      }
+    }
+  },
+  "styles": {
+    "low-taper-fade": {
+      "male": {
+        "half": {
+          "file": "low-taper-fade/male-half.png",
+          "from": "low-taper-fade/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "low-taper-fade/male-side.png",
+          "from": "low-taper-fade/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "low-taper-fade/male-back.png",
+          "from": "low-taper-fade/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "sheet": {
+          "file": "low-taper-fade/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d320/kx4rjx9z9YxCshvG1h0DG_ubReTrT1.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Low Taper Fade to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Low Taper Fade\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Low Taper Fade while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.\n\nThe silhouette follows the shape of the skull rather than ballooning out from it.",
+          "coverage": {
+            "front": 0.006320953369140625,
+            "half": 0.16736602783203125,
+            "side": 0.2117156982421875,
+            "back": 0.2814140319824219
+          },
+          "bald": [
+            "front"
+          ]
+        },
+        "front": {
+          "file": "low-taper-fade/male-front.png",
+          "from": "low-taper-fade/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "curtain-bangs": {
+      "male": {
+        "half": {
+          "file": "curtain-bangs/male-half.png",
+          "from": "curtain-bangs/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "front": {
+          "file": "curtain-bangs/male-front.png",
+          "from": "curtain-bangs/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "curtain-bangs/male-side.png",
+          "from": "curtain-bangs/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "curtain-bangs/male-back.png",
+          "from": "curtain-bangs/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "sheet": {
+          "file": "curtain-bangs/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d30c/Dp_gEGVSrnFEZNcC2-8cy_nnpk9Tik.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Curtain Bangs to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Curtain Bangs\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Curtain Bangs while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.31916046142578125,
+            "half": 0.3549079895019531,
+            "side": 0.3809165954589844,
+            "back": 0.5076866149902344
+          },
+          "bald": []
+        }
+      }
+    },
+    "mid-fade": {
+      "male": {
+        "half": {
+          "file": "mid-fade/male-half.png",
+          "from": "mid-fade/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "front": {
+          "file": "mid-fade/male-front.png",
+          "from": "mid-fade/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "mid-fade/male-side.png",
+          "from": "mid-fade/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "mid-fade/male-back.png",
+          "from": "mid-fade/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "sheet": {
+          "file": "mid-fade/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d297/NH5voGNwtAhRG1e7thtVJ_d1RPP0dJ.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains four views of the same mannequin wearing the same hairstyle. Recreate the image while applying the requested Mid Fade to the mannequins.\n\nHair specifications:\n\nHairstyle: Mid Fade\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Mid Fade while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.1562957763671875,
+            "half": 0.20031356811523438,
+            "side": 0.2306976318359375,
+            "back": 0.3092041015625
+          },
+          "bald": []
+        }
+      }
+    },
+    "textured-crop": {
+      "male": {
+        "sheet": {
+          "file": "textured-crop/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d29c/RiCNVu5RZL6tbjV2yCQSK_MwsEJr1j.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains four views of the same mannequin wearing the same hairstyle. Recreate the image while applying the requested Textured Crop to the mannequins.\n\nHair specifications:\n\nHairstyle: Textured Crop\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Textured Crop while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.1598663330078125,
+            "half": 0.19366073608398438,
+            "side": 0.23474502563476562,
+            "back": 0.29925537109375
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "textured-crop/male-front.png",
+          "from": "textured-crop/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "textured-crop/male-half.png",
+          "from": "textured-crop/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "textured-crop/male-side.png",
+          "from": "textured-crop/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "textured-crop/male-back.png",
+          "from": "textured-crop/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "wolf-cut": {
+      "male": {
+        "sheet": {
+          "file": "wolf-cut/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d2ba/OB4euMZGUy48mLHosILd9_H8pdDq2X.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains four views of the same mannequin wearing the same hairstyle. Recreate the image while applying the requested Wolf Cut to the mannequins.\n\nHair specifications:\n\nHairstyle: Wolf Cut\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Wolf Cut while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.3159332275390625,
+            "half": 0.36463165283203125,
+            "side": 0.3967323303222656,
+            "back": 0.5224952697753906
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "wolf-cut/male-front.png",
+          "from": "wolf-cut/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "wolf-cut/male-half.png",
+          "from": "wolf-cut/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "wolf-cut/male-side.png",
+          "from": "wolf-cut/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "wolf-cut/male-back.png",
+          "from": "wolf-cut/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "high-skin-fade": {
+      "male": {
+        "sheet": {
+          "file": "high-skin-fade/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d2ac/ebM7_-w7FvaOrsflG7G4p_sdgP1wME.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains four views of the same mannequin wearing the same hairstyle. Recreate the image while applying the requested High Skin Fade to the mannequins.\n\nHair specifications:\n\nHairstyle: High Skin Fade\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with High Skin Fade while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.11787033081054688,
+            "half": 0.15285491943359375,
+            "side": 0.15642166137695312,
+            "back": 0.23172378540039062
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "high-skin-fade/male-front.png",
+          "from": "high-skin-fade/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "high-skin-fade/male-half.png",
+          "from": "high-skin-fade/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "high-skin-fade/male-side.png",
+          "from": "high-skin-fade/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "high-skin-fade/male-back.png",
+          "from": "high-skin-fade/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "curly-top": {
+      "male": {
+        "sheet": {
+          "file": "curly-top/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d30c/K8TSJcX_OFWtobzgksXbt_W2ZJKklu.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Curly Top to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Curly Top\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Curly Top while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.\n\nAttention: a previous attempt returned the Top-left quadrant still bald, with the mannequin's scalp bare. Fix that: Top-left must wear the same Curly Top as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the 4 views stay consistent with each other.",
+          "coverage": {
+            "front": 0.19475173950195312,
+            "half": 0.24219894409179688,
+            "side": 0.2678985595703125,
+            "back": 0.3750724792480469
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "curly-top/male-front.png",
+          "from": "curly-top/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "curly-top/male-half.png",
+          "from": "curly-top/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "curly-top/male-side.png",
+          "from": "curly-top/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "curly-top/male-back.png",
+          "from": "curly-top/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "burst-fade": {
+      "male": {
+        "sheet": {
+          "file": "burst-fade/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d323/gNdH1ZUX0uTbf1sXQ10Qs_0boY0c5E.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Burst Fade to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Burst Fade\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Burst Fade while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.13895034790039062,
+            "half": 0.16592025756835938,
+            "side": 0.2023468017578125,
+            "back": 0.2812461853027344
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "burst-fade/male-front.png",
+          "from": "burst-fade/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "burst-fade/male-half.png",
+          "from": "burst-fade/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "burst-fade/male-side.png",
+          "from": "burst-fade/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "burst-fade/male-back.png",
+          "from": "burst-fade/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "box-braids": {
+      "male": {
+        "sheet": {
+          "file": "box-braids/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d324/Cb2CWGV-YyAtFovFjyLZo_WZBDTrqy.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Box Braids to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Box Braids\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Box Braids while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.\n\nAttention: a previous attempt returned the Top-left quadrant still bald, with the mannequin's scalp bare. Fix that: Top-left must wear the same Box Braids as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the 4 views stay consistent with each other.",
+          "coverage": {
+            "front": 0.19842147827148438,
+            "half": 0.2621955871582031,
+            "side": 0.32546234130859375,
+            "back": 0.4920845031738281
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "box-braids/male-front.png",
+          "from": "box-braids/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "box-braids/male-half.png",
+          "from": "box-braids/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "box-braids/male-side.png",
+          "from": "box-braids/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "box-braids/male-back.png",
+          "from": "box-braids/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "quiff": {
+      "male": {
+        "sheet": {
+          "file": "quiff/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d302/rsTRU8ZXHbj3YOHlebf12_tb4Il0IR.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Quiff to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Quiff\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Quiff while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.\n\nAttention: a previous attempt returned the Top-right quadrant still bald, with the mannequin's scalp bare. Fix that: Top-right must wear the same Quiff as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the 4 views stay consistent with each other.",
+          "coverage": {
+            "front": 0.16489791870117188,
+            "half": 0.21945571899414062,
+            "side": 0.2559852600097656,
+            "back": 0.36539459228515625
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "quiff/male-front.png",
+          "from": "quiff/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "quiff/male-half.png",
+          "from": "quiff/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "quiff/male-side.png",
+          "from": "quiff/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "quiff/male-back.png",
+          "from": "quiff/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "twist-out": {
+      "male": {
+        "sheet": {
+          "file": "twist-out/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d349/Bu-L0sUSjXuZ-3qUvBsED_bmfwzlJ7.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Twist Out to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Twist Out\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Twist Out while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.\n\nAttention: a previous attempt returned the Top-left quadrant still bald, with the mannequin's scalp bare. Fix that: Top-left must wear the same Twist Out as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the 4 views stay consistent with each other.",
+          "coverage": {
+            "front": 0.3299903869628906,
+            "half": 0.3551216125488281,
+            "side": 0.4345283508300781,
+            "back": 0.5509452819824219
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "twist-out/male-front.png",
+          "from": "twist-out/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "twist-out/male-half.png",
+          "from": "twist-out/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "twist-out/male-side.png",
+          "from": "twist-out/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "twist-out/male-back.png",
+          "from": "twist-out/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "afro": {
+      "male": {
+        "sheet": {
+          "file": "afro/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d34e/mWUDrFrWuwOzOh1bllBXp_9Mzav3MV.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Afro to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Afro\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Afro while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.\n\nAttention: a previous attempt returned the Top-left quadrant still bald, with the mannequin's scalp bare. Fix that: Top-left must wear the same Afro as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the 4 views stay consistent with each other.",
+          "coverage": {
+            "front": 0.3454017639160156,
+            "half": 0.3475761413574219,
+            "side": 0.39196014404296875,
+            "back": 0.5301895141601562
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "afro/male-front.png",
+          "from": "afro/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "afro/male-half.png",
+          "from": "afro/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "afro/male-side.png",
+          "from": "afro/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "afro/male-back.png",
+          "from": "afro/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "slick-back": {
+      "male": {
+        "sheet": {
+          "file": "slick-back/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d354/A6kIPOoJWw_-FLLmawNuX_JwIqCzdw.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Slick Back to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Slick Back\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Slick Back while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.005855560302734375,
+            "half": 0.16448593139648438,
+            "side": 0.2753868103027344,
+            "back": 0.4181671142578125
+          },
+          "bald": [
+            "front"
+          ]
+        },
+        "front": {
+          "file": "slick-back/male-front.png",
+          "from": "slick-back/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "slick-back/male-half.png",
+          "from": "slick-back/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "slick-back/male-side.png",
+          "from": "slick-back/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "slick-back/male-back.png",
+          "from": "slick-back/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "messy-fringe": {
+      "male": {
+        "sheet": {
+          "file": "messy-fringe/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d34b/rqX3jsyjmz7XGZqT8WOqt_r4WKvU96.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Messy Fringe to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Messy Fringe\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Messy Fringe while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.2603569030761719,
+            "half": 0.32076263427734375,
+            "side": 0.350677490234375,
+            "back": 0.4609565734863281
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "messy-fringe/male-front.png",
+          "from": "messy-fringe/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "messy-fringe/male-half.png",
+          "from": "messy-fringe/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "messy-fringe/male-side.png",
+          "from": "messy-fringe/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "messy-fringe/male-back.png",
+          "from": "messy-fringe/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "french-crop": {
+      "male": {
+        "sheet": {
+          "file": "french-crop/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d36c/RTuy3q4xQILXmzgt1xbth_xUYEc0CL.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested French Crop to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: French Crop\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with French Crop while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.\n\nAttention: a previous attempt returned the Bottom-left quadrant still bald, with the mannequin's scalp bare. Fix that: Bottom-left must wear the same French Crop as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the 4 views stay consistent with each other.",
+          "coverage": {
+            "front": 0.19109725952148438,
+            "half": 0.23403167724609375,
+            "side": 0.2513236999511719,
+            "back": 0.3048210144042969
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "french-crop/male-front.png",
+          "from": "french-crop/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "french-crop/male-half.png",
+          "from": "french-crop/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "french-crop/male-side.png",
+          "from": "french-crop/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "french-crop/male-back.png",
+          "from": "french-crop/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "buzz-cut": {
+      "male": {
+        "sheet": {
+          "file": "buzz-cut/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d361/IDk22bXsIdBGr9gDXyOgz_GuSbMoq2.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Buzz Cut to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Buzz Cut\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Buzz Cut while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.0975189208984375,
+            "half": 0.15499496459960938,
+            "side": 0.19785690307617188,
+            "back": 0.2904624938964844
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "buzz-cut/male-front.png",
+          "from": "buzz-cut/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "buzz-cut/male-half.png",
+          "from": "buzz-cut/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "buzz-cut/male-side.png",
+          "from": "buzz-cut/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "buzz-cut/male-back.png",
+          "from": "buzz-cut/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "side-part": {
+      "male": {
+        "sheet": {
+          "file": "side-part/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d36f/Jnr9Nq8FO-eN3wQhH56Cn_wLfebVLE.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Classic Side Part to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Classic Side Part\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Classic Side Part while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.\n\nAttention: a previous attempt returned the Top-left quadrant still bald, with the mannequin's scalp bare. Fix that: Top-left must wear the same Classic Side Part as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the 4 views stay consistent with each other.",
+          "coverage": {
+            "front": 0.16176223754882812,
+            "half": 0.35227203369140625,
+            "side": 0.3794136047363281,
+            "back": 0.5046920776367188
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "side-part/male-front.png",
+          "from": "side-part/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "side-part/male-half.png",
+          "from": "side-part/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "side-part/male-side.png",
+          "from": "side-part/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "side-part/male-back.png",
+          "from": "side-part/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "pompadour": {
+      "male": {
+        "sheet": {
+          "file": "pompadour/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d3a9/uSV-pPKZLmUFZOkFiWgc4_vRbAvs3N.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Pompadour to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Pompadour\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Pompadour while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.11797332763671875,
+            "half": 0.18262100219726562,
+            "side": 0.21850204467773438,
+            "back": 0.3518524169921875
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "pompadour/male-front.png",
+          "from": "pompadour/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "pompadour/male-half.png",
+          "from": "pompadour/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "pompadour/male-side.png",
+          "from": "pompadour/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "pompadour/male-back.png",
+          "from": "pompadour/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "shoulder-flow": {
+      "male": {
+        "sheet": {
+          "file": "shoulder-flow/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d3b9/3hVKxghDxVqtQONEvkYVj_ArVGFl8M.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Shoulder Flow to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Shoulder Flow\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Shoulder Flow while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.\n\nAttention: a previous attempt returned the Top-right quadrant still bald, with the mannequin's scalp bare. Fix that: Top-right must wear the same Shoulder Flow as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the 4 views stay consistent with each other.",
+          "coverage": {
+            "front": 0.28121185302734375,
+            "half": 0.3602638244628906,
+            "side": 0.4106788635253906,
+            "back": 0.53759765625
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "shoulder-flow/male-front.png",
+          "from": "shoulder-flow/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "shoulder-flow/male-half.png",
+          "from": "shoulder-flow/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "shoulder-flow/male-side.png",
+          "from": "shoulder-flow/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "shoulder-flow/male-back.png",
+          "from": "shoulder-flow/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "modern-mullet": {
+      "male": {
+        "sheet": {
+          "file": "modern-mullet/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d3c4/so8F_eB_l6RoGAJNayPyW_d0oih3v6.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Modern Mullet to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Modern Mullet\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Modern Mullet while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.2056884765625,
+            "half": 0.29082489013671875,
+            "side": 0.34526824951171875,
+            "back": 0.4470062255859375
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "modern-mullet/male-front.png",
+          "from": "modern-mullet/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "modern-mullet/male-half.png",
+          "from": "modern-mullet/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "modern-mullet/male-side.png",
+          "from": "modern-mullet/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "modern-mullet/male-back.png",
+          "from": "modern-mullet/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "ivy-league": {
+      "male": {
+        "sheet": {
+          "file": "ivy-league/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d3d0/ZjcpRPSR8hnNmpuyv3Hi-_ALaWrnQ2.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Ivy League to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Ivy League\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Ivy League while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.16408538818359375,
+            "half": 0.20823287963867188,
+            "side": 0.24621200561523438,
+            "back": 0.3188896179199219
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "ivy-league/male-front.png",
+          "from": "ivy-league/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "ivy-league/male-half.png",
+          "from": "ivy-league/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "ivy-league/male-side.png",
+          "from": "ivy-league/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "ivy-league/male-back.png",
+          "from": "ivy-league/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "man-bun": {
+      "male": {
+        "sheet": {
+          "file": "man-bun/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d3d7/9rZ4bqeizoP5QvVtgfOX8_qXaQqmN2.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Man Bun to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Man Bun\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Man Bun while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.\n\nAttention: a previous attempt returned the Top-left quadrant still bald, with the mannequin's scalp bare. Fix that: Top-left must wear the same Man Bun as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the 4 views stay consistent with each other.",
+          "coverage": {
+            "front": 0.10231399536132812,
+            "half": 0.163330078125,
+            "side": 0.2596321105957031,
+            "back": 0.2958335876464844
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "man-bun/male-front.png",
+          "from": "man-bun/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "man-bun/male-half.png",
+          "from": "man-bun/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "man-bun/male-side.png",
+          "from": "man-bun/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "man-bun/male-back.png",
+          "from": "man-bun/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "top-knot": {
+      "male": {
+        "sheet": {
+          "file": "top-knot/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d3db/9hGklvEerglJhcEUDPJeB_Tn9QY1q9.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Top Knot to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Top Knot\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Top Knot while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.155303955078125,
+            "half": 0.22980117797851562,
+            "side": 0.27246856689453125,
+            "back": 0.30791473388671875
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "top-knot/male-front.png",
+          "from": "top-knot/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "top-knot/male-half.png",
+          "from": "top-knot/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "top-knot/male-side.png",
+          "from": "top-knot/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "top-knot/male-back.png",
+          "from": "top-knot/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "caesar-cut": {
+      "male": {
+        "sheet": {
+          "file": "caesar-cut/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d3e3/e2FFkzcyReiwkFl83SQ4B_SvbqF0qU.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Caesar Cut to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Caesar Cut\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Caesar Cut while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.",
+          "coverage": {
+            "front": 0.14340972900390625,
+            "half": 0.1926727294921875,
+            "side": 0.22917556762695312,
+            "back": 0.2982330322265625
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "caesar-cut/male-front.png",
+          "from": "caesar-cut/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "caesar-cut/male-half.png",
+          "from": "caesar-cut/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "caesar-cut/male-side.png",
+          "from": "caesar-cut/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "caesar-cut/male-back.png",
+          "from": "caesar-cut/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    },
+    "mohawk": {
+      "male": {
+        "sheet": {
+          "file": "mohawk/male-sheet.png",
+          "url": "https://v3b.fal.media/files/b/0aa8d3e9/SqOzfrLIcg_N5PKqbRVEk_RRXM0qOY.png",
+          "prompt": "Use the provided image as the exact visual reference. It contains 4 views of the same mannequin wearing the same hairstyle, one per quadrant: Top-left, Top-right, Bottom-left, Bottom-right. Recreate the image while applying the requested Mohawk to the mannequins.\n\nAll 4 heads must be wearing the hairstyle. Every quadrant — Top-left, Top-right, Bottom-left, Bottom-right — is a separate head that has to be re-drawn with the new hair: none of the 4 may be left bald, left with the reference's own hair, or copied through unchanged. A quadrant returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: Mohawk\nHair color: Espresso brown — #33231B\nHair type: Type 3A–3B curly\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with Mohawk while maintaining the same mannequin and presentation across all four views.\n\nEnsure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.\n\nAttention: a previous attempt returned the Top-left quadrant still bald, with the mannequin's scalp bare. Fix that: Top-left must wear the same Mohawk as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the 4 views stay consistent with each other.",
+          "coverage": {
+            "front": 0.09123611450195312,
+            "half": 0.1385498046875,
+            "side": 0.17212677001953125,
+            "back": 0.25638580322265625
+          },
+          "bald": []
+        },
+        "front": {
+          "file": "mohawk/male-front.png",
+          "from": "mohawk/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "half": {
+          "file": "mohawk/male-half.png",
+          "from": "mohawk/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 0,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "side": {
+          "file": "mohawk/male-side.png",
+          "from": "mohawk/male-sheet.png",
+          "crop": {
+            "x": 0,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        },
+        "back": {
+          "file": "mohawk/male-back.png",
+          "from": "mohawk/male-sheet.png",
+          "crop": {
+            "x": 512,
+            "y": 512,
+            "width": 512,
+            "height": 512
+          }
+        }
+      }
+    }
+  }
+}
