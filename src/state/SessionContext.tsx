@@ -8,6 +8,17 @@ export interface Session {
   gender: Gender | null;
   categoryId: string | null;
   hairstyleId: string | null;
+  /**
+   * The hair colour every mannequin is shown in, as a catalog colour id, or null
+   * for the shade the catalog was rendered in.
+   *
+   * Colour sits here rather than on a hairstyle on purpose: it is one choice
+   * applied to the whole app at once, so two styles side by side still differ
+   * only by their cut. It survives moving between styles, which a per-style
+   * setting would not, and it is copied onto a look when one is generated so a
+   * saved look keeps the colour it was made in.
+   */
+  colorId: string | null;
   options: TryOnOptions;
   look: GeneratedLook | null;
 }
@@ -17,6 +28,7 @@ const emptySession: Session = {
   gender: null,
   categoryId: null,
   hairstyleId: null,
+  colorId: null,
   options: {},
   look: null,
 };
@@ -25,6 +37,7 @@ interface SessionState extends Session {
   setPhoto: (uri: string | null) => void;
   setGender: (gender: Gender) => void;
   setCategory: (categoryId: string | null) => void;
+  setColor: (colorId: string | null) => void;
   setHairstyle: (hairstyleId: string, options: TryOnOptions) => void;
   setOptions: (options: TryOnOptions) => void;
   patchOptions: (patch: Partial<TryOnOptions>) => void;
@@ -49,6 +62,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const setCategory = useCallback((categoryId: string | null) => {
     setSession((prev) => ({ ...prev, categoryId }));
+  }, []);
+
+  const setColor = useCallback((colorId: string | null) => {
+    setSession((prev) => (prev.colorId === colorId ? prev : { ...prev, colorId }));
   }, []);
 
   const setHairstyle = useCallback((hairstyleId: string, options: TryOnOptions) => {
@@ -79,6 +96,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setPhoto,
       setGender,
       setCategory,
+      setColor,
       setHairstyle,
       setOptions,
       patchOptions,
@@ -86,7 +104,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       reset,
       restartStyleChoice,
     }),
-    [session, setPhoto, setGender, setCategory, setHairstyle, setOptions, patchOptions, setLook, reset, restartStyleChoice],
+    [
+      session,
+      setPhoto,
+      setGender,
+      setCategory,
+      setColor,
+      setHairstyle,
+      setOptions,
+      patchOptions,
+      setLook,
+      reset,
+      restartStyleChoice,
+    ],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

@@ -3,11 +3,12 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colorById, shareLook } from '@/api/client';
+import { shareLook } from '@/api/client';
 import { Button } from '@/components/Button';
 import { EmptyState, MockNotice } from '@/components/Feedback';
 import { PhotoFrame } from '@/components/PhotoFrame';
 import { Header, Screen } from '@/components/Screen';
+import { useLookColor } from '@/hooks/useHairColor';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { useSession } from '@/state/SessionContext';
@@ -27,8 +28,9 @@ const CHANNELS: { id: string; label: string; icon: keyof typeof Ionicons.glyphMa
 export default function ShareScreen() {
   const router = useRouter();
   const { look, gender } = useSession();
-  const { styleById, colors: palette } = useCatalog();
+  const { styleById } = useCatalog();
   const { saveLook } = useLibrary();
+  const color = useLookColor(look);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -42,8 +44,6 @@ export default function ShareScreen() {
       </Screen>
     );
   }
-
-  const activeColor = colorById(palette, look.options.color ?? hairstyle.defaultColorId);
 
   const send = async (channel: string) => {
     setBusy(channel);
@@ -72,11 +72,10 @@ export default function ShareScreen() {
           uri={look.resultUri}
           style={{ width: width * 0.52, height: width * 0.66 }}
           rounded={radii.lg}
-          demo={{ shape: hairstyle.shape, options: look.options, color: activeColor, gender }}
+          demo={{ styleId: hairstyle.id, shape: hairstyle.shape, color, gender }}
           demoWidth={width * 0.56}
         />
         <Text style={[type.bodyStrong, { color: colors.ink, marginTop: spacing.md }]}>{hairstyle.name}</Text>
-        <Text style={[type.caption, { color: colors.muted }]}>{activeColor?.name}</Text>
       </View>
 
       <View style={{ paddingHorizontal: spacing.xl, gap: spacing.lg }}>

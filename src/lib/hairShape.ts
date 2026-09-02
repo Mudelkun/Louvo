@@ -12,10 +12,33 @@
 
 import type { HairShape, TryOnOptions } from '@/api/types';
 
-/** Camera angle a mannequin is drawn from — one style, shown from all three. */
-export type ViewAngle = 'front' | 'side' | 'back';
+/** Camera angle a mannequin is drawn from — one style, shown from all four. */
+export type ViewAngle = 'front' | 'half' | 'side' | 'back';
 
-export const VIEW_ANGLES: ViewAngle[] = ['front', 'side', 'back'];
+export const VIEW_ANGLES: ViewAngle[] = ['front', 'half', 'side', 'back'];
+
+/**
+ * The one view that stands for a style wherever only one image fits — cards,
+ * badges, the style screen's opening shot.
+ *
+ * The three-quarter turn, because a haircut reads from it: the fringe, the
+ * taper above the ear and a little of the nape are all in frame at once, where
+ * dead-on hides the sides and the profile hides the front. It is the hero panel
+ * the generator shoots for the same reason (`scripts/lib/prompts.mjs`).
+ */
+export const HERO_ANGLE: ViewAngle = 'half';
+
+/**
+ * How far the head is turned away from the camera, 0 (dead-on) .. 1 (full
+ * profile). `half` is the three-quarter view, so the geometry that separates
+ * front from side — skull width, where the neck sits, how far the hair wraps
+ * round the near temple — is interpolated rather than special-cased per angle.
+ * The head turns to the viewer's right, so the near side is the left of the
+ * frame and anything behind the head moves left.
+ */
+const TURN: Record<ViewAngle, number> = { front: 0, half: 0.5, side: 1, back: 0 };
+
+export const turnFor = (angle: ViewAngle): number => TURN[angle];
 
 export const HEAD = {
   viewBox: { width: 200, height: 250 },
@@ -44,7 +67,7 @@ export interface HeadGeometry {
  * wide, so the profile silhouette is a little broader than the front one.
  */
 export function headFor(angle: ViewAngle): HeadGeometry {
-  return angle === 'side' ? { ...HEAD, rx: HEAD.rx * 1.13 } : { ...HEAD };
+  return { ...HEAD, rx: HEAD.rx * (1 + 0.13 * TURN[angle]) };
 }
 
 /**
@@ -53,6 +76,9 @@ export function headFor(angle: ViewAngle): HeadGeometry {
  */
 const ARC: Record<ViewAngle, { start: number; end: number }> = {
   front: { start: 196, end: -16 },
+  // Part of the way to the profile: a little more nape on the left, a little
+  // more forehead on the right.
+  half: { start: 201, end: 5 },
   // Facing right: from the nape, over the crown, stopping at the forehead.
   side: { start: 206, end: 26 },
   back: { start: 200, end: -20 },
@@ -135,6 +161,7 @@ export interface HairPaths {
 export function buildHairPaths(shape: HairShape, angle: ViewAngle = 'front'): HairPaths {
   const head = headFor(angle);
   const { cx, cy, rx, ry } = head;
+  const turn = TURN[angle];
   const paths: HairPaths = { cap: '' };
 
   const isCrest = shape.sides < 0.07 && shape.top > 0.72; // mohawk-like
@@ -144,9 +171,9 @@ export function buildHairPaths(shape: HairShape, angle: ViewAngle = 'front'): Ha
   const expandTop = 3.5 + shape.top * 34;
   const expandSide = 2.5 + shape.sides * 12 + (shape.texture === 'coily' ? 3 : 0);
 
-  // Seen from the side, anything falling behind the head sits behind the skull
-  // rather than around it.
-  const bx = cx + (angle === 'side' ? -rx * 0.34 : 0);
+  // As the head turns, anything falling behind it swings behind the skull
+  // rather than staying wrapped around it.
+  const bx = cx - rx * 0.34 * turn;
 
   // ---- back mass ---------------------------------------------------------
   if (shape.back > 0.05 && !isGathered) {
@@ -180,7 +207,7 @@ export function buildHairPaths(shape: HairShape, angle: ViewAngle = 'front'): Ha
   // look at it head-on. From the side it runs the length of the skull.
   const narrowCrest = isCrest && angle !== 'side';
   const { start: startAngle, end: endAngle } = narrowCrest
-    ? { start: 138, end: 42 }
+    ? { start: 138 + turn * 24, end: 42 - turn * 24 }
     : isCrest
       ? { start: 162, end: 18 }
       : ARC[angle];
@@ -188,7 +215,7 @@ export function buildHairPaths(shape: HairShape, angle: ViewAngle = 'front'): Ha
   const outer: string[] = [];
 
   // The crest's horizontal radius is pulled in hard while its height is left alone.
-  const capRxScale = narrowCrest ? 0.45 : 1;
+  const capRxScale = narrowCrest ? 0.45 + turn * 0.34 : 1;
 
   for (let i = 0; i <= steps; i += 1) {
     const deg = startAngle + ((endAngle - startAngle) * i) / steps;
@@ -245,40 +272,44 @@ export function buildHairPaths(shape: HairShape, angle: ViewAngle = 'front'): Ha
     ].join(' ');
   } else {
     // The hairline meets the head above the widest point, otherwise every style
-    // reads as a swim cap pulled down over the temples.
-    const templeAngle = 18;
-    const [rtx, rty] = onHead(head, templeAngle, 1.5);
-    const [ltx, lty] = onHead(head, 180 - templeAngle, 1.5);
+    // reads as a swim cap pulled down over the temples. On a turned head it is
+    // no longer symmetric: it rides higher on the far side, drops past the near
+    // temple, and the whole sweep foreshortens towards the face.
+    const farTemple = 18 + turn * 12;
+    const nearTemple = 18 - turn * 10;
+    const [, rty] = onHead(head, farTemple, 1.5);
+    const [ltx, lty] = onHead(head, 180 - nearTemple, 1.5);
     const targetY = cy - ry * (0.72 - shape.fringe * 0.62);
     const controlY = 2 * targetY - (rty + lty) / 2;
 
     paths.cap = [
       ...outer,
-      ...hug(endAngle, templeAngle),
-      `Q ${cx} ${round(controlY)} ${round(ltx)} ${round(lty)}`,
-      ...hug(180 - templeAngle, startAngle),
+      ...hug(endAngle, farTemple),
+      `Q ${round(cx + rx * 0.42 * turn)} ${round(controlY)} ${round(ltx)} ${round(lty)}`,
+      ...hug(180 - nearTemple, startAngle),
       'Z',
     ].join(' ');
   }
 
   // ---- sides -------------------------------------------------------------
-  // Only the front view needs them: the side and back caps already cover the
-  // whole visible side of the skull.
-  if (angle === 'front' && !isCrest && shape.sides > 0.01) {
+  // Only the views that still face you need them: the profile and back caps
+  // already cover the whole visible side of the skull.
+  if (angle !== 'side' && angle !== 'back' && !isCrest && shape.sides > 0.01) {
     const sweep = 22 + shape.sides * 74;
     const sideSteps = 26;
 
-    const buildSide = (mirror: boolean) => {
+    const buildSide = (mirror: boolean, weight: number) => {
       const from = mirror ? -16 : 196;
       const direction = mirror ? -1 : 1;
       const outerPts: string[] = [];
       const innerPts: string[] = [];
       for (let i = 0; i <= sideSteps; i += 1) {
         const t = i / sideSteps;
-        const deg = from + direction * sweep * t;
+        const deg = from + direction * sweep * weight * t;
         // Fades taper to nothing at the bottom; longer sides keep their weight.
         const taper = 1 - t * (1 - Math.min(1, shape.sides * 1.9));
-        const expand = Math.max(0.4, expandSide * taper) + textureAt(shape, deg, textureStrength * 0.5) * t;
+        const expand =
+          Math.max(0.4, expandSide * weight * taper) + textureAt(shape, deg, textureStrength * 0.5) * t;
         const [ox, oy] = onHead(head, deg, expand);
         outerPts.push(`${i === 0 ? 'M' : 'L'} ${round(ox)} ${round(oy)}`);
         const [ix, iy] = onHead(head, deg, -1);
@@ -287,14 +318,16 @@ export function buildHairPaths(shape: HairShape, angle: ViewAngle = 'front'): Ha
       return [...outerPts, ...innerPts, 'Z'].join(' ');
     };
 
-    paths.sideLeft = buildSide(false);
-    paths.sideRight = buildSide(true);
+    // Turned away from the camera the far side foreshortens to a sliver, while
+    // the near side shows the full sweep down past the ear.
+    paths.sideLeft = buildSide(false, 1 + turn * 0.3);
+    paths.sideRight = buildSide(true, 1 - turn * 0.7);
   }
 
   // ---- knot / tail -------------------------------------------------------
   if (shape.knot) {
     paths.knot = {
-      cx: cx + (angle === 'side' ? -rx * 0.22 : 0),
+      cx: cx - rx * 0.22 * turn,
       cy: cy - ry - 6 - shape.top * 16,
       r: 13 + shape.top * 6,
     };
@@ -318,7 +351,7 @@ export function buildHairPaths(shape: HairShape, angle: ViewAngle = 'front'): Ha
   // ---- parting -----------------------------------------------------------
   // A parting only reads when the scalp is facing you.
   if (angle !== 'side' && shape.part && shape.part !== 'none' && shape.top > 0.12) {
-    const x = cx + (shape.part === 'middle' ? 0 : rx * 0.32);
+    const x = cx + (shape.part === 'middle' ? 0 : rx * 0.32) + rx * 0.22 * turn;
     const topY = cy - ry - expandTop * 0.55;
     paths.part = `M ${round(x)} ${round(topY)} L ${round(x)} ${round(cy - ry * 0.34)}`;
   }
