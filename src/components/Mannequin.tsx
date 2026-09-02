@@ -16,10 +16,11 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 
-import type { Gender, HairColor, HairShape, TryOnOptions } from '@/api/types';
+import type { Gender, HairColor, HairShape, TryOnOptions, VariantId } from '@/api/types';
 import { hairGrade } from '@/lib/colorGrade';
+import { baseHairColor } from '@/lib/constants';
 import { buildHairPaths, effectiveShape, headFor, HERO_ANGLE, turnFor, type ViewAngle } from '@/lib/hairShape';
-import { mannequinMask, mannequinRender } from '@/lib/mannequinRender';
+import { mannequinMask, mannequinRender, renderVariant } from '@/lib/mannequinRender';
 import { colors as tokens } from '@/theme/theme';
 
 interface MannequinProps {
@@ -37,8 +38,20 @@ interface MannequinProps {
    * directly; a generated render is colour-graded to it (`src/lib/colorGrade.ts`),
    * since the render exists in exactly one shade.
    */
-  color?: HairColor;
+  color?: HairColor | null;
   gender?: Gender | null;
+  /**
+   * Which renders of this style are acceptable, best first — the output of
+   * `variantCandidates(style, hairType)`. One entry once the user has declared a
+   * hair type, several under "All Types", and omitted entirely by the callers
+   * that are not drawing a catalog hairstyle at all.
+   *
+   * A style whose wanted variant has not been generated yet falls through to
+   * the procedural drawing, exactly as an ungenerated style always has: showing
+   * someone the curly render of a cut they asked to see straight would be a
+   * wrong image rather than a partial one.
+   */
+  variants?: VariantId[] | null;
   /** Camera angle. The catalog shows every style dead-on, three-quarter, in profile and from behind. */
   angle?: ViewAngle;
   size?: number;
@@ -63,6 +76,7 @@ export function Mannequin({
   options,
   color,
   gender,
+  variants,
   angle = 'front',
   size = 160,
   backdrop = '#EFE9E1',
@@ -73,9 +87,17 @@ export function Mannequin({
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const resolved = useMemo(() => effectiveShape(shape, options), [shape, options]);
   const paths = useMemo(() => buildHairPaths(resolved, angle), [resolved, angle]);
-  const render = mannequinRender(styleId, gender, angle);
-  const grade = useMemo(() => hairGrade(color), [color]);
-  const hairOnly = grade ? mannequinMask(styleId, gender, angle) : null;
+  // Resolved once, then used for both the render and its mask, so the graded
+  // copy is always masked by the mask belonging to the image underneath it.
+  const variant = renderVariant(styleId, gender, angle, variants);
+  const render = mannequinRender(styleId, gender, angle, variant ? [variant] : variants);
+  // The grade is anchored to the shade *this* render was shot in, not to one
+  // catalog-wide shade: the coily variant is shot in black and everything else
+  // in espresso, so grading a coily render from the espresso anchor would
+  // overshoot every target. See BASE_HAIR_COLORS.
+  const anchor = baseHairColor(variant);
+  const grade = useMemo(() => hairGrade(color, anchor.hex), [color, anchor.hex]);
+  const hairOnly = grade && variant ? mannequinMask(styleId, gender, angle, [variant]) : null;
 
   const hair = color?.hex ?? '#3B2A21';
   const hairShade = color?.shade ?? '#241811';
@@ -245,12 +267,14 @@ export function MannequinBadge({
   shape,
   color,
   gender,
+  variants,
   size = 44,
 }: {
   styleId?: string | null;
   shape: HairShape;
-  color?: HairColor;
+  color?: HairColor | null;
   gender?: Gender | null;
+  variants?: VariantId[] | null;
   size?: number;
 }) {
   return (
@@ -269,6 +293,7 @@ export function MannequinBadge({
         shape={shape}
         color={color}
         gender={gender}
+        variants={variants}
         angle={HERO_ANGLE}
         size={size * 1.5}
         backdrop={null}

@@ -6,21 +6,28 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Gender } from '@/api/types';
 import { Header, Screen } from '@/components/Screen';
 import { useSession } from '@/state/SessionContext';
-import { colors, radii, shadow, spacing, type } from '@/theme/theme';
+import { colors, radii, spacing, type } from '@/theme/theme';
 
-const OPTIONS: { id: Gender; label: string }[] = [
-  { id: 'male', label: 'Male' },
-  { id: 'female', label: 'Female' },
+const OPTIONS: { id: Gender; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { id: 'male', label: 'Male', icon: 'man-outline' },
+  { id: 'female', label: 'Female', icon: 'woman-outline' },
 ];
 
-/** Step 2 — one tap, one decision. Choosing moves the flow on immediately. */
+/**
+ * Step 2 — one tap, one decision. Choosing moves the flow on to hair type.
+ *
+ * Two flat tiles side by side rather than two stacked cards: the choice is a
+ * pair, and sitting them next to each other says so without any chrome. The
+ * type is left-aligned and the tiles carry a hairline instead of a shadow, so
+ * the only thing with any weight on the screen is the option in hand.
+ */
 export default function GenderScreen() {
   const router = useRouter();
-  const { setGender } = useSession();
+  const { gender, setGender } = useSession();
 
   const choose = (value: Gender) => {
     setGender(value);
-    router.push('/try/categories');
+    router.push('/try/hair-type');
   };
 
   return (
@@ -28,22 +35,38 @@ export default function GenderScreen() {
       <Header />
 
       <View style={styles.body}>
-        <Text style={[type.title, styles.title]}>Select Gender</Text>
+        <Text style={[type.display, styles.title]}>Select gender</Text>
         <Text style={[type.body, styles.subtitle]}>This helps us show you relevant styles.</Text>
 
-        <View style={{ gap: spacing.lg }}>
-          {OPTIONS.map((option) => (
-            <Pressable
-              key={option.id}
-              accessibilityRole="button"
-              accessibilityLabel={option.label}
-              onPress={() => choose(option.id)}
-              style={({ pressed }) => [styles.card, pressed && { transform: [{ scale: 0.99 }] }]}
-            >
-              <Ionicons name="person" size={44} color={colors.accent} />
-              <Text style={[type.heading, { color: colors.ink }]}>{option.label}</Text>
-            </Pressable>
-          ))}
+        <View style={styles.row}>
+          {OPTIONS.map((option) => {
+            const selected = gender === option.id;
+            return (
+              <Pressable
+                key={option.id}
+                accessibilityRole="radio"
+                accessibilityLabel={option.label}
+                accessibilityState={{ selected }}
+                onPress={() => choose(option.id)}
+                style={({ pressed }) => [
+                  styles.tile,
+                  selected && styles.tileSelected,
+                  pressed && { opacity: 0.9, transform: [{ scale: 0.985 }] },
+                ]}
+              >
+                <Ionicons
+                  name={option.icon}
+                  size={40}
+                  color={selected ? colors.accent : colors.inkSoft}
+                />
+                <Text
+                  style={[type.bodyStrong, { color: selected ? colors.accentInk : colors.ink }]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       </View>
     </Screen>
@@ -51,24 +74,20 @@ export default function GenderScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl },
-  title: { color: colors.ink, textAlign: 'center' },
-  subtitle: {
-    color: colors.muted,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    marginBottom: spacing.xxl,
-    paddingHorizontal: spacing.xl,
-  },
-  card: {
+  body: { paddingHorizontal: spacing.xl, paddingTop: spacing.xxl },
+  title: { color: colors.ink },
+  subtitle: { color: colors.muted, marginTop: spacing.sm, marginBottom: spacing.xxl },
+  row: { flexDirection: 'row', gap: spacing.md },
+  tile: {
+    flex: 1,
+    aspectRatio: 0.92,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.md,
-    paddingVertical: spacing.xxxl,
     backgroundColor: colors.surface,
-    borderRadius: radii.xl,
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.hairline,
-    ...shadow.card,
   },
+  tileSelected: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
 });

@@ -1,17 +1,24 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { CatalogBrowser } from '@/components/CatalogBrowser';
 import { Header } from '@/components/Screen';
+import { ALL_HAIR_TYPES } from '@/lib/hairTypes';
 import { useCatalog } from '@/state/CatalogContext';
 import { useSession } from '@/state/SessionContext';
-import { colors, spacing, type } from '@/theme/theme';
+import { colors, spacing } from '@/theme/theme';
 
+/** The whole catalog, reached straight from the hair type step.
+ *
+ *  Nothing sits above the grid but the controls that change it: the category
+ *  name in the header and the count under the filters say what is on screen,
+ *  and the blurb that used to explain the catalog said nothing the styles do
+ *  not say better. */
 export default function CatalogScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ categoryId?: string }>();
-  const { gender, setCategory, hairstyleId } = useSession();
+  const { gender, hairTypeId, setHairType, setCategory, hairstyleId } = useSession();
   const { categoryById } = useCatalog();
   const [categoryId, setCategoryId] = useState<string>(params.categoryId ?? 'all');
 
@@ -28,23 +35,21 @@ export default function CatalogScreen() {
       <View style={{ flex: 1, marginTop: spacing.lg }}>
         <CatalogBrowser
           gender={gender}
+          hairType={hairTypeId}
+          onHairTypeChange={setHairType}
           categoryId={categoryId}
           selectedId={hairstyleId}
           onCategoryChange={changeCategory}
-          onSelect={(style) => router.push(`/try/style/${style.id}`)}
-          header={
-            <View style={styles.header}>
-              <Text style={[type.body, { color: colors.muted }]}>
-                {category?.tagline ?? 'Everything in the catalog, newest and most requested first.'}
-              </Text>
-            </View>
+          // The type the grid is filtered to opens with the style, so the
+          // detail page shows the cut on the texture that was on screen.
+          onSelect={(style) =>
+            router.push({
+              pathname: '/try/style/[id]',
+              params: { id: style.id, hairType: hairTypeId ?? ALL_HAIR_TYPES },
+            })
           }
         />
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  header: { paddingHorizontal: spacing.xl },
-});
