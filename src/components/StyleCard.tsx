@@ -3,16 +3,24 @@ import { Image } from 'expo-image';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import type { Gender, HairColor, Hairstyle } from '@/api/types';
+import type { Gender, HairColor, HairTypeId, Hairstyle } from '@/api/types';
+import { FavouriteHeart } from '@/components/FavouriteHeart';
 import { Mannequin } from '@/components/Mannequin';
 import { HERO_ANGLE } from '@/lib/hairShape';
+import { textureFor, variantCandidates } from '@/lib/hairTypes';
 import { colors, radii, shadow, spacing, type } from '@/theme/theme';
 
 interface StyleCardProps {
   hairstyle: Hairstyle;
-  color?: HairColor;
+  color?: HairColor | null;
   /** Picks the male or female render when the style has both. */
   gender?: Gender | null;
+  /**
+   * The hair type the grid is being browsed as, or null for "All Types". Picks
+   * which render of this cut the card shows, and which texture the fallback
+   * drawing is drawn in.
+   */
+  hairType?: HairTypeId | null;
   onPress?: () => void;
   onToggleFavourite?: () => void;
   favourite?: boolean;
@@ -27,6 +35,7 @@ export function StyleCard({
   hairstyle,
   color,
   gender,
+  hairType,
   onPress,
   onToggleFavourite,
   favourite,
@@ -36,6 +45,7 @@ export function StyleCard({
   style,
 }: StyleCardProps) {
   const imageHeight = compact ? width * 0.94 : width * 1.02;
+  const shape = { ...hairstyle.shape, texture: textureFor(hairstyle, hairType) };
 
   return (
     <Pressable
@@ -58,9 +68,10 @@ export function StyleCard({
         ) : (
           <Mannequin
             styleId={hairstyle.id}
-            shape={hairstyle.shape}
+            shape={shape}
             color={color}
             gender={gender}
+            variants={variantCandidates(hairstyle, hairType)}
             angle={HERO_ANGLE}
             size={width}
             backdrop={null}
@@ -68,19 +79,13 @@ export function StyleCard({
         )}
 
         {onToggleFavourite ? (
-          <Pressable
-            accessibilityRole="button"
+          <FavouriteHeart
             accessibilityLabel={favourite ? `Remove ${hairstyle.name} from favourites` : `Save ${hairstyle.name}`}
-            hitSlop={8}
-            onPress={onToggleFavourite}
+            favourite={favourite}
+            onToggle={onToggleFavourite}
+            tone="chip"
             style={styles.heart}
-          >
-            <Ionicons
-              name={favourite ? 'heart' : 'heart-outline'}
-              size={16}
-              color={favourite ? colors.accent : colors.inkSoft}
-            />
-          </Pressable>
+          />
         ) : null}
 
         {selected ? (
@@ -120,17 +125,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     overflow: 'hidden',
   },
-  heart: {
-    position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  heart: { position: 'absolute', top: spacing.sm, right: spacing.sm },
   selectedBadge: {
     position: 'absolute',
     top: spacing.sm,

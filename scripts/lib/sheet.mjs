@@ -17,10 +17,14 @@
  * exact angles by being an edit of the composed sheet.
  *
  * The layout below is the single source of truth: `lib/prompts.mjs` describes it
- * to the model in words, and the crop maths here reads the same constant.
+ * to the model in words, and the crop maths in `lib/grid.mjs` reads the same
+ * constant.
  */
 
+import { HAIR_LUMA, formatCoverage, gridLabel, gridRect, hairCoverage, panelOf, sliceGrid } from './grid.mjs';
 import { blankImage, cropImage, decodePng, encodePng, pasteImage, resizeImage } from './png.mjs';
+
+export { HAIR_LUMA, formatCoverage };
 
 /**
  * A 2×2 grid, read left to right and top to bottom. Square panels in a square
@@ -39,35 +43,10 @@ export const SHEET = {
 export const SHEET_ANGLES = SHEET.cells;
 
 /** Where one panel sits, as a fraction of the sheet. */
-export function cellRect(angle) {
-  const index = SHEET.cells.indexOf(angle);
-  if (index < 0) throw new Error(`"${angle}" is not a panel on the sheet`);
-  return {
-    x: (index % SHEET.cols) / SHEET.cols,
-    y: Math.floor(index / SHEET.cols) / SHEET.rows,
-    width: 1 / SHEET.cols,
-    height: 1 / SHEET.rows,
-  };
-}
+export const cellRect = (angle) => gridRect(SHEET, angle);
 
 /** How a panel is named to the model — "Top-left" and friends. */
-export function panelLabel(angle) {
-  const index = SHEET.cells.indexOf(angle);
-  if (index < 0) throw new Error(`"${angle}" is not a panel on the sheet`);
-  return SHEET.positions[index];
-}
-
-/** One panel out of a decoded sheet, with the crop that produced it. */
-function panelOf(image, angle, inset = 0) {
-  const rect = cellRect(angle);
-  const crop = {
-    x: Math.round(rect.x * image.width + inset),
-    y: Math.round(rect.y * image.height + inset),
-    width: Math.round(rect.width * image.width - inset * 2),
-    height: Math.round(rect.height * image.height - inset * 2),
-  };
-  return { crop, image: cropImage(image, crop.x, crop.y, crop.width, crop.height) };
-}
+export const panelLabel = (angle) => gridLabel(SHEET, angle);
 
 /**
  * Tiles approved base heads into one sheet — no model, no cost, no drift.
@@ -126,18 +105,11 @@ export function composeSheet(byAngle) {
  * @returns {{ angle: string, png: Buffer, crop: { x: number, y: number, width: number, height: number } }[]}
  */
 export function sliceSheet(buffer, { angles = SHEET_ANGLES, inset = 0 } = {}) {
-  const image = decodePng(buffer);
-  const panelWidth = image.width / SHEET.cols;
-  const panelHeight = image.height / SHEET.rows;
-
-  if (panelWidth < 64 || panelHeight < 64) {
-    throw new Error(`sheet is only ${image.width}x${image.height} — panels would be unusably small`);
-  }
-
-  return angles.map((angle) => {
-    const panel = panelOf(image, angle, inset);
-    return { angle, crop: panel.crop, png: encodePng(panel.image) };
-  });
+  return sliceGrid(buffer, SHEET, { cells: angles, inset }).map((panel) => ({
+    angle: panel.cell,
+    crop: panel.crop,
+    png: encodePng(panel.image),
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -151,16 +123,6 @@ export function sliceSheet(buffer, { angles = SHEET_ANGLES, inset = 0 } = {}) {
 // ---------------------------------------------------------------------------
 
 /**
- * Luminance below which a pixel is hair rather than mannequin.
- *
- * The material is matte white with shadows bottoming out around #D4D1CD (212),
- * and catalog hair is espresso brown (#33231B, luma 40). 150 sits in the gap:
- * dark enough that no amount of shading under a jaw counts as hair, light
- * enough to catch the soft edge of a fade.
- */
-export const HAIR_LUMA = 150;
-
-/**
  * Hair coverage below which a panel is considered bald.
  *
  * Measured, not guessed. Across the first fifteen style sheets the styled panels
@@ -172,24 +134,6 @@ export const HAIR_LUMA = 150;
  */
 export const HAIR_COVERAGE_FLOOR = 0.03;
 
-/** Fraction of a panel's opaque pixels that are hair-dark. */
-function hairCoverage(image) {
-  const { width, height, channels, pixels } = image;
-  let hair = 0;
-  let counted = 0;
-
-  for (let offset = 0; offset < width * height * channels; offset += channels) {
-    if (channels === 4 && pixels[offset + 3] < 16) continue;
-    const r = pixels[offset];
-    const g = channels >= 3 ? pixels[offset + 1] : r;
-    const b = channels >= 3 ? pixels[offset + 2] : r;
-    counted += 1;
-    if (0.2126 * r + 0.7152 * g + 0.0722 * b < HAIR_LUMA) hair += 1;
-  }
-
-  return counted ? hair / counted : 0;
-}
-
 /**
  * Measures every panel of a sheet and reports the ones the model left bald.
  *
@@ -200,12 +144,7 @@ function hairCoverage(image) {
 export function inspectSheet(buffer, { angles = SHEET_ANGLES } = {}) {
   const image = decodePng(buffer);
   const coverage = Object.fromEntries(
-    angles.map((angle) => [angle, hairCoverage(panelOf(image, angle).image)]),
+    angles.map((angle) => [angle, hairCoverage(panelOf(image, SHEET, angle).image)]),
   );
   return { coverage, bald: angles.filter((angle) => coverage[angle] < HAIR_COVERAGE_FLOOR) };
-}
-
-/** `front 0.6%, side 0.5%` — coverage as it is printed in a warning. */
-export function formatCoverage(coverage, angles = Object.keys(coverage)) {
-  return angles.map((angle) => `${angle} ${(coverage[angle] * 100).toFixed(1)}%`).join(', ');
 }

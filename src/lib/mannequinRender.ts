@@ -1,5 +1,10 @@
-import { mannequinMasks, mannequinRenders, type MannequinRenderMap, type RenderSource } from '@/api/mannequinRenders.generated';
-import type { Gender } from '@/api/types';
+import {
+  mannequinMasks,
+  mannequinRenders,
+  type MannequinVariantMap,
+  type RenderSource,
+} from '@/api/mannequinRenders.generated';
+import type { Gender, VariantId } from '@/api/types';
 import type { ViewAngle } from '@/lib/hairShape';
 
 /**
@@ -14,29 +19,62 @@ import type { ViewAngle } from '@/lib/hairShape';
  * Only an exact angle match is used: a fade shot from the side is not an honest
  * stand-in for the same fade from behind. Gender is matched exactly too when the
  * caller knows it; when it does not (the catalog before the user has chosen),
- * whichever variant exists is shown, male first.
+ * whichever exists is shown, male first.
+ *
+ * `variants` is the same idea one level up, and it is an ordered list rather
+ * than a single id because how strict the match has to be depends on what the
+ * user has told us. `variantCandidates()` in `src/lib/hairTypes.ts` builds it:
+ * one entry once a hair type is declared, several under "All Types". Passing
+ * nothing accepts any variant, which is what the callers with no hairstyle
+ * behind them — the sample photo, the welcome screen — actually mean.
  */
 const GENDER_ORDER: Gender[] = ['male', 'female'];
 
 function lookup(
-  map: Record<string, MannequinRenderMap>,
+  map: Record<string, MannequinVariantMap>,
   styleId: string | null | undefined,
   gender: Gender | null | undefined,
   angle: ViewAngle,
-): RenderSource | null {
-  const byGender = styleId ? map[styleId] : undefined;
-  if (!byGender) return null;
+  variants: VariantId[] | null | undefined,
+): { variant: VariantId; source: RenderSource } | null {
+  const byVariant = styleId ? map[styleId] : undefined;
+  if (!byVariant) return null;
 
-  const variant = gender ? byGender[gender] : GENDER_ORDER.map((g) => byGender[g]).find(Boolean);
-  return variant?.[angle] ?? null;
+  const wanted = variants ?? (Object.keys(byVariant) as VariantId[]);
+  for (const variant of wanted) {
+    const byGender = byVariant[variant];
+    if (!byGender) continue;
+    const views = gender ? byGender[gender] : GENDER_ORDER.map((g) => byGender[g]).find(Boolean);
+    const source = views?.[angle];
+    if (source) return { variant, source };
+  }
+  return null;
+}
+
+/**
+ * Which variant a render lookup lands on.
+ *
+ * Worth having separately so a mask is taken from the *same* variant as the
+ * render it is laid over. The two maps are built by one walk and normally agree,
+ * but a mask that failed to compute leaves a hole in only one of them, and
+ * masking a curly render with a coily mask would recolour the wrong pixels.
+ */
+export function renderVariant(
+  styleId: string | null | undefined,
+  gender: Gender | null | undefined,
+  angle: ViewAngle,
+  variants?: VariantId[] | null,
+): VariantId | null {
+  return lookup(mannequinRenders, styleId, gender, angle, variants)?.variant ?? null;
 }
 
 export function mannequinRender(
   styleId: string | null | undefined,
   gender: Gender | null | undefined,
   angle: ViewAngle,
+  variants?: VariantId[] | null,
 ): RenderSource | null {
-  return lookup(mannequinRenders, styleId, gender, angle);
+  return lookup(mannequinRenders, styleId, gender, angle, variants)?.source ?? null;
 }
 
 /**
@@ -52,8 +90,9 @@ export function mannequinMask(
   styleId: string | null | undefined,
   gender: Gender | null | undefined,
   angle: ViewAngle,
+  variants?: VariantId[] | null,
 ): RenderSource | null {
-  return lookup(mannequinMasks, styleId, gender, angle);
+  return lookup(mannequinMasks, styleId, gender, angle, variants)?.source ?? null;
 }
 
 /** Whether any render at all exists for a style — used to pick a hero angle. */

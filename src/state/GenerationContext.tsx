@@ -78,6 +78,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           hairstyleId: request.hairstyle.id,
           hairstyleName: request.hairstyle.name,
           gender: request.gender,
+          hairType: request.hairType,
           sourcePhotoUri: request.photoUri,
           options: request.options,
           createdAt: Date.now(),

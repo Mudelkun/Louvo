@@ -1,7 +1,8 @@
 /**
  * Keeps the app's render map in step with what is on disk.
  *
- * The generator writes PNGs into `assets/mannequins/<style>/<gender>-<angle>.png`,
+ * The generator writes PNGs into
+ * `assets/mannequins/<style>/<variant>/<gender>-<angle>.png`,
  * but Metro only bundles an asset that some module actually `require`s, and a
  * require path has to be a literal. So the bridge between "a file exists" and
  * "the UI shows it" is this module: it scans the output directory and rewrites
@@ -32,10 +33,20 @@ export const RENDER_ANGLES = SHEET.cells;
 export const RENDER_GENDERS = ['male', 'female'];
 
 /**
+ * The variant directories a style may hold — one per distinct render the
+ * hairstyle × hair type matrix asks for, plus `any` for the styles the matrix
+ * says need only one. Which of these a given style actually uses is decided by
+ * its `variants` row in the catalog, never here.
+ */
+export const RENDER_VARIANTS = ['any', 'straight', 'wavy', 'curly', 'coily'];
+
+/**
  * `male-half.png` and friends. The composed `<gender>-sheet.png` is not a view,
  * and neither is `male-half-mask.png` — the anchored `.png` excludes both.
  */
 const FILE_PATTERN = new RegExp(`^(${RENDER_GENDERS.join('|')})-(${RENDER_ANGLES.join('|')})\.png$`);
+
+const isVariantDir = (entry) => entry.isDirectory() && RENDER_VARIANTS.includes(entry.name);
 
 const MODULE_PATH = ['src', 'api', 'mannequinRenders.generated.ts'];
 
@@ -46,8 +57,15 @@ export const maskFileFor = (file) => file.replace(/\.png$/, '-mask.png');
 const isStyleDir = (entry) => entry.isDirectory() && !entry.name.startsWith('_') && !entry.name.startsWith('.');
 
 /**
- * Reads `<out>` and returns `{ [styleId]: { [gender]: { [angle]: absolutePath } } }`,
+ * Reads `<out>` and returns
+ * `{ [styleId]: { [variant]: { [gender]: { [angle]: absolutePath } } } }`,
  * with only the files that actually exist.
+ *
+ * A style directory holds one subdirectory per generated variant, so a catalog
+ * part-way through a hair-type batch is a mix of variants rather than a mix of
+ * layouts. Anything sitting loose in the style directory is ignored: it is
+ * either a pre-variant render (`npm run mannequins:sync` reports those) or not
+ * a view at all.
  */
 export async function scanRenders(out) {
   const styles = {};
@@ -59,17 +77,32 @@ export async function scanRenders(out) {
   }
 
   for (const entry of entries.filter(isStyleDir).sort((a, b) => a.name.localeCompare(b.name))) {
-    const dir = path.join(out, entry.name);
-    const files = (await readdir(dir)).sort();
-    for (const file of files) {
-      const match = FILE_PATTERN.exec(file);
-      if (!match) continue;
-      const [, gender, angle] = match;
-      ((styles[entry.name] ??= {})[gender] ??= {})[angle] = path.join(dir, file);
+    const styleDir = path.join(out, entry.name);
+    const variants = (await readdir(styleDir, { withFileTypes: true }))
+      .filter(isVariantDir)
+      .sort((a, b) => RENDER_VARIANTS.indexOf(a.name) - RENDER_VARIANTS.indexOf(b.name));
+
+    for (const variant of variants) {
+      const dir = path.join(styleDir, variant.name);
+      const files = (await readdir(dir)).sort();
+      for (const file of files) {
+        const match = FILE_PATTERN.exec(file);
+        if (!match) continue;
+        const [, gender, angle] = match;
+        (((styles[entry.name] ??= {})[variant.name] ??= {})[gender] ??= {})[angle] = path.join(dir, file);
+      }
     }
   }
   return styles;
 }
+
+/** Every render path in a scan, flattened. */
+export const renderFiles = (styles) =>
+  Object.values(styles).flatMap((byVariant) =>
+    Object.values(byVariant).flatMap((byGender) =>
+      Object.values(byGender).flatMap((views) => Object.values(views)),
+    ),
+  );
 
 function render(styles, modulePath, masksOnDisk) {
   const requirePath = (file) => {
@@ -85,14 +118,20 @@ function render(styles, modulePath, masksOnDisk) {
   const mapOf = (fileFor) =>
     Object.keys(styles)
       .map((id) => {
-        const variants = RENDER_GENDERS.filter((gender) => styles[id][gender])
-          .map((gender) => {
-            const views = RENDER_ANGLES.filter((angle) => styles[id][gender][angle])
-              .map((angle) => [angle, fileFor(styles[id][gender][angle])])
-              .filter(([, file]) => file)
-              .map(([angle, file]) => `      ${angle}: require('${requirePath(file)}'),`)
+        const variants = RENDER_VARIANTS.filter((variant) => styles[id][variant])
+          .map((variant) => {
+            const genders = RENDER_GENDERS.filter((gender) => styles[id][variant][gender])
+              .map((gender) => {
+                const views = RENDER_ANGLES.filter((angle) => styles[id][variant][gender][angle])
+                  .map((angle) => [angle, fileFor(styles[id][variant][gender][angle])])
+                  .filter(([, file]) => file)
+                  .map(([angle, file]) => `        ${angle}: require('${requirePath(file)}'),`)
+                  .join('\n');
+                return views ? `      ${gender}: {\n${views}\n      },` : '';
+              })
+              .filter(Boolean)
               .join('\n');
-            return views ? `    ${gender}: {\n${views}\n    },` : '';
+            return genders ? `    ${variant}: {\n${genders}\n    },` : '';
           })
           .filter(Boolean)
           .join('\n');
@@ -121,7 +160,7 @@ function render(styles, modulePath, masksOnDisk) {
  * \`hairstyle.imageUrl\` still wins over them when it is populated.
  */
 
-import type { Gender } from './types';
+import type { Gender, VariantId } from './types';
 import type { ViewAngle } from '@/lib/hairShape';
 
 /** What \`require()\` gives back for a bundled image: an asset registry handle. */
@@ -129,8 +168,16 @@ export type RenderSource = number;
 
 export type MannequinRenderMap = Partial<Record<Gender, Partial<Record<ViewAngle, RenderSource>>>>;
 
+/**
+ * A style's renders, keyed by the variant of the hairstyle × hair type matrix
+ * they were generated for. \`any\` is the single render that serves every type.
+ * Which variant a given user should see is decided from the catalog by
+ * \`variantCandidates()\` in src/lib/hairTypes.ts, never from this file.
+ */
+export type MannequinVariantMap = Partial<Record<VariantId, MannequinRenderMap>>;
+
 /** Keyed by hairstyle id — the app never reads a name out of here. */
-export const mannequinRenders: Record<string, MannequinRenderMap> = {${body ? `\n${body}\n` : ''}};
+export const mannequinRenders: Record<string, MannequinVariantMap> = {${body ? `\n${body}\n` : ''}};
 
 /**
  * The matching hair masks: greyscale, white where the haircut is, the same size
@@ -138,7 +185,7 @@ export const mannequinRenders: Record<string, MannequinRenderMap> = {${body ? `\
  * and used to keep the colour grade off the mannequin. A render missing from
  * here is graded whole, which is the old behaviour rather than a broken one.
  */
-export const mannequinMasks: Record<string, MannequinRenderMap> = {${masks ? `\n${masks}\n` : ''}};
+export const mannequinMasks: Record<string, MannequinVariantMap> = {${masks ? `\n${masks}\n` : ''}};
 `;
 }
 
@@ -168,9 +215,7 @@ async function rewrite({ root, out }) {
   const modulePath = path.join(root, ...MODULE_PATH);
   const styles = await scanRenders(out);
 
-  const files = Object.values(styles).flatMap((byGender) =>
-    Object.values(byGender).flatMap((views) => Object.values(views)),
-  );
+  const files = renderFiles(styles);
   const masked = await ensureHairMasks(files);
   const masksOnDisk = new Set(masked.filter((entry) => entry.mask).map((entry) => entry.mask));
 
@@ -179,16 +224,14 @@ async function rewrite({ root, out }) {
   const previous = await readFile(modulePath, 'utf8').catch(() => null);
   if (previous !== source) await writeFile(modulePath, source, 'utf8');
 
-  const images = Object.values(styles).reduce(
-    (total, byGender) => total + Object.values(byGender).reduce((n, views) => n + Object.keys(views).length, 0),
-    0,
-  );
+  const variants = Object.values(styles).reduce((total, byVariant) => total + Object.keys(byVariant).length, 0);
 
   return {
     file: modulePath,
     relativeFile: path.relative(root, modulePath).split(path.sep).join('/'),
     styles: Object.keys(styles).length,
-    images,
+    variants,
+    images: files.length,
     masks: masksOnDisk.size,
     maskedNow: masked.filter((entry) => entry.written).length,
     changed: previous !== source,

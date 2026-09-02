@@ -20,14 +20,14 @@ export default function MoreStylesScreen() {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from?: string }>();
   const { hairstyles, styleById } = useCatalog();
-  const { gender, restartStyleChoice } = useSession();
+  const { gender, hairTypeId, restartStyleChoice } = useSession();
   const { favouriteIds, toggleFavourite } = useLibrary();
   const color = useHairColor();
 
   const seed = styleById(from);
   const recommended = useMemo(
-    () => recommendationsFor(hairstyles, from ?? '', gender, 8),
-    [hairstyles, from, gender],
+    () => recommendationsFor(hairstyles, from ?? '', gender, 8, hairTypeId),
+    [hairstyles, from, gender, hairTypeId],
   );
 
   const open = (id: string) => {
@@ -67,6 +67,7 @@ export default function MoreStylesScreen() {
               width={CARD_WIDTH}
               color={color}
               gender={gender}
+              hairType={hairTypeId}
               favourite={favouriteIds.includes(style.id)}
               onToggleFavourite={() => toggleFavourite(style.id)}
               onPress={() => open(style.id)}

@@ -2,14 +2,16 @@
 /**
  * Measures the hair tone of the generated catalog.
  *
- * This is where `BASE_HAIR_COLOR.hex` in `src/lib/constants.ts` comes from. The
- * app's colour grade maps the render's own hair tone onto whatever shade the
- * user picked, so the anchor has to be what the model actually returned, not the
- * colour `HAIR_COLOUR` in lib/prompts.mjs asked it for — the two are a shade
- * apart in practice.
+ * This is where the `BASE_HAIR_COLORS` anchors in `src/lib/constants.ts` come
+ * from. The app's colour grade maps a render's own hair tone onto whatever shade
+ * the user picked, so the anchor has to be what the model actually returned, not
+ * the colour `HAIR_COLOURS` in lib/prompts.mjs asked it for — the two are a
+ * shade apart in practice.
  *
- * Run it after re-shooting the catalog in a different shade, and paste the mean
- * it prints into `BASE_HAIR_COLOR`:
+ * Measured **per variant**, because the catalog is no longer shot in one shade:
+ * the coily variant is shot in black and everything else in espresso, so one
+ * mean across the whole directory would describe neither of them. Run it after
+ * shooting a batch and paste each mean into the matching entry:
  *
  *   node scripts/measure-hair-tone.mjs
  *
@@ -35,63 +37,88 @@ const WHITE_LUMA = 235;
 const luma = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
 const hex = (rgb) => `#${rgb.map((v) => Math.round(v).toString(16).padStart(2, '0').toUpperCase()).join('')}`;
 
+/** A running mean for one variant. */
+const emptyTotals = () => ({
+  hair: [0, 0, 0],
+  white: [0, 0, 0],
+  hairCount: 0,
+  whiteCount: 0,
+  files: 0,
+  styles: new Set(),
+});
+
+/** Adds one render's hair and backdrop pixels into a variant's running totals. */
+function accumulate(image, totals) {
+  const { pixels, channels, width, height } = image;
+  totals.files += 1;
+
+  for (let i = 0; i < width * height; i += 1) {
+    const offset = i * channels;
+    const r = pixels[offset];
+    const g = channels > 2 ? pixels[offset + 1] : r;
+    const b = channels > 2 ? pixels[offset + 2] : r;
+    if (channels === 4 && pixels[offset + 3] < 200) continue;
+
+    const l = luma(r, g, b);
+    if (l < HAIR_LUMA) {
+      totals.hair[0] += r;
+      totals.hair[1] += g;
+      totals.hair[2] += b;
+      totals.hairCount += 1;
+    } else if (l > WHITE_LUMA) {
+      totals.white[0] += r;
+      totals.white[1] += g;
+      totals.white[2] += b;
+      totals.whiteCount += 1;
+    }
+  }
+}
+
 async function main() {
   const dirs = (await readdir(RENDERS, { withFileTypes: true })).filter(
     (entry) => entry.isDirectory() && !entry.name.startsWith('_'),
   );
 
-  const hair = [0, 0, 0];
-  const white = [0, 0, 0];
-  let hairCount = 0;
-  let whiteCount = 0;
-  let files = 0;
+  const totals = new Map();
 
   for (const dir of dirs) {
-    // Sheets are the same four panels again; counting them would weight the
-    // measurement towards styles that still have their uncut sheet on disk.
-    const pngs = (await readdir(path.join(RENDERS, dir.name))).filter(
-      (name) => name.endsWith('.png') && !name.includes('sheet'),
+    const variants = (await readdir(path.join(RENDERS, dir.name), { withFileTypes: true })).filter((entry) =>
+      entry.isDirectory(),
     );
 
-    for (const name of pngs) {
-      const image = decodePng(await readFile(path.join(RENDERS, dir.name, name)));
-      const { pixels, channels, width, height } = image;
-      files += 1;
+    for (const variant of variants) {
+      if (!totals.has(variant.name)) totals.set(variant.name, emptyTotals());
+      const bucket = totals.get(variant.name);
+      bucket.styles.add(dir.name);
 
-      for (let i = 0; i < width * height; i += 1) {
-        const offset = i * channels;
-        const r = pixels[offset];
-        const g = channels > 2 ? pixels[offset + 1] : r;
-        const b = channels > 2 ? pixels[offset + 2] : r;
-        if (channels === 4 && pixels[offset + 3] < 200) continue;
+      // Sheets are the same four panels again and masks are not photographs;
+      // counting either would skew the mean.
+      const pngs = (await readdir(path.join(RENDERS, dir.name, variant.name))).filter(
+        (name) => name.endsWith('.png') && !name.includes('sheet') && !name.includes('mask'),
+      );
 
-        const l = luma(r, g, b);
-        if (l < HAIR_LUMA) {
-          hair[0] += r;
-          hair[1] += g;
-          hair[2] += b;
-          hairCount += 1;
-        } else if (l > WHITE_LUMA) {
-          white[0] += r;
-          white[1] += g;
-          white[2] += b;
-          whiteCount += 1;
-        }
+      for (const name of pngs) {
+        accumulate(decodePng(await readFile(path.join(RENDERS, dir.name, variant.name, name))), bucket);
       }
     }
   }
 
-  if (!hairCount) {
+  const found = [...totals.entries()].filter(([, bucket]) => bucket.hairCount);
+  if (!found.length) {
     console.error(`No hair pixels found under ${RENDERS} — generate the catalog first.`);
     process.exitCode = 1;
     return;
   }
 
-  console.log(`${files} render(s) across ${dirs.length} style(s)`);
-  console.log(`hair mean:  ${hex(hair.map((v) => v / hairCount))}  (${hairCount.toLocaleString()} px)`);
-  console.log(`white mean: ${hex(white.map((v) => v / whiteCount))}  (${whiteCount.toLocaleString()} px)`);
-  console.log('\nPaste the hair mean into BASE_HAIR_COLOR.hex in src/lib/constants.ts.');
-  console.log('The white mean should stay near #FFFFFF — the grade leaves white where it is,');
+  for (const [variant, bucket] of found) {
+    const mean = (channel, count) => hex(channel.map((v) => v / count));
+    console.log(`\n${variant}  —  ${bucket.files} render(s) across ${bucket.styles.size} style(s)`);
+    console.log(`  hair mean:  ${mean(bucket.hair, bucket.hairCount)}  (${bucket.hairCount.toLocaleString()} px)`);
+    console.log(`  white mean: ${mean(bucket.white, bucket.whiteCount)}  (${bucket.whiteCount.toLocaleString()} px)`);
+  }
+
+  console.log('\nPaste each hair mean into the matching BASE_HAIR_COLORS entry in src/lib/constants.ts.');
+  console.log('Every white mean should stay near #FFFFFF — the grade leaves white where it is,');
   console.log('which is what keeps it off the mannequin and the background.');
 }
 

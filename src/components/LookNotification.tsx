@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MannequinBadge } from '@/components/Mannequin';
 import { useHairColorById } from '@/hooks/useHairColor';
+import { textureFor, variantCandidates } from '@/lib/hairTypes';
 import { useCatalog } from '@/state/CatalogContext';
 import { useGeneration } from '@/state/GenerationContext';
 import { useSession } from '@/state/SessionContext';
@@ -76,9 +77,10 @@ export function LookNotification() {
         {hairstyle ? (
           <MannequinBadge
             styleId={hairstyle.id}
-            shape={hairstyle.shape}
+            shape={{ ...hairstyle.shape, texture: textureFor(hairstyle, notification.hairType) }}
             color={color}
             gender={notification.gender}
+            variants={variantCandidates(hairstyle, notification.hairType)}
             size={38}
           />
         ) : (

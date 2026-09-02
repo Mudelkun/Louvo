@@ -15,7 +15,7 @@
  * `hairstyle.imageUrl` still wins over them when it is populated.
  */
 
-import type { Gender } from './types';
+import type { Gender, VariantId } from './types';
 import type { ViewAngle } from '@/lib/hairShape';
 
 /** What `require()` gives back for a bundled image: an asset registry handle. */
@@ -23,206 +23,434 @@ export type RenderSource = number;
 
 export type MannequinRenderMap = Partial<Record<Gender, Partial<Record<ViewAngle, RenderSource>>>>;
 
+/**
+ * A style's renders, keyed by the variant of the hairstyle × hair type matrix
+ * they were generated for. `any` is the single render that serves every type.
+ * Which variant a given user should see is decided from the catalog by
+ * `variantCandidates()` in src/lib/hairTypes.ts, never from this file.
+ */
+export type MannequinVariantMap = Partial<Record<VariantId, MannequinRenderMap>>;
+
 /** Keyed by hairstyle id — the app never reads a name out of here. */
-export const mannequinRenders: Record<string, MannequinRenderMap> = {
+export const mannequinRenders: Record<string, MannequinVariantMap> = {
   'afro': {
-    male: {
-      front: require('../../assets/mannequins/afro/male-front.png'),
-      half: require('../../assets/mannequins/afro/male-half.png'),
-      side: require('../../assets/mannequins/afro/male-side.png'),
-      back: require('../../assets/mannequins/afro/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/afro/curly/male-front.png'),
+        half: require('../../assets/mannequins/afro/curly/male-half.png'),
+        side: require('../../assets/mannequins/afro/curly/male-side.png'),
+        back: require('../../assets/mannequins/afro/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/afro/coily/male-front.png'),
+        half: require('../../assets/mannequins/afro/coily/male-half.png'),
+        side: require('../../assets/mannequins/afro/coily/male-side.png'),
+        back: require('../../assets/mannequins/afro/coily/male-back.png'),
+      },
     },
   },
   'box-braids': {
-    male: {
-      front: require('../../assets/mannequins/box-braids/male-front.png'),
-      half: require('../../assets/mannequins/box-braids/male-half.png'),
-      side: require('../../assets/mannequins/box-braids/male-side.png'),
-      back: require('../../assets/mannequins/box-braids/male-back.png'),
+    any: {
+      male: {
+        front: require('../../assets/mannequins/box-braids/any/male-front.png'),
+        half: require('../../assets/mannequins/box-braids/any/male-half.png'),
+        side: require('../../assets/mannequins/box-braids/any/male-side.png'),
+        back: require('../../assets/mannequins/box-braids/any/male-back.png'),
+      },
     },
   },
   'burst-fade': {
-    male: {
-      front: require('../../assets/mannequins/burst-fade/male-front.png'),
-      half: require('../../assets/mannequins/burst-fade/male-half.png'),
-      side: require('../../assets/mannequins/burst-fade/male-side.png'),
-      back: require('../../assets/mannequins/burst-fade/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/burst-fade/curly/male-front.png'),
+        half: require('../../assets/mannequins/burst-fade/curly/male-half.png'),
+        side: require('../../assets/mannequins/burst-fade/curly/male-side.png'),
+        back: require('../../assets/mannequins/burst-fade/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/burst-fade/coily/male-front.png'),
+        half: require('../../assets/mannequins/burst-fade/coily/male-half.png'),
+        side: require('../../assets/mannequins/burst-fade/coily/male-side.png'),
+        back: require('../../assets/mannequins/burst-fade/coily/male-back.png'),
+      },
     },
   },
   'buzz-cut': {
-    male: {
-      front: require('../../assets/mannequins/buzz-cut/male-front.png'),
-      half: require('../../assets/mannequins/buzz-cut/male-half.png'),
-      side: require('../../assets/mannequins/buzz-cut/male-side.png'),
-      back: require('../../assets/mannequins/buzz-cut/male-back.png'),
+    any: {
+      male: {
+        front: require('../../assets/mannequins/buzz-cut/any/male-front.png'),
+        half: require('../../assets/mannequins/buzz-cut/any/male-half.png'),
+        side: require('../../assets/mannequins/buzz-cut/any/male-side.png'),
+        back: require('../../assets/mannequins/buzz-cut/any/male-back.png'),
+      },
     },
   },
   'caesar-cut': {
-    male: {
-      front: require('../../assets/mannequins/caesar-cut/male-front.png'),
-      half: require('../../assets/mannequins/caesar-cut/male-half.png'),
-      side: require('../../assets/mannequins/caesar-cut/male-side.png'),
-      back: require('../../assets/mannequins/caesar-cut/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/caesar-cut/curly/male-front.png'),
+        half: require('../../assets/mannequins/caesar-cut/curly/male-half.png'),
+        side: require('../../assets/mannequins/caesar-cut/curly/male-side.png'),
+        back: require('../../assets/mannequins/caesar-cut/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/caesar-cut/coily/male-front.png'),
+        half: require('../../assets/mannequins/caesar-cut/coily/male-half.png'),
+        side: require('../../assets/mannequins/caesar-cut/coily/male-side.png'),
+        back: require('../../assets/mannequins/caesar-cut/coily/male-back.png'),
+      },
+    },
+  },
+  'crew-cut': {
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/crew-cut/coily/male-front.png'),
+        half: require('../../assets/mannequins/crew-cut/coily/male-half.png'),
+        side: require('../../assets/mannequins/crew-cut/coily/male-side.png'),
+        back: require('../../assets/mannequins/crew-cut/coily/male-back.png'),
+      },
     },
   },
   'curly-top': {
-    male: {
-      front: require('../../assets/mannequins/curly-top/male-front.png'),
-      half: require('../../assets/mannequins/curly-top/male-half.png'),
-      side: require('../../assets/mannequins/curly-top/male-side.png'),
-      back: require('../../assets/mannequins/curly-top/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/curly-top/curly/male-front.png'),
+        half: require('../../assets/mannequins/curly-top/curly/male-half.png'),
+        side: require('../../assets/mannequins/curly-top/curly/male-side.png'),
+        back: require('../../assets/mannequins/curly-top/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/curly-top/coily/male-front.png'),
+        half: require('../../assets/mannequins/curly-top/coily/male-half.png'),
+        side: require('../../assets/mannequins/curly-top/coily/male-side.png'),
+        back: require('../../assets/mannequins/curly-top/coily/male-back.png'),
+      },
     },
   },
   'curtain-bangs': {
-    male: {
-      front: require('../../assets/mannequins/curtain-bangs/male-front.png'),
-      half: require('../../assets/mannequins/curtain-bangs/male-half.png'),
-      side: require('../../assets/mannequins/curtain-bangs/male-side.png'),
-      back: require('../../assets/mannequins/curtain-bangs/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/curtain-bangs/curly/male-front.png'),
+        half: require('../../assets/mannequins/curtain-bangs/curly/male-half.png'),
+        side: require('../../assets/mannequins/curtain-bangs/curly/male-side.png'),
+        back: require('../../assets/mannequins/curtain-bangs/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/curtain-bangs/coily/male-front.png'),
+        half: require('../../assets/mannequins/curtain-bangs/coily/male-half.png'),
+        side: require('../../assets/mannequins/curtain-bangs/coily/male-side.png'),
+        back: require('../../assets/mannequins/curtain-bangs/coily/male-back.png'),
+      },
     },
   },
   'french-crop': {
-    male: {
-      front: require('../../assets/mannequins/french-crop/male-front.png'),
-      half: require('../../assets/mannequins/french-crop/male-half.png'),
-      side: require('../../assets/mannequins/french-crop/male-side.png'),
-      back: require('../../assets/mannequins/french-crop/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/french-crop/curly/male-front.png'),
+        half: require('../../assets/mannequins/french-crop/curly/male-half.png'),
+        side: require('../../assets/mannequins/french-crop/curly/male-side.png'),
+        back: require('../../assets/mannequins/french-crop/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/french-crop/coily/male-front.png'),
+        half: require('../../assets/mannequins/french-crop/coily/male-half.png'),
+        side: require('../../assets/mannequins/french-crop/coily/male-side.png'),
+        back: require('../../assets/mannequins/french-crop/coily/male-back.png'),
+      },
     },
   },
   'high-skin-fade': {
-    male: {
-      front: require('../../assets/mannequins/high-skin-fade/male-front.png'),
-      half: require('../../assets/mannequins/high-skin-fade/male-half.png'),
-      side: require('../../assets/mannequins/high-skin-fade/male-side.png'),
-      back: require('../../assets/mannequins/high-skin-fade/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/high-skin-fade/curly/male-front.png'),
+        half: require('../../assets/mannequins/high-skin-fade/curly/male-half.png'),
+        side: require('../../assets/mannequins/high-skin-fade/curly/male-side.png'),
+        back: require('../../assets/mannequins/high-skin-fade/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/high-skin-fade/coily/male-front.png'),
+        half: require('../../assets/mannequins/high-skin-fade/coily/male-half.png'),
+        side: require('../../assets/mannequins/high-skin-fade/coily/male-side.png'),
+        back: require('../../assets/mannequins/high-skin-fade/coily/male-back.png'),
+      },
     },
   },
   'ivy-league': {
-    male: {
-      front: require('../../assets/mannequins/ivy-league/male-front.png'),
-      half: require('../../assets/mannequins/ivy-league/male-half.png'),
-      side: require('../../assets/mannequins/ivy-league/male-side.png'),
-      back: require('../../assets/mannequins/ivy-league/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/ivy-league/curly/male-front.png'),
+        half: require('../../assets/mannequins/ivy-league/curly/male-half.png'),
+        side: require('../../assets/mannequins/ivy-league/curly/male-side.png'),
+        back: require('../../assets/mannequins/ivy-league/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/ivy-league/coily/male-front.png'),
+        half: require('../../assets/mannequins/ivy-league/coily/male-half.png'),
+        side: require('../../assets/mannequins/ivy-league/coily/male-side.png'),
+        back: require('../../assets/mannequins/ivy-league/coily/male-back.png'),
+      },
     },
   },
   'low-taper-fade': {
-    male: {
-      front: require('../../assets/mannequins/low-taper-fade/male-front.png'),
-      half: require('../../assets/mannequins/low-taper-fade/male-half.png'),
-      side: require('../../assets/mannequins/low-taper-fade/male-side.png'),
-      back: require('../../assets/mannequins/low-taper-fade/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/low-taper-fade/curly/male-front.png'),
+        half: require('../../assets/mannequins/low-taper-fade/curly/male-half.png'),
+        side: require('../../assets/mannequins/low-taper-fade/curly/male-side.png'),
+        back: require('../../assets/mannequins/low-taper-fade/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/low-taper-fade/coily/male-front.png'),
+        half: require('../../assets/mannequins/low-taper-fade/coily/male-half.png'),
+        side: require('../../assets/mannequins/low-taper-fade/coily/male-side.png'),
+        back: require('../../assets/mannequins/low-taper-fade/coily/male-back.png'),
+      },
     },
   },
   'man-bun': {
-    male: {
-      front: require('../../assets/mannequins/man-bun/male-front.png'),
-      half: require('../../assets/mannequins/man-bun/male-half.png'),
-      side: require('../../assets/mannequins/man-bun/male-side.png'),
-      back: require('../../assets/mannequins/man-bun/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/man-bun/curly/male-front.png'),
+        half: require('../../assets/mannequins/man-bun/curly/male-half.png'),
+        side: require('../../assets/mannequins/man-bun/curly/male-side.png'),
+        back: require('../../assets/mannequins/man-bun/curly/male-back.png'),
+      },
     },
   },
   'messy-fringe': {
-    male: {
-      front: require('../../assets/mannequins/messy-fringe/male-front.png'),
-      half: require('../../assets/mannequins/messy-fringe/male-half.png'),
-      side: require('../../assets/mannequins/messy-fringe/male-side.png'),
-      back: require('../../assets/mannequins/messy-fringe/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/messy-fringe/curly/male-front.png'),
+        half: require('../../assets/mannequins/messy-fringe/curly/male-half.png'),
+        side: require('../../assets/mannequins/messy-fringe/curly/male-side.png'),
+        back: require('../../assets/mannequins/messy-fringe/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/messy-fringe/coily/male-front.png'),
+        half: require('../../assets/mannequins/messy-fringe/coily/male-half.png'),
+        side: require('../../assets/mannequins/messy-fringe/coily/male-side.png'),
+        back: require('../../assets/mannequins/messy-fringe/coily/male-back.png'),
+      },
     },
   },
   'mid-fade': {
-    male: {
-      front: require('../../assets/mannequins/mid-fade/male-front.png'),
-      half: require('../../assets/mannequins/mid-fade/male-half.png'),
-      side: require('../../assets/mannequins/mid-fade/male-side.png'),
-      back: require('../../assets/mannequins/mid-fade/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/mid-fade/curly/male-front.png'),
+        half: require('../../assets/mannequins/mid-fade/curly/male-half.png'),
+        side: require('../../assets/mannequins/mid-fade/curly/male-side.png'),
+        back: require('../../assets/mannequins/mid-fade/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/mid-fade/coily/male-front.png'),
+        half: require('../../assets/mannequins/mid-fade/coily/male-half.png'),
+        side: require('../../assets/mannequins/mid-fade/coily/male-side.png'),
+        back: require('../../assets/mannequins/mid-fade/coily/male-back.png'),
+      },
     },
   },
   'modern-mullet': {
-    male: {
-      front: require('../../assets/mannequins/modern-mullet/male-front.png'),
-      half: require('../../assets/mannequins/modern-mullet/male-half.png'),
-      side: require('../../assets/mannequins/modern-mullet/male-side.png'),
-      back: require('../../assets/mannequins/modern-mullet/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/modern-mullet/curly/male-front.png'),
+        half: require('../../assets/mannequins/modern-mullet/curly/male-half.png'),
+        side: require('../../assets/mannequins/modern-mullet/curly/male-side.png'),
+        back: require('../../assets/mannequins/modern-mullet/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/modern-mullet/coily/male-front.png'),
+        half: require('../../assets/mannequins/modern-mullet/coily/male-half.png'),
+        side: require('../../assets/mannequins/modern-mullet/coily/male-side.png'),
+        back: require('../../assets/mannequins/modern-mullet/coily/male-back.png'),
+      },
     },
   },
   'mohawk': {
-    male: {
-      front: require('../../assets/mannequins/mohawk/male-front.png'),
-      half: require('../../assets/mannequins/mohawk/male-half.png'),
-      side: require('../../assets/mannequins/mohawk/male-side.png'),
-      back: require('../../assets/mannequins/mohawk/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/mohawk/curly/male-front.png'),
+        half: require('../../assets/mannequins/mohawk/curly/male-half.png'),
+        side: require('../../assets/mannequins/mohawk/curly/male-side.png'),
+        back: require('../../assets/mannequins/mohawk/curly/male-back.png'),
+      },
     },
   },
   'pompadour': {
-    male: {
-      front: require('../../assets/mannequins/pompadour/male-front.png'),
-      half: require('../../assets/mannequins/pompadour/male-half.png'),
-      side: require('../../assets/mannequins/pompadour/male-side.png'),
-      back: require('../../assets/mannequins/pompadour/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/pompadour/curly/male-front.png'),
+        half: require('../../assets/mannequins/pompadour/curly/male-half.png'),
+        side: require('../../assets/mannequins/pompadour/curly/male-side.png'),
+        back: require('../../assets/mannequins/pompadour/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/pompadour/coily/male-front.png'),
+        half: require('../../assets/mannequins/pompadour/coily/male-half.png'),
+        side: require('../../assets/mannequins/pompadour/coily/male-side.png'),
+        back: require('../../assets/mannequins/pompadour/coily/male-back.png'),
+      },
     },
   },
   'quiff': {
-    male: {
-      front: require('../../assets/mannequins/quiff/male-front.png'),
-      half: require('../../assets/mannequins/quiff/male-half.png'),
-      side: require('../../assets/mannequins/quiff/male-side.png'),
-      back: require('../../assets/mannequins/quiff/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/quiff/curly/male-front.png'),
+        half: require('../../assets/mannequins/quiff/curly/male-half.png'),
+        side: require('../../assets/mannequins/quiff/curly/male-side.png'),
+        back: require('../../assets/mannequins/quiff/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/quiff/coily/male-front.png'),
+        half: require('../../assets/mannequins/quiff/coily/male-half.png'),
+        side: require('../../assets/mannequins/quiff/coily/male-side.png'),
+        back: require('../../assets/mannequins/quiff/coily/male-back.png'),
+      },
     },
   },
   'shoulder-flow': {
-    male: {
-      front: require('../../assets/mannequins/shoulder-flow/male-front.png'),
-      half: require('../../assets/mannequins/shoulder-flow/male-half.png'),
-      side: require('../../assets/mannequins/shoulder-flow/male-side.png'),
-      back: require('../../assets/mannequins/shoulder-flow/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/shoulder-flow/curly/male-front.png'),
+        half: require('../../assets/mannequins/shoulder-flow/curly/male-half.png'),
+        side: require('../../assets/mannequins/shoulder-flow/curly/male-side.png'),
+        back: require('../../assets/mannequins/shoulder-flow/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/shoulder-flow/coily/male-front.png'),
+        half: require('../../assets/mannequins/shoulder-flow/coily/male-half.png'),
+        side: require('../../assets/mannequins/shoulder-flow/coily/male-side.png'),
+        back: require('../../assets/mannequins/shoulder-flow/coily/male-back.png'),
+      },
     },
   },
   'side-part': {
-    male: {
-      front: require('../../assets/mannequins/side-part/male-front.png'),
-      half: require('../../assets/mannequins/side-part/male-half.png'),
-      side: require('../../assets/mannequins/side-part/male-side.png'),
-      back: require('../../assets/mannequins/side-part/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/side-part/curly/male-front.png'),
+        half: require('../../assets/mannequins/side-part/curly/male-half.png'),
+        side: require('../../assets/mannequins/side-part/curly/male-side.png'),
+        back: require('../../assets/mannequins/side-part/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/side-part/coily/male-front.png'),
+        half: require('../../assets/mannequins/side-part/coily/male-half.png'),
+        side: require('../../assets/mannequins/side-part/coily/male-side.png'),
+        back: require('../../assets/mannequins/side-part/coily/male-back.png'),
+      },
     },
   },
   'slick-back': {
-    male: {
-      front: require('../../assets/mannequins/slick-back/male-front.png'),
-      half: require('../../assets/mannequins/slick-back/male-half.png'),
-      side: require('../../assets/mannequins/slick-back/male-side.png'),
-      back: require('../../assets/mannequins/slick-back/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/slick-back/curly/male-front.png'),
+        half: require('../../assets/mannequins/slick-back/curly/male-half.png'),
+        side: require('../../assets/mannequins/slick-back/curly/male-side.png'),
+        back: require('../../assets/mannequins/slick-back/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/slick-back/coily/male-front.png'),
+        half: require('../../assets/mannequins/slick-back/coily/male-half.png'),
+        side: require('../../assets/mannequins/slick-back/coily/male-side.png'),
+        back: require('../../assets/mannequins/slick-back/coily/male-back.png'),
+      },
     },
   },
   'textured-crop': {
-    male: {
-      front: require('../../assets/mannequins/textured-crop/male-front.png'),
-      half: require('../../assets/mannequins/textured-crop/male-half.png'),
-      side: require('../../assets/mannequins/textured-crop/male-side.png'),
-      back: require('../../assets/mannequins/textured-crop/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/textured-crop/curly/male-front.png'),
+        half: require('../../assets/mannequins/textured-crop/curly/male-half.png'),
+        side: require('../../assets/mannequins/textured-crop/curly/male-side.png'),
+        back: require('../../assets/mannequins/textured-crop/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/textured-crop/coily/male-front.png'),
+        half: require('../../assets/mannequins/textured-crop/coily/male-half.png'),
+        side: require('../../assets/mannequins/textured-crop/coily/male-side.png'),
+        back: require('../../assets/mannequins/textured-crop/coily/male-back.png'),
+      },
     },
   },
   'top-knot': {
-    male: {
-      front: require('../../assets/mannequins/top-knot/male-front.png'),
-      half: require('../../assets/mannequins/top-knot/male-half.png'),
-      side: require('../../assets/mannequins/top-knot/male-side.png'),
-      back: require('../../assets/mannequins/top-knot/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/top-knot/curly/male-front.png'),
+        half: require('../../assets/mannequins/top-knot/curly/male-half.png'),
+        side: require('../../assets/mannequins/top-knot/curly/male-side.png'),
+        back: require('../../assets/mannequins/top-knot/curly/male-back.png'),
+      },
     },
   },
   'twist-out': {
-    male: {
-      front: require('../../assets/mannequins/twist-out/male-front.png'),
-      half: require('../../assets/mannequins/twist-out/male-half.png'),
-      side: require('../../assets/mannequins/twist-out/male-side.png'),
-      back: require('../../assets/mannequins/twist-out/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/twist-out/curly/male-front.png'),
+        half: require('../../assets/mannequins/twist-out/curly/male-half.png'),
+        side: require('../../assets/mannequins/twist-out/curly/male-side.png'),
+        back: require('../../assets/mannequins/twist-out/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/twist-out/coily/male-front.png'),
+        half: require('../../assets/mannequins/twist-out/coily/male-half.png'),
+        side: require('../../assets/mannequins/twist-out/coily/male-side.png'),
+        back: require('../../assets/mannequins/twist-out/coily/male-back.png'),
+      },
     },
   },
   'wolf-cut': {
-    male: {
-      front: require('../../assets/mannequins/wolf-cut/male-front.png'),
-      half: require('../../assets/mannequins/wolf-cut/male-half.png'),
-      side: require('../../assets/mannequins/wolf-cut/male-side.png'),
-      back: require('../../assets/mannequins/wolf-cut/male-back.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/wolf-cut/curly/male-front.png'),
+        half: require('../../assets/mannequins/wolf-cut/curly/male-half.png'),
+        side: require('../../assets/mannequins/wolf-cut/curly/male-side.png'),
+        back: require('../../assets/mannequins/wolf-cut/curly/male-back.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/wolf-cut/coily/male-front.png'),
+        half: require('../../assets/mannequins/wolf-cut/coily/male-half.png'),
+        side: require('../../assets/mannequins/wolf-cut/coily/male-side.png'),
+        back: require('../../assets/mannequins/wolf-cut/coily/male-back.png'),
+      },
     },
   },
 };
@@ -233,205 +461,425 @@ export const mannequinRenders: Record<string, MannequinRenderMap> = {
  * and used to keep the colour grade off the mannequin. A render missing from
  * here is graded whole, which is the old behaviour rather than a broken one.
  */
-export const mannequinMasks: Record<string, MannequinRenderMap> = {
+export const mannequinMasks: Record<string, MannequinVariantMap> = {
   'afro': {
-    male: {
-      front: require('../../assets/mannequins/afro/male-front-mask.png'),
-      half: require('../../assets/mannequins/afro/male-half-mask.png'),
-      side: require('../../assets/mannequins/afro/male-side-mask.png'),
-      back: require('../../assets/mannequins/afro/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/afro/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/afro/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/afro/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/afro/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/afro/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/afro/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/afro/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/afro/coily/male-back-mask.png'),
+      },
     },
   },
   'box-braids': {
-    male: {
-      front: require('../../assets/mannequins/box-braids/male-front-mask.png'),
-      half: require('../../assets/mannequins/box-braids/male-half-mask.png'),
-      side: require('../../assets/mannequins/box-braids/male-side-mask.png'),
-      back: require('../../assets/mannequins/box-braids/male-back-mask.png'),
+    any: {
+      male: {
+        front: require('../../assets/mannequins/box-braids/any/male-front-mask.png'),
+        half: require('../../assets/mannequins/box-braids/any/male-half-mask.png'),
+        side: require('../../assets/mannequins/box-braids/any/male-side-mask.png'),
+        back: require('../../assets/mannequins/box-braids/any/male-back-mask.png'),
+      },
     },
   },
   'burst-fade': {
-    male: {
-      front: require('../../assets/mannequins/burst-fade/male-front-mask.png'),
-      half: require('../../assets/mannequins/burst-fade/male-half-mask.png'),
-      side: require('../../assets/mannequins/burst-fade/male-side-mask.png'),
-      back: require('../../assets/mannequins/burst-fade/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/burst-fade/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/burst-fade/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/burst-fade/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/burst-fade/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/burst-fade/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/burst-fade/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/burst-fade/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/burst-fade/coily/male-back-mask.png'),
+      },
     },
   },
   'buzz-cut': {
-    male: {
-      front: require('../../assets/mannequins/buzz-cut/male-front-mask.png'),
-      half: require('../../assets/mannequins/buzz-cut/male-half-mask.png'),
-      side: require('../../assets/mannequins/buzz-cut/male-side-mask.png'),
-      back: require('../../assets/mannequins/buzz-cut/male-back-mask.png'),
+    any: {
+      male: {
+        front: require('../../assets/mannequins/buzz-cut/any/male-front-mask.png'),
+        half: require('../../assets/mannequins/buzz-cut/any/male-half-mask.png'),
+        side: require('../../assets/mannequins/buzz-cut/any/male-side-mask.png'),
+        back: require('../../assets/mannequins/buzz-cut/any/male-back-mask.png'),
+      },
     },
   },
   'caesar-cut': {
-    male: {
-      front: require('../../assets/mannequins/caesar-cut/male-front-mask.png'),
-      half: require('../../assets/mannequins/caesar-cut/male-half-mask.png'),
-      side: require('../../assets/mannequins/caesar-cut/male-side-mask.png'),
-      back: require('../../assets/mannequins/caesar-cut/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/caesar-cut/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/caesar-cut/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/caesar-cut/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/caesar-cut/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/caesar-cut/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/caesar-cut/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/caesar-cut/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/caesar-cut/coily/male-back-mask.png'),
+      },
+    },
+  },
+  'crew-cut': {
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/crew-cut/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/crew-cut/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/crew-cut/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/crew-cut/coily/male-back-mask.png'),
+      },
     },
   },
   'curly-top': {
-    male: {
-      front: require('../../assets/mannequins/curly-top/male-front-mask.png'),
-      half: require('../../assets/mannequins/curly-top/male-half-mask.png'),
-      side: require('../../assets/mannequins/curly-top/male-side-mask.png'),
-      back: require('../../assets/mannequins/curly-top/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/curly-top/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/curly-top/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/curly-top/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/curly-top/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/curly-top/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/curly-top/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/curly-top/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/curly-top/coily/male-back-mask.png'),
+      },
     },
   },
   'curtain-bangs': {
-    male: {
-      front: require('../../assets/mannequins/curtain-bangs/male-front-mask.png'),
-      half: require('../../assets/mannequins/curtain-bangs/male-half-mask.png'),
-      side: require('../../assets/mannequins/curtain-bangs/male-side-mask.png'),
-      back: require('../../assets/mannequins/curtain-bangs/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/curtain-bangs/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/curtain-bangs/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/curtain-bangs/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/curtain-bangs/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/curtain-bangs/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/curtain-bangs/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/curtain-bangs/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/curtain-bangs/coily/male-back-mask.png'),
+      },
     },
   },
   'french-crop': {
-    male: {
-      front: require('../../assets/mannequins/french-crop/male-front-mask.png'),
-      half: require('../../assets/mannequins/french-crop/male-half-mask.png'),
-      side: require('../../assets/mannequins/french-crop/male-side-mask.png'),
-      back: require('../../assets/mannequins/french-crop/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/french-crop/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/french-crop/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/french-crop/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/french-crop/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/french-crop/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/french-crop/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/french-crop/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/french-crop/coily/male-back-mask.png'),
+      },
     },
   },
   'high-skin-fade': {
-    male: {
-      front: require('../../assets/mannequins/high-skin-fade/male-front-mask.png'),
-      half: require('../../assets/mannequins/high-skin-fade/male-half-mask.png'),
-      side: require('../../assets/mannequins/high-skin-fade/male-side-mask.png'),
-      back: require('../../assets/mannequins/high-skin-fade/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/high-skin-fade/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/high-skin-fade/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/high-skin-fade/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/high-skin-fade/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/high-skin-fade/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/high-skin-fade/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/high-skin-fade/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/high-skin-fade/coily/male-back-mask.png'),
+      },
     },
   },
   'ivy-league': {
-    male: {
-      front: require('../../assets/mannequins/ivy-league/male-front-mask.png'),
-      half: require('../../assets/mannequins/ivy-league/male-half-mask.png'),
-      side: require('../../assets/mannequins/ivy-league/male-side-mask.png'),
-      back: require('../../assets/mannequins/ivy-league/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/ivy-league/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/ivy-league/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/ivy-league/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/ivy-league/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/ivy-league/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/ivy-league/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/ivy-league/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/ivy-league/coily/male-back-mask.png'),
+      },
     },
   },
   'low-taper-fade': {
-    male: {
-      front: require('../../assets/mannequins/low-taper-fade/male-front-mask.png'),
-      half: require('../../assets/mannequins/low-taper-fade/male-half-mask.png'),
-      side: require('../../assets/mannequins/low-taper-fade/male-side-mask.png'),
-      back: require('../../assets/mannequins/low-taper-fade/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/low-taper-fade/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/low-taper-fade/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/low-taper-fade/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/low-taper-fade/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/low-taper-fade/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/low-taper-fade/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/low-taper-fade/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/low-taper-fade/coily/male-back-mask.png'),
+      },
     },
   },
   'man-bun': {
-    male: {
-      front: require('../../assets/mannequins/man-bun/male-front-mask.png'),
-      half: require('../../assets/mannequins/man-bun/male-half-mask.png'),
-      side: require('../../assets/mannequins/man-bun/male-side-mask.png'),
-      back: require('../../assets/mannequins/man-bun/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/man-bun/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/man-bun/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/man-bun/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/man-bun/curly/male-back-mask.png'),
+      },
     },
   },
   'messy-fringe': {
-    male: {
-      front: require('../../assets/mannequins/messy-fringe/male-front-mask.png'),
-      half: require('../../assets/mannequins/messy-fringe/male-half-mask.png'),
-      side: require('../../assets/mannequins/messy-fringe/male-side-mask.png'),
-      back: require('../../assets/mannequins/messy-fringe/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/messy-fringe/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/messy-fringe/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/messy-fringe/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/messy-fringe/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/messy-fringe/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/messy-fringe/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/messy-fringe/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/messy-fringe/coily/male-back-mask.png'),
+      },
     },
   },
   'mid-fade': {
-    male: {
-      front: require('../../assets/mannequins/mid-fade/male-front-mask.png'),
-      half: require('../../assets/mannequins/mid-fade/male-half-mask.png'),
-      side: require('../../assets/mannequins/mid-fade/male-side-mask.png'),
-      back: require('../../assets/mannequins/mid-fade/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/mid-fade/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/mid-fade/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/mid-fade/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/mid-fade/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/mid-fade/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/mid-fade/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/mid-fade/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/mid-fade/coily/male-back-mask.png'),
+      },
     },
   },
   'modern-mullet': {
-    male: {
-      front: require('../../assets/mannequins/modern-mullet/male-front-mask.png'),
-      half: require('../../assets/mannequins/modern-mullet/male-half-mask.png'),
-      side: require('../../assets/mannequins/modern-mullet/male-side-mask.png'),
-      back: require('../../assets/mannequins/modern-mullet/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/modern-mullet/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/modern-mullet/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/modern-mullet/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/modern-mullet/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/modern-mullet/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/modern-mullet/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/modern-mullet/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/modern-mullet/coily/male-back-mask.png'),
+      },
     },
   },
   'mohawk': {
-    male: {
-      front: require('../../assets/mannequins/mohawk/male-front-mask.png'),
-      half: require('../../assets/mannequins/mohawk/male-half-mask.png'),
-      side: require('../../assets/mannequins/mohawk/male-side-mask.png'),
-      back: require('../../assets/mannequins/mohawk/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/mohawk/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/mohawk/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/mohawk/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/mohawk/curly/male-back-mask.png'),
+      },
     },
   },
   'pompadour': {
-    male: {
-      front: require('../../assets/mannequins/pompadour/male-front-mask.png'),
-      half: require('../../assets/mannequins/pompadour/male-half-mask.png'),
-      side: require('../../assets/mannequins/pompadour/male-side-mask.png'),
-      back: require('../../assets/mannequins/pompadour/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/pompadour/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/pompadour/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/pompadour/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/pompadour/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/pompadour/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/pompadour/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/pompadour/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/pompadour/coily/male-back-mask.png'),
+      },
     },
   },
   'quiff': {
-    male: {
-      front: require('../../assets/mannequins/quiff/male-front-mask.png'),
-      half: require('../../assets/mannequins/quiff/male-half-mask.png'),
-      side: require('../../assets/mannequins/quiff/male-side-mask.png'),
-      back: require('../../assets/mannequins/quiff/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/quiff/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/quiff/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/quiff/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/quiff/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/quiff/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/quiff/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/quiff/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/quiff/coily/male-back-mask.png'),
+      },
     },
   },
   'shoulder-flow': {
-    male: {
-      front: require('../../assets/mannequins/shoulder-flow/male-front-mask.png'),
-      half: require('../../assets/mannequins/shoulder-flow/male-half-mask.png'),
-      side: require('../../assets/mannequins/shoulder-flow/male-side-mask.png'),
-      back: require('../../assets/mannequins/shoulder-flow/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/shoulder-flow/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/shoulder-flow/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/shoulder-flow/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/shoulder-flow/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/shoulder-flow/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/shoulder-flow/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/shoulder-flow/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/shoulder-flow/coily/male-back-mask.png'),
+      },
     },
   },
   'side-part': {
-    male: {
-      front: require('../../assets/mannequins/side-part/male-front-mask.png'),
-      half: require('../../assets/mannequins/side-part/male-half-mask.png'),
-      side: require('../../assets/mannequins/side-part/male-side-mask.png'),
-      back: require('../../assets/mannequins/side-part/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/side-part/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/side-part/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/side-part/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/side-part/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/side-part/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/side-part/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/side-part/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/side-part/coily/male-back-mask.png'),
+      },
     },
   },
   'slick-back': {
-    male: {
-      front: require('../../assets/mannequins/slick-back/male-front-mask.png'),
-      half: require('../../assets/mannequins/slick-back/male-half-mask.png'),
-      side: require('../../assets/mannequins/slick-back/male-side-mask.png'),
-      back: require('../../assets/mannequins/slick-back/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/slick-back/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/slick-back/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/slick-back/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/slick-back/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/slick-back/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/slick-back/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/slick-back/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/slick-back/coily/male-back-mask.png'),
+      },
     },
   },
   'textured-crop': {
-    male: {
-      front: require('../../assets/mannequins/textured-crop/male-front-mask.png'),
-      half: require('../../assets/mannequins/textured-crop/male-half-mask.png'),
-      side: require('../../assets/mannequins/textured-crop/male-side-mask.png'),
-      back: require('../../assets/mannequins/textured-crop/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/textured-crop/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/textured-crop/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/textured-crop/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/textured-crop/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/textured-crop/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/textured-crop/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/textured-crop/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/textured-crop/coily/male-back-mask.png'),
+      },
     },
   },
   'top-knot': {
-    male: {
-      front: require('../../assets/mannequins/top-knot/male-front-mask.png'),
-      half: require('../../assets/mannequins/top-knot/male-half-mask.png'),
-      side: require('../../assets/mannequins/top-knot/male-side-mask.png'),
-      back: require('../../assets/mannequins/top-knot/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/top-knot/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/top-knot/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/top-knot/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/top-knot/curly/male-back-mask.png'),
+      },
     },
   },
   'twist-out': {
-    male: {
-      front: require('../../assets/mannequins/twist-out/male-front-mask.png'),
-      half: require('../../assets/mannequins/twist-out/male-half-mask.png'),
-      side: require('../../assets/mannequins/twist-out/male-side-mask.png'),
-      back: require('../../assets/mannequins/twist-out/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/twist-out/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/twist-out/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/twist-out/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/twist-out/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/twist-out/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/twist-out/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/twist-out/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/twist-out/coily/male-back-mask.png'),
+      },
     },
   },
   'wolf-cut': {
-    male: {
-      front: require('../../assets/mannequins/wolf-cut/male-front-mask.png'),
-      half: require('../../assets/mannequins/wolf-cut/male-half-mask.png'),
-      side: require('../../assets/mannequins/wolf-cut/male-side-mask.png'),
-      back: require('../../assets/mannequins/wolf-cut/male-back-mask.png'),
+    curly: {
+      male: {
+        front: require('../../assets/mannequins/wolf-cut/curly/male-front-mask.png'),
+        half: require('../../assets/mannequins/wolf-cut/curly/male-half-mask.png'),
+        side: require('../../assets/mannequins/wolf-cut/curly/male-side-mask.png'),
+        back: require('../../assets/mannequins/wolf-cut/curly/male-back-mask.png'),
+      },
+    },
+    coily: {
+      male: {
+        front: require('../../assets/mannequins/wolf-cut/coily/male-front-mask.png'),
+        half: require('../../assets/mannequins/wolf-cut/coily/male-half-mask.png'),
+        side: require('../../assets/mannequins/wolf-cut/coily/male-side-mask.png'),
+        back: require('../../assets/mannequins/wolf-cut/coily/male-back-mask.png'),
+      },
     },
   },
 };
