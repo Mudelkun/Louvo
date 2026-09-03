@@ -41,12 +41,14 @@ export const HAIR_COLOUR = 'Espresso brown — #33231B';
  *
  * This is the one place the "colour is a grade, not a generation" rule bends,
  * and it bends for a reason rather than for a colour: espresso reads as a muddy
- * mid-brown on type 4 coils, because a dense zig-zag texture is mostly
- * self-shadow and there is very little lit surface left to carry the hue. Black
- * is what type 4 hair is photographed in, so that is what it is shot in.
+ * mid-brown on the textured variants, because a dense coil or curl is mostly
+ * self-shadow and there is very little lit surface left to carry the hue. It
+ * showed on type 4 first and worst, which is why coily was the first row to go
+ * black; the curly renders had the same problem a level down, so **curly and
+ * coily are both shot black** and the loose textures stay espresso.
  *
  * It is still not a colour *choice* — nobody picks these, and no style has its
- * own. There are two anchors instead of one, and the app grades from whichever
+ * own. There are two shades across five rows, and the app grades from whichever
  * one the render it is showing was shot in (`baseHairColor()` in
  * `src/lib/constants.ts`). Adding a shade a user can pick is still a row in the
  * catalog's colour list and still costs no generation.
@@ -54,12 +56,14 @@ export const HAIR_COLOUR = 'Espresso brown — #33231B';
  * Change one of these and the matching anchor has to be re-measured from the new
  * renders: `node scripts/measure-hair-tone.mjs` prints one mean per variant.
  */
+const BLACK = 'Natural black — #131110';
+
 export const HAIR_COLOURS = {
   any: HAIR_COLOUR,
   straight: HAIR_COLOUR,
   wavy: HAIR_COLOUR,
-  curly: HAIR_COLOUR,
-  coily: 'Natural black — #131110',
+  curly: BLACK,
+  coily: BLACK,
 };
 
 /** The shade a given variant is generated in. */
@@ -226,6 +230,35 @@ export const GENDER_PROPORTIONS = {
   female: 'Feminine proportions: a softer, narrower jaw line and a slimmer, slightly longer neck. Still completely featureless.',
 };
 
+/**
+ * How the *haircut* is gendered, as opposed to the head wearing it.
+ *
+ * `GENDER_PROPORTIONS` above is about the mannequin sculpt, and it has no place
+ * in a sheet prompt: the sculpt is in the reference image and the sheet prompt
+ * spends a whole paragraph telling the model not to touch it. This is the other
+ * half, and it is the half the sheet prompt was missing — a hairstyle *name* is
+ * not gender-neutral. Handed "Messy Fringe" and nothing else, the model returns
+ * the men's reading of the name onto whichever head it is given, so every style
+ * offered to both genders — Messy Fringe, Curtain Bangs, Afro, Wolf Cut, Top
+ * Knot — came back as one haircut twice and the women's render looked like the
+ * men's. Styles whose name already carries the gender (Blunt Bob, Pixie Cut,
+ * Textured Lob) were unaffected, which is exactly the shape of the bug.
+ *
+ * `label` genders the cut wherever the prompt names it; `line` is the
+ * instruction in the specification block. Both, because one mention of it loses
+ * to the model's default reading often enough to be worth the words.
+ */
+export const GENDER_CUT = {
+  male: {
+    label: "men's",
+    line: "Worn by: a man — cut, shaped and finished as a men's barber would give this haircut, never the women's version of the same name.",
+  },
+  female: {
+    label: "women's",
+    line: "Worn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.",
+  },
+};
+
 /** Picks the phrase whose threshold the value falls under. */
 const band = (value, table) => (table.find(([limit]) => value <= limit) ?? table[table.length - 1])[1];
 
@@ -376,15 +409,24 @@ export function standaloneStylePrompt({ style, gender, angle, variant = 'any', e
  * is to say so. Describing them in words is what produced re-posed heads and
  * over-rotated three-quarters; a sentence cannot pin a camera angle as well as
  * the pixels already can.
+ *
+ * The haircut is the exception, and `gender` is the part of it the reference
+ * cannot carry: the base sheet supplies a woman's *head*, not a woman's *cut*.
+ * See `GENDER_CUT`.
  */
-export function styleSheetPrompt({ style, variant = 'any', extra, missing = [] }) {
+export function styleSheetPrompt({ style, gender, variant = 'any', extra, missing = [] }) {
   const name = style.name;
+  const gendered = GENDER_CUT[gender];
+  // How the cut is named everywhere the prompt names it — "women's Messy
+  // Fringe". Falls back to the bare name when the caller has no gender, which
+  // is only the dry run of a base head.
+  const cut = gendered ? `${gendered.label} ${name}` : name;
   const count = SHEET.cells.length;
   const panels = SHEET.positions.join(', ');
   const type = hairTypeLine(variant);
 
   const lines = [
-    `Use the provided image as the exact visual reference. It contains ${count} views of the same mannequin wearing the same hairstyle, one per quadrant: ${panels}. Recreate the image while applying the requested ${name} to the mannequins.`,
+    `Use the provided image as the exact visual reference. It contains ${count} views of the same mannequin wearing the same hairstyle, one per quadrant: ${panels}. Recreate the image while applying the requested ${cut} to the mannequins.`,
     '',
     // The failure this guards against: three heads come back styled and the
     // fourth is passed through untouched from the reference. It is `front`, the
@@ -394,15 +436,16 @@ export function styleSheetPrompt({ style, variant = 'any', extra, missing = [] }
     '',
     'Hair specifications:',
     '',
-    `Hairstyle: ${name}`,
+    `Hairstyle: ${cut}`,
     `Hair color: ${hairColour(variant)}`,
     ...(type ? [type] : []),
+    ...(gendered ? [gendered.line] : []),
     '',
     'Reference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and four-view layout from the reference image.',
     '',
     'Do not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.',
     '',
-    `The only meaningful change should be the hair: replace the existing hairstyle with ${name} while maintaining the same mannequin and presentation across all four views.`,
+    `The only meaningful change should be the hair: replace the existing hairstyle with ${cut} while maintaining the same mannequin and presentation across all four views.`,
     '',
     'Ensure that the hairstyle is consistent across all four views of the same mannequin, with accurate hair continuity between the front, side, rear, and three-quarter views.',
     '',
@@ -415,7 +458,7 @@ export function styleSheetPrompt({ style, variant = 'any', extra, missing = [] }
     const labels = missing.map(panelLabel);
     lines.push(
       '',
-      `Attention: a previous attempt returned the ${listOf(labels)} ${plural(labels, 'quadrant')} still bald, with the mannequin's scalp bare. Fix that: ${listOf(labels)} must wear the same ${name} as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the ${count} views stay consistent with each other.`,
+      `Attention: a previous attempt returned the ${listOf(labels)} ${plural(labels, 'quadrant')} still bald, with the mannequin's scalp bare. Fix that: ${listOf(labels)} must wear the same ${cut} as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the ${count} views stay consistent with each other.`,
     );
   }
 

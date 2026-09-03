@@ -13,8 +13,11 @@ import { usePhotoPickerSheet } from '@/state/PhotoPickerContext';
  * app, so the screen behind it stays visible. Web has no sheet (no camera or
  * media-library support there), so it falls through to the system picker.
  *
- * The photo never leaves the device in this phase — phase 3 uploads it to the
- * API, which forwards it to Fal.ai.
+ * The uri this hands back is a local one and stays local until the user asks
+ * for a preview: `generateTryOn` reads the file, sends it to the image model and
+ * keeps the result on the device. Nothing is uploaded by picking a photo, and
+ * with no generator key configured nothing is uploaded at all. Once there is a
+ * backend the photo goes to the API instead, which holds the model key.
  */
 export function usePhotoPicker(onPicked: (uri: string) => void) {
   const sheet = usePhotoPickerSheet();

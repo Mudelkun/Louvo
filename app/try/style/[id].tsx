@@ -57,6 +57,12 @@ const ANGLE_LABELS: Record<ViewAngle, { short: string; long: string }> = {
   back: { short: 'Back', long: 'Back view' },
 };
 
+/** A gender that arrived as a route param, or undefined for anything else. */
+function parseGender(value: string | string[] | undefined): Gender | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return raw === 'male' || raw === 'female' ? raw : null;
+}
+
 /**
  * Which hair type to open the preview chips on when the user arrived without
  * declaring one — an unfiltered grid, a deep link, a saved look.
@@ -88,10 +94,30 @@ function openingType(hairstyle: Hairstyle, gender: Gender | null): HairTypeId | 
  */
 export default function StyleDetailScreen() {
   const router = useRouter();
-  const { id, hairType } = useLocalSearchParams<{ id: string; hairType?: string }>();
+  const { id, hairType, gender: browsedGender } = useLocalSearchParams<{
+    id: string;
+    hairType?: string;
+    gender?: string;
+  }>();
   const { styleById, hairTypes, loading } = useCatalog();
   const { isFavourite, toggleFavourite } = useLibrary();
-  const { gender, hairTypeId, photoUri, setPhoto, setHairstyle } = useSession();
+  const { gender: sessionGender, hairTypeId, photoUri, setPhoto, setHairstyle } = useSession();
+  /**
+   * Which gender's version of this cut the screen is about.
+   *
+   * It arrives on the tap, exactly as the browsed hair type does, and for the
+   * same reason: the Styles tab browses a gender locally and never writes it to
+   * the session, so following the session here showed the men's render of every
+   * cut tapped in the women's grid — the catalog is shot per gender, so that is
+   * a different haircut, not a different model. Reached without the param (the
+   * try-on flow, a deep link, a favourite) it is the session's, which is what
+   * that route means by gender anyway.
+   *
+   * Unlike the hair type this is *not* display-only: it picks the render the
+   * generator is handed as its reference, so a women's cut has to generate from
+   * the women's mannequin. See `generate()`.
+   */
+  const gender = parseGender(browsedGender) ?? sessionGender;
   // The shade every mannequin is drawn in. There is no colour picker at the
   // moment, so this is the shade the catalog was rendered in for everyone —
   // the grade is an identity and the renders are shown untouched. Bringing the
@@ -183,23 +209,41 @@ export default function StyleDetailScreen() {
   };
 
   /**
-   * Generation runs in the background — the user is sent straight to My looks,
-   * where the preview shows as a processing tile and notifies when it is ready.
+   * Generation still runs in the background — nothing about the job changes —
+   * but the user is taken to the wait rather than past it. `start()` returns the
+   * job id and `/try/generating` adopts it, so the screen is a view onto a job
+   * that would run identically if the user walked away. See that screen for why
+   * the old straight-to-Profile jump was the wrong ending to this flow.
+   *
+   * Pushed rather than replaced: cancelling or backing out lands here again, on
+   * the style the user picked, and the result screen replaces the wait so Back
+   * from the result skips it.
    */
   const generate = () => {
     // The colour still goes onto the look rather than being left implicit: a
-    // saved look has to keep the shade it was generated in, whether the user
-    // chose it or it is the catalog default.
+    // saved look has to keep the shade its *mannequin* is drawn in, whether the
+    // user chose it or it is the catalog default.
+    //
+    // It is deliberately not passed to the generator. `GenerateRequest.hairColor`
+    // is the field for that and it stays unset while there is no colour picker,
+    // so the preview keeps the subject's own hair colour instead of putting
+    // everyone in the catalog's display default. See the note on that field.
     const options = color ? { color: color.id } : {};
     setHairstyle(hairstyle.id, options);
-    start({
+    const jobId = start({
       hairstyle,
       gender: gender ?? hairstyle.genders[0],
-      hairType: hairTypeId,
+      // The session's declaration, and `shownAs` only when there is none. Under
+      // "All Types" nothing was declared, so the type the screen is currently
+      // showing is the closest thing to a choice — and, more to the point, it is
+      // the texture the reference images the generator is about to be handed
+      // actually depict. Falling through to null there would let the model be
+      // shown a curly reference and told nothing about texture at all.
+      hairType: hairTypeId ?? shownAs,
       photoUri,
       options,
     });
-    router.replace('/(tabs)/profile');
+    router.push(`/try/generating?job=${jobId}`);
   };
 
   return (
@@ -394,8 +438,8 @@ export default function StyleDetailScreen() {
         </View>
 
         <Text style={[type.caption, styles.note]}>
-          Generating takes a few seconds and runs in the background — you will get a notification
-          when your look is ready in My looks.
+          Generating takes a few seconds. You can watch it happen on your photo, or leave the
+          screen — it keeps running and lands in My looks either way.
         </Text>
       </View>
     </Screen>

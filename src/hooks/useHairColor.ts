@@ -8,6 +8,9 @@ import { useSession } from '@/state/SessionContext';
  * Resolves a catalog colour id to the shade to draw in, or null for "the shade
  * it was shot in".
  *
+ * A session normally has an id — it starts at `DEFAULT_HAIR_COLOR_ID` — so null
+ * here is the older-look and unknown-id case rather than the everyday one.
+ *
  * Null is not a missing value, it is the absence of a *choice*, and it has to
  * stay distinct from any particular shade: the grade is anchored per variant
  * (espresso for most renders, black for coily — see `BASE_HAIR_COLORS`), so

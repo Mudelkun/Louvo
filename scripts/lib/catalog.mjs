@@ -7,9 +7,7 @@
  * the live catalog with no other change.
  */
 
-import { readFile, rm, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { loadTsModule } from './transpile.mjs';
 
 /**
  * @param {{ root: string, catalogUrl?: string|null }} opts
@@ -25,32 +23,11 @@ export async function loadCatalog({ root, catalogUrl }) {
 }
 
 /**
- * `mockCatalog.ts` is TypeScript whose only imports are type-only, so stripping
- * the types with the compiler already in devDependencies yields an importable
- * module. The temp file is written beside the source so any relative import that
- * appears later still resolves.
+ * `mockCatalog.ts` is TypeScript whose only imports are type-only, so it is
+ * imported as-is rather than copied. See `lib/transpile.mjs`.
  */
 async function loadMockCatalog(root) {
-  const source = path.join(root, 'src', 'api', 'mockCatalog.ts');
-  const temp = path.join(root, 'src', 'api', `.mockCatalog.${process.pid}.mjs`);
-
-  const ts = (await import('typescript')).default;
-  const code = await readFile(source, 'utf8');
-  const { outputText } = ts.transpileModule(code, {
-    compilerOptions: {
-      module: ts.ModuleKind.ESNext,
-      target: ts.ScriptTarget.ES2022,
-      isolatedModules: true,
-    },
-    fileName: source,
-  });
-
-  try {
-    await writeFile(temp, outputText, 'utf8');
-    const mod = await import(pathToFileURL(temp).href);
-    if (!mod.mockCatalog) throw new Error(`${source} does not export mockCatalog`);
-    return mod.mockCatalog;
-  } finally {
-    await rm(temp, { force: true });
-  }
+  const mod = await loadTsModule({ root, file: 'src/api/mockCatalog.ts' });
+  if (!mod.mockCatalog) throw new Error('src/api/mockCatalog.ts does not export mockCatalog');
+  return mod.mockCatalog;
 }
