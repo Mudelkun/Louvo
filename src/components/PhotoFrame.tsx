@@ -21,7 +21,13 @@ export interface DemoSubject {
 
 interface PhotoFrameProps {
   uri: string | null;
-  /** Overlay wash used to differentiate the simulated "after" from the original. */
+  /**
+   * Overlay wash marking a *simulated* "after" as different from the original.
+   *
+   * Null on a real preview, always. It is a flat colour over the whole frame,
+   * so on an image the model actually changed it is a cast on skin, clothes and
+   * hair rather than a label.
+   */
   tint?: string | null;
   rounded?: number;
   style?: StyleProp<ViewStyle>;
@@ -36,9 +42,10 @@ interface PhotoFrameProps {
 /**
  * Renders the user's photo, the sample mannequin, or a neutral placeholder.
  *
- * Until Fal.ai is wired up, a "generated" result is the original photo with a
- * subtle wash over it — enough to make the before/after comparison legible while
- * being clearly a stand-in.
+ * `tint` is a leftover of the era before Fal.ai was wired up, when a "generated"
+ * result was the original photo and a subtle wash over it was the only thing
+ * making a before/after comparison legible. Generation is real now, so every
+ * caller passes it only for a look that was simulated — see the prop.
  */
 export function PhotoFrame({
   uri,

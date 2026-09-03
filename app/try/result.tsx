@@ -29,7 +29,11 @@ const RAIL_CARD_WIDTH = Math.min(136, (width - spacing.xl * 2 - spacing.md * 2) 
 export default function ResultScreen() {
   const router = useRouter();
   const { hairstyles, styleById } = useCatalog();
-  const { look, gender, hairTypeId, restartStyleChoice } = useSession();
+  const { look, gender: sessionGender, hairTypeId, restartStyleChoice } = useSession();
+  // The look's own gender, not the session's — a look generated from the women's
+  // catalog has to keep being drawn on the women's mannequin after the session
+  // has moved on, exactly as `look.hairType` and `look.options.color` do below.
+  const gender = look?.gender ?? sessionGender;
   const lookColor = useLookColor(look);
   const browsingColor = useHairColor();
   const { isFavourite, toggleFavourite, favouriteIds } = useLibrary();
@@ -99,12 +103,24 @@ export default function ResultScreen() {
       <View style={styles.stage}>
         <PhotoFrame
           uri={look.resultUri}
-          tint={look.resultUri && look.resultUri !== DEMO_PHOTO ? 'rgba(255,90,60,0.08)' : null}
+          // The warm wash was the simulation's way of marking a photo that had
+          // been "changed". A generated look really has been, so it is shown as
+          // it came back — tinting it would misrepresent the result.
+          tint={look.simulated && look.resultUri && look.resultUri !== DEMO_PHOTO ? 'rgba(255,90,60,0.08)' : null}
           style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT }}
           demo={{ styleId: hairstyle.id, shape: lookShape, color: lookColor, gender, variants: lookVariants }}
           demoWidth={STAGE_HEIGHT * 0.8}
         >
-          <View style={styles.styleTag}>
+          {/* The tag names the cut in the picture, so it is the obvious way back
+              to that cut's page. It does not clear the style choice the way the
+              "try next" rail does — this is the look the user is standing on,
+              and dropping it would empty this screen behind them. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`View ${hairstyle.name} details`}
+            onPress={() => router.push(`/try/style/${hairstyle.id}`)}
+            style={({ pressed }) => [styles.styleTag, pressed && { opacity: 0.75 }]}
+          >
             <MannequinBadge
               styleId={hairstyle.id}
               shape={lookShape}
@@ -116,13 +132,14 @@ export default function ResultScreen() {
             <Text style={[type.caption, { color: colors.onDark, fontWeight: '700' }]}>
               {hairstyle.name}
             </Text>
-          </View>
+            <Ionicons name="chevron-forward" size={14} color={colors.onDark} />
+          </Pressable>
         </PhotoFrame>
       </View>
 
       <View style={{ paddingHorizontal: spacing.xl, gap: spacing.lg }}>
         <View style={styles.pillRow}>
-          <Pill tone="jade" label="Simulated preview" />
+          <Pill tone="jade" label={look.simulated ? 'Simulated preview' : 'AI preview'} />
         </View>
 
         <View style={styles.actionRow}>
@@ -166,11 +183,20 @@ export default function ResultScreen() {
           </View>
         ) : null}
 
+        {/* Two different things get shown on this screen and they should never
+            be described the same way: a generated preview, and the walkthrough
+            standing in for one. `look.simulated` is the look's own record of
+            which it is, so a look saved months ago still says the right thing. */}
         <View style={styles.explainer}>
-          <Ionicons name="information-circle-outline" size={17} color={colors.inkSoft} />
+          <Ionicons
+            name={look.simulated ? 'information-circle-outline' : 'sparkles-outline'}
+            size={17}
+            color={colors.inkSoft}
+          />
           <Text style={[type.caption, { color: colors.inkSoft, flex: 1 }]}>
-            Image generation is not connected yet, so this shows your original photo with the chosen
-            style recorded against it. The layout, actions and flow are final.
+            {look.simulated
+              ? 'Nothing was generated for this one, so it shows the original photo with the chosen style recorded against it. The sample photo has no image behind it to edit, and previews are simulated when no generator key is configured.'
+              : 'Generated from your photo and the catalog’s renders of this cut. Only the hair was changed — your face, pose, clothes, background and lighting are the original pixels.'}
           </Text>
         </View>
       </View>
@@ -216,7 +242,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(23,21,26,0.72)',
     borderRadius: radii.pill,
     paddingLeft: 6,
-    paddingRight: spacing.lg,
+    paddingRight: spacing.md,
     paddingVertical: 6,
   },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

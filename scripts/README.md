@@ -75,10 +75,19 @@ Everything already on disk was shot while `lib/prompts.mjs` carried one
 `HAIR_TYPE = 'Type 3A-3B curly'` constant, so **men x curly is complete** (25 of 26 styles;
 `crew-cut` was never generated) and lives under each style's curly — or `any` — directory.
 
-Two things change between two shots of the same cut, and nothing else does: the `Hair type:` line
-(`HAIR_TYPE_LABELS`) and the shade (`HAIR_COLOURS`), both in `lib/prompts.mjs`. The head, material,
-light, crop and framing are identical by construction, because every shot is an edit of the same
-base sheet.
+Two things change between two shots of the same cut at one gender, and nothing else does: the
+`Hair type:` line (`HAIR_TYPE_LABELS`) and the shade (`HAIR_COLOURS`), both in `lib/prompts.mjs`.
+The head, material, light, crop and framing are identical by construction, because every shot is an
+edit of the same base sheet.
+
+Across genders a third thing changes, and it has to: **the cut is named as the men's or the
+women's version of itself** (`GENDER_CUT`). The base sheet supplies a woman's *head*; it cannot
+supply a woman's *cut*, and a hairstyle name is not gender-neutral. The sheet prompt used to carry
+no gender at all — the male and female prompts for a style were byte-identical, which the manifest
+still shows for everything shot before this — so the model took the men's reading of the name and
+put it on both heads. Every style offered to both genders came back as one haircut twice; styles
+whose name already carries the gender (Blunt Bob, Pixie Cut, Textured Lob) were the only ones
+unaffected. Renders made before the fix need re-shooting per gender, not re-grading.
 
 The `Hair type:` line is deliberately the bare label — `Type 4A–4C coily`, no prose. The longer
 descriptions in `HAIR_TYPES` exist for the hair-type picker's example sheet, which draws all four
@@ -86,11 +95,11 @@ textures in one image and has to be told how they differ; a catalog sheet draws 
 such contrast. Keeping it bare is also what makes the coily batch the same prompt as the curly
 catalog it has to sit beside.
 
-`HAIR_COLOURS` is espresso for everything except **coily, which is shot in black** — espresso reads
-as a muddy mid-brown on type 4 coils, which are mostly self-shadow with little lit surface to carry
-a hue. Two shades means two grade anchors in the app: run `node scripts/measure-hair-tone.mjs`
-after a batch and paste each mean it prints into the matching `BASE_HAIR_COLORS` entry in
-`src/lib/constants.ts`. It reports per variant for exactly this reason.
+`HAIR_COLOURS` is espresso for `any`, `straight` and `wavy`, and **black for `curly` and `coily`** —
+espresso reads as a muddy mid-brown on a dense texture, which is mostly self-shadow with little lit
+surface to carry a hue. Two shades means two grade anchors in the app: run
+`node scripts/measure-hair-tone.mjs` after a batch and paste each mean it prints into the matching
+`BASE_HAIR_COLORS` entry in `src/lib/constants.ts`. It reports per variant for exactly this reason.
 
 ## How it works
 
@@ -380,15 +389,16 @@ npm run hair-types -- --slice --inset 4   # re-cut the sheets on disk — free, 
 | `--force-base` | also regenerate the base heads — they are kept by default, since every style image inherits them |
 | `--seed <n>` | reproducible re-runs |
 | `--reference <file>` | swap the look reference that seeds the base heads |
-| `--model` / `--edit-model` | swap models — defaults are `fal-ai/nano-banana` and `fal-ai/nano-banana/edit` |
+| `--model` / `--edit-model` | swap models — defaults are `fal-ai/nano-banana` and `fal-ai/nano-banana-2/edit` |
 | `--no-edit` | one-shot text-to-image per style instead of editing a base head (worse consistency; only if the edit model disappoints) |
 | `--catalog-url <url>` | read the catalog from the live API instead of `mockCatalog.ts` |
 
 ## Cost
 
-Roughly $0.04 per image at nano-banana list price. In sheet mode that is one generation per
-style x variant x gender: **130 for the whole catalog, of which 25 are done** — about **$4.20**
-left, against **$5.76** if every style were shot once per hair type. `--matrix` prints the current
-number rather than this one. Check
+Roughly $0.08 per image at nano-banana-2 list price — twice what the earlier batches cost, since
+the catalog moved off `nano-banana/edit` after men x curly. In sheet mode that is one generation
+per style x variant x gender: **130 for the whole catalog**, against **192** if every style were
+shot once per hair type. `--matrix` prints what is left today rather than a number that goes stale
+here. Check
 fal.ai/pricing — the script prints its estimate and asks for confirmation on runs of more than
 four images.

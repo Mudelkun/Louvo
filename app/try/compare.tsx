@@ -5,7 +5,7 @@ import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import { BeforeAfter } from '@/components/BeforeAfter';
 import { Button } from '@/components/Button';
 import { ChoiceRow } from '@/components/Controls';
-import { EmptyState } from '@/components/Feedback';
+import { EmptyState, Pill } from '@/components/Feedback';
 import { PhotoFrame } from '@/components/PhotoFrame';
 import { Header, Screen } from '@/components/Screen';
 import { useLookColor } from '@/hooks/useHairColor';
@@ -25,11 +25,14 @@ const MODES = [
 
 export default function CompareScreen() {
   const router = useRouter();
-  const { look, gender } = useSession();
+  const { look, gender: sessionGender } = useSession();
   const { styleById } = useCatalog();
   // "Before" is the hair the subject walked in with, so it stays the neutral
   // shade however the picker has been set since.
   const color = useLookColor(look);
+  // Both mannequins belong to the look, so they are drawn for the gender it was
+  // generated for rather than whatever the session is set to now.
+  const gender = look?.gender ?? sessionGender;
   const { saveLook, savedLooks } = useLibrary();
   const [mode, setMode] = useState('slider');
 
@@ -70,10 +73,17 @@ export default function CompareScreen() {
         <ChoiceRow options={MODES} value={mode} onChange={setMode} />
 
         {mode === 'slider' ? (
+          /* Washes only on a simulated look, exactly as the side-by-side mode
+             below and `result.tsx` do it. On a real preview both sides are shown
+             as they are: the wash was there to make an unchanged photograph look
+             changed, and on a photograph that did change it is a colour cast
+             over the hair the user came here to look at. */
           <BeforeAfter
             beforeUri={look.sourcePhotoUri}
             afterUri={look.resultUri}
             height={STAGE_WIDTH * 1.24}
+            beforeTint={look.simulated ? 'rgba(23,21,26,0.06)' : null}
+            afterTint={look.simulated ? 'rgba(255,90,60,0.08)' : null}
             beforeDemo={{ shape: DEMO_BASE_SHAPE, color: BASE_HAIR_COLOR, gender }}
             afterDemo={{ shape: hairstyle.shape, color, gender }}
           />
@@ -84,10 +94,15 @@ export default function CompareScreen() {
               uri={look.sourcePhotoUri}
               demo={{ shape: DEMO_BASE_SHAPE, color: BASE_HAIR_COLOR, gender }}
             />
+            {/* No tint on a generated look. The warm wash was the simulation's
+                way of marking a photo as "changed" when nothing about it had
+                changed — which, on a real preview, both misrepresents the result
+                and disguises a simulated one as an edit. `result.tsx` dropped it
+                for the same reason. */}
             <Column
               label="After"
               uri={look.resultUri}
-              tint="rgba(255,90,60,0.08)"
+              tint={look.simulated ? 'rgba(255,90,60,0.08)' : undefined}
               demo={{ styleId: hairstyle.id, shape: hairstyle.shape, color, gender }}
             />
           </View>
@@ -98,6 +113,21 @@ export default function CompareScreen() {
             ? 'Drag the handle to wipe between your original photo and the new look.'
             : hairstyle.name}
         </Text>
+
+        {/* An identical before and after has two completely different causes —
+            the model declined to change the hair, or nothing was generated at
+            all — and this screen is exactly where someone goes to find that out.
+            Saying which is the difference between a prompt problem and a wiring
+            problem. */}
+        {look.simulated ? (
+          <View style={styles.noticeRow}>
+            <Pill tone="gold" label="Not generated" />
+            <Text style={[type.caption, { color: colors.muted, flex: 1 }]}>
+              Both sides are your original photo. This look was simulated, so there is nothing to
+              compare yet — see Settings for whether the generator is live.
+            </Text>
+          </View>
+        ) : null}
       </View>
     </Screen>
   );
@@ -133,4 +163,5 @@ function Column({
 
 const styles = StyleSheet.create({
   splitRow: { flexDirection: 'row', gap: spacing.md },
+  noticeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
 });

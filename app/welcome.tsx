@@ -6,8 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { Mannequin } from '@/components/Mannequin';
+import { useHairColor } from '@/hooks/useHairColor';
 import { useOnboarding } from '@/hooks/useOnboarding';
-import { BASE_HAIR_COLOR } from '@/lib/constants';
 import { HERO_ANGLE } from '@/lib/hairShape';
 import { useCatalog } from '@/state/CatalogContext';
 import { colors, radii, spacing, type } from '@/theme/theme';
@@ -21,6 +21,11 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { catalog, hairstyles } = useCatalog();
+  // The hero cards are catalog renders like any others, so they take the
+  // session's shade rather than an anchor: pinned to the anchor they are shown
+  // as shot, and three styles side by side is exactly where the two shades the
+  // catalog is generated in read as two hair colours.
+  const color = useHairColor();
   const { complete } = useOnboarding();
 
   const heroStyles = [...hairstyles].sort((a, b) => b.popularity - a.popularity).slice(0, HERO_COUNT);
@@ -55,7 +60,7 @@ export default function WelcomeScreen() {
               <Mannequin
                 styleId={style.id}
                 shape={style.shape}
-                color={BASE_HAIR_COLOR}
+                color={color}
                 angle={HERO_ANGLE}
                 size={width / 3.6}
                 backdrop={null}
