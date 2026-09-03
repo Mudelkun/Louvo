@@ -96,8 +96,8 @@ export function CatalogBrowser({
    * filter's sheet: changing the type here is the same question asked again, and
    * four names on their own are a worse way to answer it than four pictures.
    *
-   * They follow the gender toggle above the grid, since the examples exist per
-   * gender and the grid is already showing that gender's catalog; "Everyone"
+   * They follow the gender above the grid, since the examples exist per gender
+   * and the grid is already showing that gender's catalog; an unset gender
    * takes whichever set exists (`hairTypeExample`). All four or none, for the
    * reason the picker gives — a half-illustrated list reads as a failed load.
    */

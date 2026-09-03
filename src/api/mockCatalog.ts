@@ -46,10 +46,15 @@ const hairTypes: HairType[] = [
 ];
 
 /**
- * The shades any style can be put in. The first entry a style is shown in is
- * `BASE_HAIR_COLOR` — espresso, the shade the catalog imagery is rendered in —
- * and every other entry is reached by grading that render in the app, so this
- * list can grow without generating a single new image.
+ * The shades any style can be put in. Every one of them is reached by grading
+ * the render in the app rather than by generating a second image, so this list
+ * can grow without costing anything.
+ *
+ * `jet` is where the app starts (`DEFAULT_HAIR_COLOR_ID`): the imagery is shot
+ * in espresso except the coily variant, which is shot in black, and grading
+ * everything to black is what makes those one catalog instead of two. The
+ * imagery's own shades are `BASE_HAIR_COLORS` — the grade's anchors, not
+ * entries here.
  */
 const colors: HairColor[] = [
   { id: 'jet', name: 'Jet Black', hex: '#171313', shade: '#000000' },

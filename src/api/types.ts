@@ -181,10 +181,22 @@ export interface GeneratedLook {
   hairType: HairTypeId | null;
   /** The user's original photo (local uri in the prototype). */
   sourcePhotoUri: string | null;
-  /** The generated result. Null while image generation is not wired up yet. */
+  /** The generated result — a local file once one has been generated. */
   resultUri: string | null;
   options: TryOnOptions;
   createdAt: number;
+  /**
+   * Whether this look was drawn by the simulation rather than generated.
+   *
+   * A simulated look's `resultUri` *is* its `sourcePhotoUri`: nothing was
+   * generated, the flow was walked through. It happens on the sample photo,
+   * which has no pixels behind it, and with no generator key configured.
+   *
+   * It is stored on the look rather than worked out from the two uris being
+   * equal, because a screen asking "is this a real preview" is asking a question
+   * about how the look was made, and a saved look has to keep that answer.
+   */
+  simulated: boolean;
 }
 
 /**
@@ -207,6 +219,25 @@ export interface LookJob {
   status: 'processing' | 'failed';
   /** 0..1 */
   progress: number;
+  /**
+   * Which of `GENERATION_STEPS` the job is in.
+   *
+   * The generator has always reported this and the job has always dropped it,
+   * which left every waiting surface with nothing to say but "Processing…" over
+   * a bar. A percentage answers *how far*; only this answers *what is
+   * happening*, and the second is what makes a wait read as work being done
+   * rather than as a stall.
+   */
+  stepIndex: number;
+  /**
+   * Why a failed job failed, short enough for the tile.
+   *
+   * Generation is a real network round trip now, so "it failed" is no longer the
+   * whole story: a rejected key, a dropped connection and a model that returned
+   * nothing all need different things from the user, and only one of them is
+   * worth pressing Retry on.
+   */
+  error?: string;
 }
 
 export interface Catalog {

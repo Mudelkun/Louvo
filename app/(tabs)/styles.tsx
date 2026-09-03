@@ -10,8 +10,9 @@ import { ALL_HAIR_TYPES } from '@/lib/hairTypes';
 import { useSession } from '@/state/SessionContext';
 import { colors, spacing, type } from '@/theme/theme';
 
+// No "Everyone" option: the catalog is shot per gender, so the combined grid
+// was two mannequins' idea of the same cut side by side. One or the other.
 const GENDER_FILTERS = [
-  { id: 'all', label: 'Everyone' },
   { id: 'male', label: 'Men' },
   { id: 'female', label: 'Women' },
 ];
@@ -21,30 +22,33 @@ export default function StylesTab() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { gender, hairTypeId } = useSession();
-  const [filter, setFilter] = useState<string>(gender ?? 'all');
+  // The tab can be reached before the flow has asked, so there is always a
+  // gender on screen: the session's if it has one, men otherwise.
+  const [filter, setFilter] = useState<Gender>(gender ?? 'male');
   const [categoryId, setCategoryId] = useState<string>('all');
   // The tab is a browsing surface rather than a step in the flow, so its hair
   // type is local: looking at the coily catalog here does not silently rewrite
   // what the try-on flow thinks the user's hair does.
   const [hairType, setHairType] = useState<HairTypeId | null>(hairTypeId);
 
-  const resolvedGender: Gender | null = filter === 'all' ? null : (filter as Gender);
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.canvas, paddingTop: insets.top + spacing.md }}>
       <CatalogBrowser
-        gender={resolvedGender}
+        gender={filter}
         hairType={hairType}
         onHairTypeChange={setHairType}
         categoryId={categoryId}
         onCategoryChange={setCategoryId}
-        // The tab's hair type is local, so it travels with the tap instead of
-        // through the session: the detail page opens on the texture the grid
-        // was showing rather than on the try-on flow's.
+        // The tab's gender and hair type are both local, so they travel with the
+        // tap instead of through the session: the detail page opens on the same
+        // mannequin the card just showed rather than on the try-on flow's. The
+        // gender matters as much as the texture — the catalog is shot per gender,
+        // so following the session there opened every cut tapped in the women's
+        // grid on its men's render.
         onSelect={(style) =>
           router.push({
             pathname: '/try/style/[id]',
-            params: { id: style.id, hairType: hairType ?? ALL_HAIR_TYPES },
+            params: { id: style.id, hairType: hairType ?? ALL_HAIR_TYPES, gender: filter },
           })
         }
         bottomInset={spacing.xxxl * 2}
@@ -55,7 +59,11 @@ export default function StylesTab() {
               Every cut is modelled on the same neutral mannequin, so you are comparing haircuts and
               nothing else.
             </Text>
-            <ChoiceRow options={GENDER_FILTERS} value={filter} onChange={setFilter} />
+            <ChoiceRow
+              options={GENDER_FILTERS}
+              value={filter}
+              onChange={(id) => setFilter(id as Gender)}
+            />
           </View>
         }
       />

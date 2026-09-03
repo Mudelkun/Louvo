@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { GENERATION_STEPS } from '@/api/client';
 import type { GeneratedLook, Hairstyle, LookJob } from '@/api/types';
 import { ChoiceRow } from '@/components/Controls';
 import { EmptyState } from '@/components/Feedback';
@@ -84,6 +85,7 @@ export default function ProfileTab() {
                 <JobTile
                   key={job.id}
                   job={job}
+                  onOpen={() => router.push(`/try/generating?job=${job.id}`)}
                   onCancel={() => cancel(job.id)}
                   onRetry={() => retry(job.id)}
                 />
@@ -199,16 +201,48 @@ function LookTile({
   );
 }
 
-/** A preview still generating — the user can be anywhere in the app while this runs. */
-function JobTile({ job, onCancel, onRetry }: { job: LookJob; onCancel: () => void; onRetry: () => void }) {
+/**
+ * A preview still generating — the user can be anywhere in the app while this
+ * runs, and this tile is what a job looks like from anywhere else.
+ *
+ * It is a shortcut back to `/try/generating` rather than a second, worse copy
+ * of it. Leaving the wait should cost the user the view, not the job: one tap
+ * puts their photo, the stage and the countdown back in front of them.
+ */
+function JobTile({
+  job,
+  onOpen,
+  onCancel,
+  onRetry,
+}: {
+  job: LookJob;
+  onOpen: () => void;
+  onCancel: () => void;
+  onRetry: () => void;
+}) {
   const failed = job.status === 'failed';
 
   return (
-    <View style={[styles.tile, styles.jobTile]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Watch the ${job.hairstyleName} preview`}
+      onPress={onOpen}
+      style={({ pressed }) => [styles.tile, styles.jobTile, pressed && { opacity: 0.9 }]}
+    >
       {failed ? (
         <>
           <Ionicons name="alert-circle-outline" size={30} color={colors.onDark} />
-          <Text style={[type.caption, styles.jobLabel]}>Generation failed</Text>
+          <Text style={[type.caption, styles.jobLabel]} numberOfLines={1}>
+            {job.hairstyleName}
+          </Text>
+          {/* Which failure it was, so Retry is a decision rather than a guess —
+              a dropped connection is worth pressing again, a rejected key is not. */}
+          <Text
+            style={[type.caption, { color: colors.onDarkMuted, textAlign: 'center' }]}
+            numberOfLines={2}
+          >
+            {job.error ?? 'Generation failed'}
+          </Text>
           <Pressable
             accessibilityRole="button"
             onPress={onRetry}
@@ -230,7 +264,12 @@ function JobTile({ job, onCancel, onRetry }: { job: LookJob; onCancel: () => voi
           <Text style={[type.caption, styles.jobLabel]} numberOfLines={1}>
             {job.hairstyleName}
           </Text>
-          <Text style={[type.caption, { color: colors.onDarkMuted }]}>Processing…</Text>
+          {/* The stage the generator reported, not the word "Processing" — the
+              job carries `stepIndex` now, and a tile that names the step is the
+              difference between a wait and a hang. */}
+          <Text style={[type.caption, { color: colors.onDarkMuted, textAlign: 'center' }]} numberOfLines={1}>
+            {GENERATION_STEPS[Math.min(job.stepIndex, GENERATION_STEPS.length - 1)].label}
+          </Text>
         </>
       )}
 
@@ -243,7 +282,7 @@ function JobTile({ job, onCancel, onRetry }: { job: LookJob; onCancel: () => voi
       >
         <Ionicons name="close" size={16} color={colors.onDark} />
       </Pressable>
-    </View>
+    </Pressable>
   );
 }
 

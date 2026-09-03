@@ -9,7 +9,22 @@ interface BeforeAfterProps {
   beforeUri: string | null;
   afterUri: string | null;
   height: number;
-  /** Wash applied to the "after" half so the split is visible in the prototype. */
+  /**
+   * Washes laid over each half, and **null is the right answer for a real
+   * preview**.
+   *
+   * They are the simulation's device: when the "after" was the same photograph
+   * as the "before", a warm wash on one side and a cool one on the other were
+   * the only thing that made the wipe look like a wipe. Against an image the
+   * model actually changed they do the opposite of their job — a flat 10% orange
+   * over the whole frame is a colour cast on skin, clothes and hair alike, and
+   * the hair is where it reads worst, because that is the one thing the user is
+   * examining. It also disguises a simulated look as an edit.
+   *
+   * So they default to nothing and the caller opts in for a simulated look only,
+   * which is what `result.tsx` and this screen's side-by-side mode already do.
+   */
+  beforeTint?: string | null;
   afterTint?: string | null;
   /** What to draw on each side when the sample photo is in use. */
   beforeDemo?: DemoSubject;
@@ -21,7 +36,8 @@ export function BeforeAfter({
   beforeUri,
   afterUri,
   height,
-  afterTint = 'rgba(255,90,60,0.10)',
+  beforeTint = null,
+  afterTint = null,
   beforeDemo,
   afterDemo,
 }: BeforeAfterProps) {
@@ -71,7 +87,7 @@ export function BeforeAfter({
       <View style={[styles.clip, { width: splitX }]}>
         <PhotoFrame
           uri={beforeUri}
-          tint="rgba(23,21,26,0.06)"
+          tint={beforeTint}
           rounded={0}
           style={{ width: width || 1, height }}
           emptyLabel="Original"
