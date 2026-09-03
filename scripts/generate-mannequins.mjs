@@ -72,8 +72,11 @@ const DEFAULT_REFERENCE = path.join(ROOT, 'scripts', 'reference-head.png');
 const ANGLES = SHEET.cells;
 const GENDERS = ['male', 'female'];
 
-/** List price at the time of writing — confirm against fal.ai/pricing. */
-const APPROX_COST_PER_IMAGE = 0.04;
+/**
+ * List price at the time of writing — confirm against fal.ai/pricing. This is
+ * the edit model's price, since every image in a catalog batch is an edit.
+ */
+const APPROX_COST_PER_IMAGE = 0.08;
 
 // ---------------------------------------------------------------------------
 // CLI
@@ -94,7 +97,20 @@ function parseArgs(argv) {
      */
     variants: null,
     model: process.env.FAL_MODEL ?? 'fal-ai/nano-banana',
-    editModel: process.env.FAL_EDIT_MODEL ?? 'fal-ai/nano-banana/edit',
+    /**
+     * The catalog was shot on `fal-ai/nano-banana/edit` up to the men x curly
+     * batch; everything from men x wavy on is nano-banana-2. It is the same
+     * family, and every style is an edit of the composed base sheet rather than
+     * a fresh roll, so the head, material, light, crop and framing are inherited
+     * from an image either way and only the hair rendering differs between the
+     * two. What the extra $0.04 buys is prompt adherence — the bald-quadrant
+     * re-roll `--sheet-retries` exists for is the failure it fixes.
+     *
+     * `--model` is deliberately left on nano-banana: it is text-to-image, so it
+     * only runs for `--no-edit` and for a base head generated with no reference
+     * on disk, neither of which is part of a catalog batch.
+     */
+    editModel: process.env.FAL_EDIT_MODEL ?? 'fal-ai/nano-banana-2/edit',
     catalogUrl: process.env.CATALOG_URL ?? null,
     reference: null,
     referenceUri: null,
@@ -202,7 +218,7 @@ function usage() {
       '  --reference <file>   look reference to seed the base heads (default: scripts/reference-head.png)',
       '  --seed <n>           fal seed, for reproducible re-runs',
       '  --model <id>         text-to-image model  (default: fal-ai/nano-banana)',
-      '  --edit-model <id>    image-edit model     (default: fal-ai/nano-banana/edit)',
+      '  --edit-model <id>    image-edit model     (default: fal-ai/nano-banana-2/edit)',
       '  --catalog-url <url>  read the catalog from the API instead of mockCatalog.ts',
       '  --out <dir>          output directory     (default: assets/mannequins)',
       '  --concurrency <n>    parallel requests    (default: 3)',
@@ -504,7 +520,7 @@ async function generateStyleImage(job, options, manifest, key) {
       throw new Error(`no base sheet for ${gender} — run --compose-base --gender ${gender} first`);
     }
 
-    if (options.dryRun) return { prompt: styleSheetPrompt({ style, variant, extra: job.extra }), dryRun: true };
+    if (options.dryRun) return { prompt: styleSheetPrompt({ style, gender, variant, extra: job.extra }), dryRun: true };
 
     const baseUri = await dataUri(base);
 
@@ -516,7 +532,7 @@ async function generateStyleImage(job, options, manifest, key) {
     let missing = [];
 
     for (let attempt = 0; attempt <= options.sheetRetries; attempt += 1) {
-      const prompt = styleSheetPrompt({ style, variant, extra: job.extra, missing });
+      const prompt = styleSheetPrompt({ style, gender, variant, extra: job.extra, missing });
       const image = await withRetry(job.label, 3, async () => {
         const result = await runModel(
           options.editModel,

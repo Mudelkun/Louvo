@@ -21,6 +21,22 @@ interface GenerationState {
 const GenerationContext = createContext<GenerationState | null>(null);
 
 /**
+ * A failure, in the words a tile has room for.
+ *
+ * The model's own errors are long and quote the request back; what the user
+ * needs is which of three things went wrong, so the raw message is only used
+ * when it is short enough to be a sentence.
+ */
+function describeFailure(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  if (/EXPO_PUBLIC_FAL_KEY/.test(message)) return 'Generation is not configured';
+  if (/40[13]|unauthor|forbidden/i.test(message)) return 'The generator rejected the key';
+  if (/timed out/i.test(message)) return 'The generator took too long';
+  if (/network|fetch failed|Failed to fetch/i.test(message)) return 'No connection to the generator';
+  return message.length > 0 && message.length <= 60 ? message : 'Something went wrong';
+}
+
+/**
  * Background preview generation.
  *
  * Nothing blocks on a job: `start()` returns immediately, the caller sends the
@@ -43,8 +59,10 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
   const run = useCallback(
     (jobId: string, request: GenerateRequest) => {
-      const job = generateLook(request, ({ progress }) => {
-        setJobs((prev) => prev.map((entry) => (entry.id === jobId ? { ...entry, progress } : entry)));
+      const job = generateLook(request, ({ progress, stepIndex }) => {
+        setJobs((prev) =>
+          prev.map((entry) => (entry.id === jobId ? { ...entry, progress, stepIndex } : entry)),
+        );
       });
       running.current.set(jobId, job.cancel);
 
@@ -58,11 +76,14 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           setNotification(look);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           if (!running.current.has(jobId)) return; // cancelled, not failed
           running.current.delete(jobId);
+          const reason = describeFailure(error);
           setJobs((prev) =>
-            prev.map((entry) => (entry.id === jobId ? { ...entry, status: 'failed' } : entry)),
+            prev.map((entry) =>
+              entry.id === jobId ? { ...entry, status: 'failed', error: reason } : entry,
+            ),
           );
         });
     },
@@ -84,6 +105,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
           createdAt: Date.now(),
           status: 'processing',
           progress: 0,
+          stepIndex: 0,
         },
         ...prev,
       ]);
@@ -106,7 +128,11 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       const request = requests.current.get(jobId);
       if (!request) return;
       setJobs((prev) =>
-        prev.map((entry) => (entry.id === jobId ? { ...entry, status: 'processing', progress: 0 } : entry)),
+        prev.map((entry) =>
+          entry.id === jobId
+            ? { ...entry, status: 'processing', progress: 0, stepIndex: 0, error: undefined }
+            : entry,
+        ),
       );
       run(jobId, request);
     },

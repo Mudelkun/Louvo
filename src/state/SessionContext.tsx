@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 import type { GeneratedLook, Gender, HairTypeId, TryOnOptions } from '@/api/types';
+import { DEFAULT_HAIR_COLOR_ID } from '@/lib/constants';
 
 /** Everything the user has chosen during the current try-on run. */
 export interface Session {
@@ -20,13 +21,18 @@ export interface Session {
   hairstyleId: string | null;
   /**
    * The hair colour every mannequin is shown in, as a catalog colour id, or null
-   * for the shade the catalog was rendered in.
+   * for the shade each render was shot in.
    *
    * Colour sits here rather than on a hairstyle on purpose: it is one choice
    * applied to the whole app at once, so two styles side by side still differ
    * only by their cut. It survives moving between styles, which a per-style
    * setting would not, and it is copied onto a look when one is generated so a
    * saved look keeps the colour it was made in.
+   *
+   * It starts at `DEFAULT_HAIR_COLOR_ID` rather than at null for the same
+   * reason: null means "however each render happens to have been shot", and the
+   * catalog is shot in two shades, so it is the one value that lets two cards
+   * differ by more than their cut.
    */
   colorId: string | null;
   options: TryOnOptions;
@@ -39,7 +45,7 @@ const emptySession: Session = {
   hairTypeId: null,
   categoryId: null,
   hairstyleId: null,
-  colorId: null,
+  colorId: DEFAULT_HAIR_COLOR_ID,
   options: {},
   look: null,
 };

@@ -10,14 +10,17 @@
  */
 
 import { supportsHairType } from '@/lib/hairTypes';
+import { cacheRemoteImage } from '@/lib/imageData';
 
 import { mockCatalog } from './mockCatalog';
+import { canGenerateFor, generateTryOn, type TryOnStage } from './tryOn';
 import type {
   Catalog,
   Category,
   GeneratedLook,
   GenerationStep,
   Gender,
+  HairColor,
   HairType,
   HairTypeId,
   Hairstyle,
@@ -155,7 +158,7 @@ export function hairTypesFor(hairTypes: HairType[]): HairType[] {
 }
 
 // ---------------------------------------------------------------------------
-// Preview generation (simulated)
+// Preview generation
 // ---------------------------------------------------------------------------
 
 export const GENERATION_STEPS: GenerationStep[] = [
@@ -171,6 +174,20 @@ export interface GenerateRequest {
   hairType: HairTypeId | null;
   photoUri: string | null;
   options: TryOnOptions;
+  /**
+   * The shade the user *chose* to see their hair in, when there is something to
+   * choose with.
+   *
+   * Deliberately not `options.color`, and deliberately not the session colour.
+   * The session starts on `DEFAULT_HAIR_COLOR_ID` so the catalog's two shot
+   * shades stop reading as two hair colours in one grid (see `constants.ts`) —
+   * that is a display default, not a statement about anyone's hair, and feeding
+   * it to the generator would hand every user a black-haired preview they never
+   * asked for. Left undefined the preview keeps the subject's own colour, which
+   * is the honest answer for a preview of a *cut*. Putting a `<SwatchRow>` back
+   * in the UI means passing its value here, and nothing else changes.
+   */
+  hairColor?: HairColor | null;
 }
 
 export interface GenerateProgress {
@@ -179,15 +196,128 @@ export interface GenerateProgress {
   stepIndex: number;
 }
 
+/** Where a stage starts, and how far it may creep before the next one begins. */
+const STAGE_RANGE: Record<TryOnStage, [number, number]> = {
+  prepare: [0.02, 0.16],
+  apply: [0.2, 0.9],
+  finalize: [0.92, 0.99],
+};
+
+const STAGE_INDEX: Record<TryOnStage, number> = { prepare: 0, apply: 1, finalize: 2 };
+
 /**
- * Simulates the Fal.ai round trip: ~6 seconds of stepped progress, then returns
- * a look whose `resultUri` is the user's own photo (image generation is phase 3).
+ * Generates one preview.
  *
- * TODO(backend): POST /looks { hairstyleId, options, photo } and poll the job
- * until it resolves to a generated image URL. The progress callback contract
- * stays the same.
+ * Two paths behind one signature. With a fal key configured and a real photo to
+ * work from it runs `generateTryOn` — the user's photo plus the catalog's own
+ * renders of the chosen cut, edited by the model. Without either it runs the
+ * original simulation, which is what keeps the sample-photo walkthrough and a
+ * key-less checkout working end to end. `GeneratedLook.simulated` says which of
+ * the two happened, so no screen has to guess.
+ *
+ * TODO(backend): both paths collapse into POST /looks { hairstyleId, hairType,
+ * photo } plus a poll loop. The progress callback contract does not change; the
+ * key stops living in the app.
  */
 export function generateLook(
+  request: GenerateRequest,
+  onProgress: (update: GenerateProgress) => void,
+): { promise: Promise<GeneratedLook>; cancel: () => void } {
+  return canGenerateFor(request.photoUri)
+    ? runRealGeneration(request, onProgress)
+    : runSimulatedGeneration(request, onProgress);
+}
+
+function lookFrom(request: GenerateRequest, resultUri: string | null, simulated: boolean): GeneratedLook {
+  return {
+    id: `look_${Date.now().toString(36)}`,
+    hairstyleId: request.hairstyle.id,
+    hairstyleName: request.hairstyle.name,
+    gender: request.gender,
+    hairType: request.hairType,
+    sourcePhotoUri: request.photoUri,
+    resultUri,
+    options: request.options,
+    createdAt: Date.now(),
+    simulated,
+  };
+}
+
+/**
+ * The real round trip.
+ *
+ * Progress is honest about being an estimate: the queue tells us which of three
+ * stages we are in and nothing about how far through it is, so each stage creeps
+ * asymptotically toward its own ceiling and only a stage change moves the bar
+ * properly. A bar that never quite fills is better than one that sits at 40% for
+ * forty seconds.
+ */
+function runRealGeneration(
+  request: GenerateRequest,
+  onProgress: (update: GenerateProgress) => void,
+): { promise: Promise<GeneratedLook>; cancel: () => void } {
+  // `canGenerateFor` has already established this, but the narrowing has to be
+  // said out loud rather than cast away — this is the one place a null photo
+  // would reach the network layer.
+  const photoUri = request.photoUri;
+  if (!photoUri) return runSimulatedGeneration(request, onProgress);
+
+  const controller = new AbortController();
+  let stage: TryOnStage = 'prepare';
+  let progress = STAGE_RANGE.prepare[0];
+
+  const report = () => onProgress({ progress, stepIndex: STAGE_INDEX[stage] });
+
+  const creep = setInterval(() => {
+    const [, ceiling] = STAGE_RANGE[stage];
+    progress += (ceiling - progress) * 0.06;
+    report();
+  }, 400);
+
+  const promise = (async () => {
+    try {
+      const outcome = await generateTryOn(
+        {
+          hairstyle: request.hairstyle,
+          gender: request.gender,
+          hairType: request.hairType,
+          photoUri,
+          color: request.hairColor ?? null,
+        },
+        {
+          signal: controller.signal,
+          onStage: (next) => {
+            stage = next;
+            progress = Math.max(progress, STAGE_RANGE[next][0]);
+            report();
+          },
+        },
+      );
+
+      // Pulled onto the device before the look is handed over: a look outlives
+      // the url it arrived on, and "save to camera roll" needs a file.
+      const resultUri = await cacheRemoteImage(outcome.imageUrl, `${request.hairstyle.id}-${Date.now()}.png`);
+      progress = 1;
+      report();
+      return lookFrom(request, resultUri, false);
+    } finally {
+      clearInterval(creep);
+    }
+  })();
+
+  return { promise, cancel: () => controller.abort() };
+}
+
+/**
+ * The original stepped simulation: ~6 seconds of progress, then a look whose
+ * `resultUri` is the user's own photo.
+ *
+ * Still the path for the sample photo — which has no pixels behind it, only a
+ * sentinel that draws the procedural mannequin — and for anyone running without
+ * a key. It is not a fallback for a *failed* generation: a failure is reported
+ * as one, with the retry the job tile already offers.
+ */
+function runSimulatedGeneration(
   request: GenerateRequest,
   onProgress: (update: GenerateProgress) => void,
 ): { promise: Promise<GeneratedLook>; cancel: () => void } {
@@ -213,17 +343,7 @@ export function generateLook(
 
       if (progress >= 1) {
         if (timer) clearInterval(timer);
-        resolve({
-          id: `look_${Date.now().toString(36)}`,
-          hairstyleId: request.hairstyle.id,
-          hairstyleName: request.hairstyle.name,
-          gender: request.gender,
-          hairType: request.hairType,
-          sourcePhotoUri: request.photoUri,
-          resultUri: request.photoUri,
-          options: request.options,
-          createdAt: Date.now(),
-        });
+        resolve(lookFrom(request, request.photoUri, true));
       }
     }, tickMs);
 

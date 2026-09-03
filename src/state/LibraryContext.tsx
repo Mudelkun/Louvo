@@ -6,6 +6,17 @@ import type { GeneratedLook } from '@/api/types';
 const FAVOURITES_KEY = 'hairify.favourites.v1';
 const LOOKS_KEY = 'hairify.looks.v1';
 
+/**
+ * Looks stored before generation existed carry no `simulated` flag, and the
+ * missing value has to read as `true`: every one of them is the user's own photo
+ * with a style recorded against it. Defaulting the other way would hang a "your
+ * new look" label on an unedited photo.
+ */
+function readLooks(raw: string): GeneratedLook[] {
+  const stored = JSON.parse(raw) as GeneratedLook[];
+  return stored.map((look) => ({ ...look, simulated: look.simulated ?? true }));
+}
+
 interface LibraryState {
   favouriteIds: string[];
   savedLooks: GeneratedLook[];
@@ -35,7 +46,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         const [rawFavourites, rawLooks] = await AsyncStorage.multiGet([FAVOURITES_KEY, LOOKS_KEY]);
         if (!active) return;
         if (rawFavourites[1]) setFavouriteIds(JSON.parse(rawFavourites[1]));
-        if (rawLooks[1]) setSavedLooks(JSON.parse(rawLooks[1]));
+        if (rawLooks[1]) setSavedLooks(readLooks(rawLooks[1]));
       } catch {
         // A corrupt cache is not worth blocking the app for.
       } finally {
