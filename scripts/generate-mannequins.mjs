@@ -34,7 +34,7 @@ import readline from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 
 import { loadCatalog } from './lib/catalog.mjs';
-import { writeRenderModule } from './lib/renders.mjs';
+import { ensureRenderDirs, writeRenderModule } from './lib/renders.mjs';
 import {
   HAIR_TYPE_IDS,
   VARIANT_IDS,
@@ -44,6 +44,7 @@ import {
   unsupportedTypes,
   variantsOf,
 } from './lib/variants.mjs';
+import { ANCHOR_LENGTH, hasLengths, lengthDir, lengthPairs, lengthsOf, validateLengths } from './lib/lengths.mjs';
 import { fetchImageBytes, firstImage, runModel, withRetry } from './lib/fal.mjs';
 import {
   baseHalfFromFrontPrompt,
@@ -51,9 +52,25 @@ import {
   baseHeadPrompt,
   standaloneStylePrompt,
   stylePrompt,
+  styleLengthSheetPrompt,
   styleSheetPrompt,
 } from './lib/prompts.mjs';
-import { SHEET, composeSheet, formatCoverage, inspectSheet, sliceSheet } from './lib/sheet.mjs';
+import {
+  SHEET,
+  composeGrid,
+  composeSheet,
+  formatContrast,
+  formatCoverage,
+  gridAspect,
+  inspectLengthSheet,
+  inspectSheet,
+  lengthBaseCells,
+  lengthContrast,
+  lengthSheet,
+  parseLengthCell,
+  sliceLengthSheet,
+  sliceSheet,
+} from './lib/sheet.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -78,6 +95,21 @@ const GENDERS = ['male', 'female'];
  */
 const APPROX_COST_PER_IMAGE = 0.08;
 
+/**
+ * What a higher resolution tier multiplies the bill by.
+ *
+ * nano-banana prices 2K at 1.5x its base rate. That is the number that makes the
+ * length sheet worth doing: one 12-panel 2K sheet is $0.12 against $0.24 for
+ * three 4-panel 1K sheets of the same twelve views, and the panels come out the
+ * same 512x512 either way. Half the money for a set of images that is also
+ * internally consistent, which separate sheets could never be.
+ */
+const RESOLUTION_MULTIPLIER = { '1K': 1, '2K': 1.5, '4K': 3 };
+
+/** What one generation costs at the tier this run is asking for. */
+const costPerImage = (options) =>
+  APPROX_COST_PER_IMAGE * (RESOLUTION_MULTIPLIER[options.resolution] ?? 1);
+
 // ---------------------------------------------------------------------------
 // CLI
 // ---------------------------------------------------------------------------
@@ -96,6 +128,28 @@ function parseArgs(argv) {
      * generates only the renders type 4 users would be shown.
      */
     variants: null,
+    /**
+     * Shoot the length dimension: one sheet per style x variant x gender holding
+     * every length that style is offered at, cut into one render per length x
+     * angle. Narrows the run to the styles that carry a `lengths` row, since
+     * most of the catalog has no useful length range and a fade's variable is
+     * its fade height.
+     */
+    lengths: false,
+    /**
+     * The resolution tier to ask the edit model for, or null for its own default
+     * (1K, which is what every render on disk was shot at).
+     *
+     * A length sheet defaults this to 2K and needs to: twelve panels in a 1K
+     * frame are ~341x256 against today's 512x512, and CLAUDE.md already records
+     * what that costs — at 1K a fade's stubble field and the separation at a
+     * hairline land under a pixel and come back as a smooth mass. At 2K a 4x3
+     * frame is 2048x1536 and a panel is exactly the 512x512 the catalog already
+     * holds.
+     */
+    resolution: null,
+    /** Print the per-style commands for the length batch and generate nothing. */
+    plan: false,
     model: process.env.FAL_MODEL ?? 'fal-ai/nano-banana',
     /**
      * The catalog was shot on `fal-ai/nano-banana/edit` up to the men x curly
@@ -167,6 +221,9 @@ function parseArgs(argv) {
       case '--base-only': options.baseOnly = true; break;
       case '--compose-base': options.composeBase = true; break;
       case '--sheet': options.sheet = true; break;
+      case '--lengths': options.lengths = true; options.sheet = true; break;
+      case '--resolution': options.resolution = next(); break;
+      case '--plan': options.plan = true; break;
       case '--sheet-inset': options.inset = Number(next()); break;
       case '--sheet-retries': options.sheetRetries = Number(next()); break;
       case '--check': options.check = true; break;
@@ -190,6 +247,17 @@ function parseArgs(argv) {
   if (!Number.isFinite(options.inset) || options.inset < 0) fail('--sheet-inset must be zero or more pixels');
   if (!Number.isFinite(options.sheetRetries) || options.sheetRetries < 0) fail('--sheet-retries must be zero or more');
   if (options.sheet && options.noEdit) fail('--sheet edits the composed base sheet, so it cannot be combined with --no-edit');
+  // A length sheet is a sheet by construction, so --lengths implies --sheet and
+  // the two can never disagree; this only catches an explicit --no-edit.
+  if (options.lengths && options.noEdit) fail('--lengths is a sheet edit, so it cannot be combined with --no-edit');
+  if (options.resolution && !RESOLUTION_MULTIPLIER[options.resolution]) {
+    fail(`--resolution must be one of ${Object.keys(RESOLUTION_MULTIPLIER).join(', ')}`);
+  }
+  // The tier the length sheet needs, unless the caller has deliberately asked
+  // for another one. Set here rather than in the defaults so `--resolution 1K
+  // --lengths` still means 1K — useful for measuring the thing this defends
+  // against, and useless for anything else.
+  if (options.lengths && !options.resolution) options.resolution = '2K';
 
   return options;
 }
@@ -211,6 +279,9 @@ function usage() {
       '  --base-only          generate just the bald base heads and stop',
       '  --compose-base       tile the approved base heads into a 2x2 sheet — free, calls nothing',
       '  --sheet              one generation per style: edit the base sheet, then cut it into four views',
+      '  --lengths            shoot the length dimension: one sheet per style holding every length it offers',
+      '  --resolution <tier>  1K, 2K or 4K (default: the model\'s own, or 2K with --lengths)',
+      '  --plan               print the per-style length commands and generate nothing',
       '  --sheet-inset <n>    trim n pixels off every panel edge when cutting a sheet',
       '  --sheet-retries <n>  re-rolls allowed when a sheet comes back with a bald head (default: 2)',
       '  --check              inspect the sheets already on disk for bald panels and stop',
@@ -299,6 +370,29 @@ const styleFile = (options, styleId, variant, gender, angle) =>
   path.join(options.out, styleId, variant, `${gender}-${angle}.png`);
 const styleSheetFile = (options, styleId, variant, gender) =>
   path.join(options.out, styleId, variant, `${gender}-sheet.png`);
+
+/**
+ * `<style>/<variant>/<length>/<gender>-<angle>.png` — except for the anchor,
+ * which keeps the path it already has.
+ *
+ * `medium` is the length every render on disk already depicts: the catalog was
+ * shot from a prompt that says nothing about length, so what is there is the cut
+ * as authored, and that is what the anchor names. Giving it a directory would
+ * mean moving 356 renders and 356 masks for no gain, and would leave a style
+ * with no length row — most of the catalog — sitting in a `medium/` folder that
+ * means nothing. So the anchor stays loose in the variant directory and only
+ * `short` and `long` are nested. `lengthDir()` is the one place that decides it.
+ */
+const lengthStyleFile = (options, styleId, variant, gender, length, angle) => {
+  const dir = lengthDir(length);
+  return dir
+    ? path.join(options.out, styleId, variant, dir, `${gender}-${angle}.png`)
+    : styleFile(options, styleId, variant, gender, angle);
+};
+
+/** The generated length sheet, kept beside the four-view sheet it replaces. */
+const lengthSheetFile = (options, styleId, variant, gender) =>
+  path.join(options.out, styleId, variant, `${gender}-lengths.png`);
 
 /**
  * Which variants of one style this run should produce.
@@ -410,6 +504,9 @@ function imageInput(options, prompt, extra = null, attempt = 0) {
     num_images: 1,
     aspect_ratio: '1:1',
     output_format: 'png',
+    // Only sent when a tier was asked for, so a normal catalog batch is byte
+    // for byte the request it has always been. A length sheet sets it to 2K.
+    ...(options.resolution ? { resolution: options.resolution } : null),
     ...(options.seed === null ? null : { seed: options.seed + attempt }),
     ...extra,
   };
@@ -496,6 +593,136 @@ Base heads: generating ${missing.length} of ${needed.length}`);
 }
 
 /**
+ * One style x variant x gender at every length it is offered at, in a single
+ * generation.
+ *
+ * Structurally the same loop as the four-view branch below — compose a base,
+ * edit it, measure every panel, re-roll the bald ones by name, keep the best
+ * attempt — against a taller grid. The base is composed here rather than read
+ * from `_base/`: a length base is the same four approved heads repeated once per
+ * row, which is free to tile and would only be a second thing to keep in sync if
+ * it were cached on disk.
+ */
+async function generateLengthSheet(job, options, key) {
+  const { style, gender, variant, lengths, file } = job;
+  const layout = lengthSheet(lengths);
+
+  if (options.dryRun) {
+    return { prompt: styleLengthSheetPrompt({ style, gender, lengths, variant, extra: job.extra }), dryRun: true };
+  }
+
+  const heads = Object.fromEntries(
+    await Promise.all(
+      SHEET.cells.map(async (a) => {
+        const head = baseFile(options, gender, a);
+        if (!existsSync(head)) {
+          throw new Error(`missing base head ${relative(options, head)} — run with --base-only first`);
+        }
+        return [a, await readFile(head)];
+      }),
+    ),
+  );
+
+  const composed = composeGrid(layout, lengthBaseCells(heads, lengths));
+  const baseUri = `data:image/png;base64,${composed.png.toString('base64')}`;
+
+  let best = null;
+  let missing = [];
+  let flat = [];
+
+  for (let attempt = 0; attempt <= options.sheetRetries; attempt += 1) {
+    const prompt = styleLengthSheetPrompt({ style, gender, lengths, variant, extra: job.extra, missing, flat });
+    const image = await withRetry(job.label, 3, async () => {
+      const result = await runModel(
+        options.editModel,
+        imageInput(options, prompt, { image_urls: [baseUri], aspect_ratio: gridAspect(layout) }, attempt),
+        { key },
+      );
+      return firstImage(result);
+    });
+
+    const bytes = await fetchImageBytes(image.url);
+
+    let coverage = {};
+    let bald = [];
+    // A length sheet has two ways to fail, and both are silent in the response.
+    // A bald panel is a head the model skipped; a flat sheet is a range it did
+    // not draw. Neither is visible without measuring, so both are measured, and
+    // a sheet is only finished when it has neither.
+    let contrast = { rows: [], ratios: [], flat: [] };
+    try {
+      ({ coverage, bald } = inspectLengthSheet(bytes, lengths, { angles: options.angles }));
+      contrast = lengthContrast(coverage, lengths, { angles: options.angles });
+    } catch (error) {
+      console.warn(`  ! ${job.label}: could not measure hair coverage (${error.message})`);
+    }
+
+    // Ranked on both faults together, so a re-roll that fixes a bald panel by
+    // flattening the range is not mistaken for an improvement.
+    const faults = bald.length + contrast.flat.length;
+    if (!best || faults < best.faults) {
+      best = { prompt, url: image.url, bytes, coverage, bald, contrast, faults };
+    }
+    if (!faults) {
+      console.log(`  · ${job.label}: ${formatContrast(lengths, contrast)}`);
+      break;
+    }
+
+    missing = bald;
+    flat = contrast.flat;
+    const left = attempt < options.sheetRetries ? ' — re-rolling' : ' — out of retries';
+    if (bald.length) console.warn(`  ! ${job.label}: ${bald.join(', ')} came back bald${left}`);
+    if (contrast.flat.length) {
+      console.warn(
+        `  ! ${job.label}: ${contrast.flat.join(', ')} barely differs from the row above ` +
+          `(${formatContrast(lengths, contrast)})${left}`,
+      );
+    }
+  }
+
+  await saveBytes(file, best.bytes);
+  if (best.faults) {
+    console.warn(`  ! ${job.label}: kept the best of ${options.sheetRetries + 1} — ${formatContrast(lengths, best.contrast)}`);
+  }
+  return {
+    prompt: best.prompt,
+    url: best.url,
+    coverage: best.coverage,
+    bald: best.bald,
+    contrast: best.contrast,
+  };
+}
+
+/**
+ * Cuts a length sheet into one render per length x angle.
+ *
+ * The anchor row lands on top of the render that is already there, and that is
+ * deliberate rather than careless: the three lengths only mean anything as a set
+ * if they came out of one generation, so the medium row has to replace the
+ * separately-shot medium it is meant to sit between. Re-shooting the anchor is
+ * the cost of the dimension, and `--matrix` counts it.
+ */
+async function sliceLengthPanels(options, job) {
+  const panels = sliceLengthSheet(await readFile(job.file), job.lengths, {
+    angles: options.angles,
+    inset: options.inset,
+  });
+  const entries = {};
+
+  for (const panel of panels) {
+    const file = lengthStyleFile(options, job.style.id, job.variant, job.gender, panel.length, panel.angle);
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, panel.png);
+    entries[`${panel.length}:${panel.angle}`] = {
+      file: relative(options, file),
+      from: relative(options, job.file),
+      crop: panel.crop,
+    };
+  }
+  return entries;
+}
+
+/**
  * Passes the base head to the edit model by its fal-hosted url when we have one
  * and as a data uri otherwise, so an approved head keeps working after the
  * hosted url expires.
@@ -513,6 +740,8 @@ async function baseImageRef(options, manifest, gender, angle) {
 
 async function generateStyleImage(job, options, manifest, key) {
   const { style, gender, angle, variant, file } = job;
+
+  if (job.lengths) return generateLengthSheet(job, options, key);
 
   if (options.sheet) {
     const base = baseSheetFile(options, gender);
@@ -624,6 +853,28 @@ function buildJobs(catalog, options, overrides) {
       for (const gender of style.genders) {
         if (!options.genders.includes(gender)) continue;
 
+        // A length run is a different unit of work: one sheet per style x
+        // variant x gender covering every length, rather than one per angle or
+        // one per four angles. Styles with no length row are skipped entirely
+        // rather than shot at a single length, because a run that quietly
+        // widened to the whole catalog would be an expensive surprise.
+        if (options.lengths) {
+          if (!hasLengths(style, gender)) continue;
+          const file = lengthSheetFile(options, style.id, variant, gender);
+          jobs.push({
+            style,
+            variant,
+            gender,
+            angle: null,
+            lengths: lengthsOf(style, gender),
+            file,
+            extra: overrides[style.id] ?? null,
+            label: `${style.id} ${variant}/${gender} lengths`,
+            exists: existsSync(file),
+          });
+          continue;
+        }
+
         // One sheet covers every angle, so sheet mode plans per gender and the
         // angles come out of the crop rather than out of separate generations.
         for (const angle of options.sheet ? [null] : options.angles) {
@@ -701,6 +952,99 @@ function dedupe(pairs) {
   const seen = new Map();
   for (const pair of pairs) seen.set(`${pair.gender}/${pair.angle}`, pair);
   return [...seen.values()];
+}
+
+
+// ---------------------------------------------------------------------------
+// The length plan
+// ---------------------------------------------------------------------------
+
+/**
+ * Prints one command per style x gender that carries a length row, and
+ * generates nothing.
+ *
+ * The list is derived from the catalog's own `lengths` rows rather than typed
+ * out, for the same reason `--matrix` derives its table: the classification is
+ * data, it will change, and a hand-kept list of commands would be wrong the
+ * first time a row moved. Adding a style to the length dimension is a row in
+ * `mockCatalog.ts` and a re-run of this.
+ *
+ * Ordered men first, then women, and within each by how much of the batch is
+ * already on disk — so the cheapest confirmations come first and an expensive
+ * re-shoot is never the thing you try the pipeline on.
+ */
+async function printLengthPlan(options, catalog) {
+  const problems = catalog.hairstyles.flatMap((style) => validateLengths(style));
+  if (problems.length) {
+    console.error('\nInvalid length rows:');
+    for (const problem of problems) console.error(`  ! ${problem}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const pairs = lengthPairs(catalog, {
+    styles: options.styles,
+    genders: options.genders,
+  });
+
+  if (!pairs.length) {
+    console.log('\nNo hairstyle in the catalog carries a `lengths` row.');
+    return;
+  }
+
+  const cost = costPerImage({ resolution: options.resolution ?? '2K' });
+  let sheets = 0;
+  let done = 0;
+
+  const rows = pairs.map(({ style, gender, lengths }) => {
+    const variants = variantsForRun(style, options);
+    const shot = variants.filter((variant) =>
+      existsSync(lengthSheetFile(options, style.id, variant, gender)),
+    ).length;
+    sheets += variants.length;
+    done += shot;
+    return { style, gender, lengths, variants, shot };
+  });
+
+  for (const gender of options.genders) {
+    const mine = rows
+      .filter((row) => row.gender === gender)
+      .sort((a, b) => b.shot - a.shot || a.style.id.localeCompare(b.style.id));
+    if (!mine.length) continue;
+
+    console.log(`\n${'='.repeat(72)}\n${gender === 'male' ? "MEN'S" : "WOMEN'S"} HAIRSTYLES — ${mine.length} to shoot\n${'='.repeat(72)}`);
+
+    for (const row of mine) {
+      const left = row.variants.length - row.shot;
+      const price = `$${(left * cost).toFixed(2)}`;
+      const state = row.shot ? ` (${row.shot}/${row.variants.length} already shot)` : '';
+      console.log(
+        `\n# ${row.style.name} — ${row.lengths.join(' / ')} — ` +
+          `${row.variants.length} sheet(s) x ${row.lengths.length * options.angles.length} panels, ${price}${state}`,
+      );
+      console.log(
+        `node scripts/generate-mannequins.mjs --lengths --style ${row.style.id} --gender ${gender}`,
+      );
+    }
+  }
+
+  const left = sheets - done;
+  console.log(`\n${'='.repeat(72)}`);
+  console.log(
+    `${pairs.length} style x gender pair(s), ${sheets} sheet(s), ${sheets * 12} panel(s) at most.\n` +
+      `${done} sheet(s) already shot, ${left} to go — roughly $${(left * cost).toFixed(2)} at $${cost.toFixed(3)}/sheet.`,
+  );
+  console.log(
+    '\nEach command shoots every hair-type variant of that style x gender, and each sheet\n' +
+      'carries all of its lengths in one generation — so the lengths of one cut are always\n' +
+      'consistent with each other. The anchor row is re-shot and replaces the render that is\n' +
+      'already there: three lengths only mean anything as a set if they came from one image.',
+  );
+  console.log(
+    '\nThe app updates itself as each one lands: the generator rewrites\n' +
+      'src/api/mannequinRenders.generated.ts after every finished style and Metro fast-refreshes,\n' +
+      'so a style generated while `npm start` is running appears without a restart.',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -821,6 +1165,22 @@ async function checkSheets(options, manifest, catalog) {
     for (const variant of variantsForRun(style, options)) {
       for (const gender of style.genders) {
         if (!options.genders.includes(gender)) continue;
+        // Length sheets are checked in preference to the four-view sheet they
+        // replace: where both exist the length one is what the app is showing,
+        // and it is the one with a second way to fail.
+        const lengths = lengthsOf(style, gender);
+        const lengthFile = lengthSheetFile(options, style.id, variant, gender);
+        if (lengths.length > 1 && existsSync(lengthFile)) {
+          const bytes = await readFile(lengthFile);
+          const { coverage, bald } = inspectLengthSheet(bytes, lengths, { angles: options.angles });
+          const contrast = lengthContrast(coverage, lengths, { angles: options.angles });
+          rows.push({ id: style.id, variant, gender, coverage, bald, lengths, contrast });
+
+          const entry = manifest.styles?.[style.id]?.[variant]?.[gender]?.lengths;
+          if (entry) Object.assign(entry, { coverage, bald, contrast });
+          continue;
+        }
+
         const file = styleSheetFile(options, style.id, variant, gender);
         if (!existsSync(file)) continue;
         const { coverage, bald } = inspectSheet(await readFile(file), { angles: options.angles });
@@ -841,11 +1201,34 @@ async function checkSheets(options, manifest, catalog) {
 
   const name = ({ id, variant, gender }) => `${id} ${variant}/${gender}`;
   const width = Math.max(...rows.map((row) => name(row).length));
-  console.log(`\nChecking ${rows.length} sheet(s) for bald views:\n`);
+  console.log(`\nChecking ${rows.length} sheet(s):\n`);
   for (const row of rows) {
+    // A length sheet is reported on its range rather than on its per-angle
+    // coverage: twelve percentages is not something anyone reads, and the
+    // question being asked of a length sheet is whether the slider will look
+    // like it does anything.
+    if (row.lengths) {
+      const faults = [
+        ...(row.bald.length ? [`${row.bald.join(', ')} bald`] : []),
+        ...(row.contrast.flat.length ? [`${row.contrast.flat.join(', ')} too close to the row above`] : []),
+      ];
+      console.log(
+        `  ${faults.length ? '✗' : '✓'} ${name(row).padEnd(width)}  ${formatContrast(row.lengths, row.contrast)}` +
+          `${faults.length ? `   <- ${faults.join('; ')}` : ''}`,
+      );
+      continue;
+    }
     console.log(
       `  ${row.bald.length ? '✗' : '✓'} ${name(row).padEnd(width)}  ${formatCoverage(row.coverage, options.angles)}` +
         `${row.bald.length ? `   <- ${row.bald.join(', ')} bald` : ''}`,
+    );
+  }
+
+  const weak = rows.filter((row) => row.lengths && row.contrast.flat.length);
+  if (weak.length) {
+    console.log(
+      `\n${weak.length} length sheet(s) do not show a wide enough range. Re-roll them:\n` +
+        [...new Set(weak.map((row) => `  node scripts/generate-mannequins.mjs --lengths --force --style ${row.id} --gender ${row.gender}`))].join('\n'),
     );
   }
 
@@ -855,7 +1238,13 @@ Contact sheet: ${await writeContactSheet(options, manifest, catalog)}`);
 
   const bad = rows.filter((row) => row.bald.length);
   if (!bad.length) {
-    console.log(`\nAll ${rows.length} sheet(s) have hair on all ${options.angles.length} views.`);
+    // Counted per sheet rather than assumed: a length sheet carries one row
+    // of views per length, so "all 4 views" is the wrong number for it.
+    const views = rows.reduce(
+      (total, row) => total + options.angles.length * (row.lengths?.length ?? 1),
+      0,
+    );
+    console.log(`\nAll ${rows.length} sheet(s) have hair on all ${views} view(s).`);
     return;
   }
 
@@ -975,7 +1364,7 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   const key = await readKey();
 
-  if (!key && !options.dryRun && !options.check && !options.matrix) {
+  if (!key && !options.dryRun && !options.check && !options.matrix && !options.plan) {
     console.error(
       'FAL_KEY is not set. Put it in .env.local at the repo root:\n\n  FAL_KEY=your-key-here\n\n' +
         '(.env*.local is already gitignored.) Use --dry-run to preview prompts without a key.',
@@ -990,6 +1379,11 @@ async function main() {
   await mkdir(options.out, { recursive: true });
 
   console.log(`Catalog: ${catalog.hairstyles.length} styles from ${options.catalogUrl ?? 'src/api/mockCatalog.ts'}`);
+
+  if (options.plan) {
+    await printLengthPlan(options, catalog);
+    return;
+  }
 
   if (options.matrix) {
     await printMatrix(options, catalog);
@@ -1034,10 +1428,11 @@ async function main() {
   console.log(
     `Plan: ${todo.length} ${options.sheet ? 'style sheet(s)' : 'style image(s)'}` +
       `${skipped ? ` — ${skipped} already generated, --force to redo` : ''}` +
-      `${options.sheet ? `\nEach sheet is cut into ${options.angles.length} view(s) locally — ${todo.length * options.angles.length} image(s) for ${todo.length} generation(s)` : ''}` +
+      `${options.lengths ? `\nEach sheet is cut into ${options.angles.length} view(s) per length locally` : options.sheet ? `\nEach sheet is cut into ${options.angles.length} view(s) locally — ${todo.length * options.angles.length} image(s) for ${todo.length} generation(s)` : ''}` +
       `${baseMissing ? `, plus ${baseMissing} base head(s)` : ''}` +
-      `\nCost: ~${total} generation(s), roughly $${(total * APPROX_COST_PER_IMAGE).toFixed(2)} at ` +
-      `$${APPROX_COST_PER_IMAGE}/image (approximate — check fal.ai/pricing)`,
+      `\nCost: ~${total} generation(s), roughly $${(total * costPerImage(options)).toFixed(2)} at ` +
+      `$${costPerImage(options).toFixed(3)}/image${options.resolution ? ` (${options.resolution})` : ''} ` +
+      '(approximate — check fal.ai/pricing)',
   );
 
   if (!todo.length) {
@@ -1049,6 +1444,18 @@ async function main() {
   if (!options.dryRun && !options.yes && total > 4 && !(await confirm('Generate?'))) {
     console.log('Cancelled.');
     return;
+  }
+
+  // Before anything is generated, not as each style lands: Metro's watcher on
+  // Windows and Linux loses files written into a directory it has not finished
+  // registering, and a `--lengths` run creates `short/` and `long/` and fills
+  // them within milliseconds. Creating them up here means the first panel is
+  // written a whole generation later than its directory — see
+  // `ensureRenderDirs`. `npm start` does the same thing for the catalog as it
+  // stands; this covers a style the catalog gained since the server booted.
+  if (!options.dryRun) {
+    const created = await ensureRenderDirs({ out: options.out, catalog });
+    if (created.length) console.log(`Created ${created.length} render directory(s) ahead of the run`);
   }
 
   await ensureBaseHeads(options, manifest, baseNeeded, key);
@@ -1072,7 +1479,18 @@ async function main() {
       const byAngle = (byVariant[job.gender] ??= {});
       const entry = { file: relative(options, job.file), url: result.url, prompt: result.prompt };
 
-      if (options.sheet) {
+      if (job.lengths) {
+        byAngle.lengths = {
+          ...entry,
+          coverage: result.coverage,
+          bald: result.bald,
+          // Kept so a sheet that came back flat can be found later without
+          // re-measuring every image in the catalog.
+          contrast: result.contrast,
+        };
+        if (result.bald.length) incomplete.push({ job, bald: result.bald });
+        Object.assign(byAngle, await sliceLengthPanels(options, job));
+      } else if (options.sheet) {
         byAngle.sheet = { ...entry, coverage: result.coverage, bald: result.bald };
         if (result.bald.length) incomplete.push({ job, bald: result.bald });
         Object.assign(

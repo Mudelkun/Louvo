@@ -82,7 +82,7 @@ export default function CompareScreen() {
             beforeUri={look.sourcePhotoUri}
             afterUri={look.resultUri}
             height={STAGE_WIDTH * 1.24}
-            beforeTint={look.simulated ? 'rgba(23,21,26,0.06)' : null}
+            beforeTint={look.simulated ? 'rgba(24,21,19,0.06)' : null}
             afterTint={look.simulated ? 'rgba(255,90,60,0.08)' : null}
             beforeDemo={{ shape: DEMO_BASE_SHAPE, color: BASE_HAIR_COLOR, gender }}
             afterDemo={{ shape: hairstyle.shape, color, gender }}
@@ -121,7 +121,7 @@ export default function CompareScreen() {
             problem. */}
         {look.simulated ? (
           <View style={styles.noticeRow}>
-            <Pill tone="gold" label="Not generated" />
+            <Pill tone="rust" label="Not generated" />
             <Text style={[type.caption, { color: colors.muted, flex: 1 }]}>
               Both sides are your original photo. This look was simulated, so there is nothing to
               compare yet — see Settings for whether the generator is live.

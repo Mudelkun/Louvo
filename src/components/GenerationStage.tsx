@@ -129,7 +129,7 @@ export function Scissors({ size = 58 }: { size?: number }) {
   const half = (mirrored: boolean) => (
     <Svg width={size} height={size} viewBox="-36 -36 72 72">
       <G transform={mirrored ? 'scale(1,-1)' : undefined}>
-        <Path d={BLADE} fill={colors.onDark} stroke="rgba(25,22,39,0.3)" strokeWidth={0.9} strokeLinejoin="round" />
+        <Path d={BLADE} fill={colors.onDark} stroke="rgba(24,21,19,0.3)" strokeWidth={0.9} strokeLinejoin="round" />
         <Path d={SHANK} stroke={colors.onDark} strokeWidth={3} strokeLinecap="round" fill="none" />
         <Circle cx={RING.cx} cy={RING.cy} r={RING.r} stroke={colors.onDark} strokeWidth={2.8} fill="none" />
       </G>
@@ -309,7 +309,7 @@ export function ScanningPhoto({
         <Defs>
           <SvgGradient id={`frame${uid}`} x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor={colors.accent} />
-            <Stop offset="1" stopColor="#FF9A6C" />
+            <Stop offset="1" stopColor={colors.accentGlow} />
           </SvgGradient>
         </Defs>
         <Rect
@@ -343,7 +343,7 @@ export function ScanningPhoto({
 }
 
 /** Transparent into accent into a bright leading edge — the trail behind the cut line. */
-const SCAN_GRADIENT = ['rgba(109,58,242,0)', 'rgba(109,58,242,0.22)', 'rgba(255,255,255,0.55)'] as const;
+const SCAN_GRADIENT = ['rgba(154,107,36,0)', 'rgba(154,107,36,0.24)', 'rgba(255,255,255,0.55)'] as const;
 
 // ---------------------------------------------------------------------------
 // What is happening

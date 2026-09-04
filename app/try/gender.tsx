@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Gender } from '@/api/types';
@@ -20,12 +20,21 @@ const OPTIONS: { id: Gender; label: string; icon: keyof typeof Ionicons.glyphMap
  * pair, and sitting them next to each other says so without any chrome. The
  * type is left-aligned and the tiles carry a hairline instead of a shadow, so
  * the only thing with any weight on the screen is the option in hand.
+ *
+ * Nothing is highlighted until the user taps. The highlight used to read from
+ * the session, which is fine on a first run — gender starts null — and wrong on
+ * every later one: the session keeps the gender across `restartStyleChoice` and
+ * across going back to the photo step, so returning to the question showed it
+ * already answered. A screen that asks a question must not also pre-answer it,
+ * so the highlight is local to this visit and the session is only ever written.
  */
 export default function GenderScreen() {
   const router = useRouter();
-  const { gender, setGender } = useSession();
+  const { setGender } = useSession();
+  const [chosen, setChosen] = useState<Gender | null>(null);
 
   const choose = (value: Gender) => {
+    setChosen(value);
     setGender(value);
     router.push('/try/hair-type');
   };
@@ -40,7 +49,7 @@ export default function GenderScreen() {
 
         <View style={styles.row}>
           {OPTIONS.map((option) => {
-            const selected = gender === option.id;
+            const selected = chosen === option.id;
             return (
               <Pressable
                 key={option.id}

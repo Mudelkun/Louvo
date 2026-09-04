@@ -14,6 +14,7 @@ import { ProgressRing } from '@/components/ProgressRing';
 import { Screen } from '@/components/Screen';
 import { StyleCard } from '@/components/StyleCard';
 import { useHairColor, useLookColor } from '@/hooks/useHairColor';
+import { confirmDestructive } from '@/lib/confirm';
 import { DEMO_BASE_SHAPE } from '@/lib/constants';
 import { textureFor, variantCandidates } from '@/lib/hairTypes';
 import { useCatalog } from '@/state/CatalogContext';
@@ -48,6 +49,19 @@ export default function ProfileTab() {
   const openLook = (look: GeneratedLook) => {
     setLook(look);
     router.push('/try/result');
+  };
+
+  // A look is a generation the user paid a wait for and there is no undo, so
+  // the trash icon asks first. The look is named in the question: the tiles are
+  // small and the icon sits on top of the picture, so "this one" has to be
+  // confirmable without trusting the tap landed where the user thought.
+  const confirmDelete = (look: GeneratedLook) => {
+    confirmDestructive({
+      title: 'Delete this look?',
+      message: `Your ${look.hairstyleName} preview will be removed from this device. This can't be undone.`,
+      confirmLabel: 'Delete',
+      onConfirm: () => removeLook(look.id),
+    });
   };
 
   return (
@@ -99,7 +113,7 @@ export default function ProfileTab() {
                     look={look}
                     hairstyle={style}
                     onPress={() => openLook(look)}
-                    onDelete={() => removeLook(look.id)}
+                    onDelete={() => confirmDelete(look)}
                   />
                 );
               })}
@@ -178,7 +192,7 @@ function LookTile({
         demoWidth={CARD_HEIGHT * 0.78}
       >
         <LinearGradient
-          colors={['transparent', 'rgba(25,22,39,0.72)']}
+          colors={['transparent', 'rgba(24,21,19,0.72)']}
           style={styles.caption}
           pointerEvents="none"
         >
@@ -337,6 +351,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(25,22,39,0.55)',
+    backgroundColor: 'rgba(24,21,19,0.55)',
   },
 });

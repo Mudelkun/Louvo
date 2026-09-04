@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { hairTypesFor } from '@/api/client';
@@ -38,11 +38,21 @@ import { colors, radii, spacing, type } from '@/theme/theme';
  *
  * Nothing here names a hair type: the four come from the catalog like
  * everything else, so a fifth would be a data change.
+ *
+ * And nothing is highlighted until the user taps. The highlight used to read
+ * the session's `hairTypeId`, where null is both "All Types" and "not asked
+ * yet" — so the screen opened with its own escape hatch already lit, answering
+ * the question on the user's behalf before they had read it. The tap is what
+ * distinguishes the two, so the highlight is local to this visit and starts
+ * unset; the session is only ever written from here.
  */
 export default function HairTypeScreen() {
   const router = useRouter();
   const { hairTypes, loading } = useCatalog();
-  const { gender, hairTypeId, setHairType } = useSession();
+  const { gender, setHairType } = useSession();
+  // `undefined` is "nothing tapped yet", which `null` cannot be: null is a real
+  // answer here — it is All Types.
+  const [chosen, setChosen] = useState<HairTypeId | null | undefined>(undefined);
 
   const entries = hairTypesFor(hairTypes);
 
@@ -61,6 +71,7 @@ export default function HairTypeScreen() {
 
   const choose = (value: HairTypeId | null) => {
     if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => undefined);
+    setChosen(value);
     setHairType(value);
     router.push('/try/catalog');
   };
@@ -82,7 +93,7 @@ export default function HairTypeScreen() {
           <>
             <View style={styles.group} accessibilityRole="radiogroup">
               {entries.map((entry, index) => {
-                const selected = hairTypeId === entry.id;
+                const selected = chosen === entry.id;
                 const example = showExamples ? hairTypeExample(gender, entry.id) : null;
                 return (
                   <Pressable
@@ -142,18 +153,18 @@ export default function HairTypeScreen() {
               accessibilityRole="radio"
               accessibilityLabel="All types"
               accessibilityHint="Browse everything, whatever your hair does"
-              accessibilityState={{ selected: hairTypeId === null }}
+              accessibilityState={{ selected: chosen === null }}
               onPress={() => choose(null)}
               style={({ pressed }) => [
                 styles.allPill,
-                hairTypeId === null && styles.allPillSelected,
+                chosen === null && styles.allPillSelected,
                 pressed && { opacity: 0.7 },
               ]}
             >
               <Text
                 style={[
                   type.label,
-                  { color: hairTypeId === null ? colors.accentInk : colors.inkSoft },
+                  { color: chosen === null ? colors.accentInk : colors.inkSoft },
                 ]}
               >
                 Not sure — show me all types
@@ -161,7 +172,7 @@ export default function HairTypeScreen() {
               <Ionicons
                 name="arrow-forward"
                 size={15}
-                color={hairTypeId === null ? colors.accentInk : colors.muted}
+                color={chosen === null ? colors.accentInk : colors.muted}
               />
             </Pressable>
           </>
