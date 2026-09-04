@@ -92,6 +92,22 @@ export function parseLength(value: string | null | undefined): HairLengthId | nu
 }
 
 /**
+ * Reads a length off a navigation param, so a screen opened for a look already
+ * generated at one opens the slider on it.
+ *
+ * The sibling of `parseHairType` and split from `parseLength` above for the
+ * same reason that one is split from the raw id: a param arrives as
+ * `string | string[]` and may name a length this cut is not offered at, so the
+ * caller gets `null` and falls back to the anchor rather than to a stop the
+ * slider does not have. There is no "all lengths" answer to carry, which is why
+ * this returns two things where `parseHairType` returns three — a length is
+ * something the user does to one cut, not a way of browsing.
+ */
+export function parseLengthParam(value: string | string[] | undefined): HairLengthId | null {
+  return parseLength(Array.isArray(value) ? value[0] : value);
+}
+
+/**
  * The catalog's length records for the positions a cut actually offers, in
  * slider order — what the control is built from.
  *
