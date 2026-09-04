@@ -16,11 +16,12 @@ import {
   collectPreview,
   fetchPreview,
   fetchPreviews,
+  PreviewError,
   submitPreview,
   type PreviewJob,
   type PreviewStatus,
 } from '@/api/previews';
-import type { GeneratedLook, LookJob } from '@/api/types';
+import type { GeneratedLook, Gender, HairTypeId, LookJob } from '@/api/types';
 import { saveLookImage } from '@/lib/imageData';
 import { onPreviewNotificationTapped, registerForPreviewPush } from '@/lib/push';
 import { useCatalog } from '@/state/CatalogContext';
@@ -62,13 +63,25 @@ const CREEP_MS = 400;
  * The model's own errors are long and quote the request back; what the user
  * needs is which of a few things went wrong, so the raw message is only used
  * when it is short enough to be a sentence.
+ *
+ * The raw one is *logged* on the way past, and that is not debug litter. This
+ * function is the only place a generation failure is looked at, and everything
+ * it cannot classify becomes the four words "Something went wrong" — which is
+ * the right thing to put on a tile and leaves nobody, including whoever is
+ * fixing it, any way to find out what happened. The upload is the sharpest case:
+ * it is the one request that does not go to our API, so when it fails it fails
+ * somewhere no server of ours can see, and this line is the only record that
+ * will ever exist of it.
  */
 function describeFailure(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error ?? '');
+  const code = error instanceof PreviewError ? error.code : null;
+  console.warn('[hairify] generation failed:', code ?? 'error', error);
+
   if (/previews_unconfigured/.test(message)) return 'Generation is not set up yet';
   if (/EXPO_PUBLIC_FAL_KEY/.test(message)) return 'Generation is not configured';
   if (/photo_too_large/.test(message)) return 'That photo is too large';
-  if (/upload_failed|photo_missing/.test(message)) return 'Your photo did not upload';
+  if (code === 'upload_failed' || /upload_failed|photo_missing/.test(message)) return 'Your photo did not upload';
   if (/40[13]|unauthor|forbidden/i.test(message)) return 'The generator rejected the key';
   if (/timed out|timeout/i.test(message)) return 'The generator took too long';
   if (/network|fetch failed|Failed to fetch|abort/i.test(message)) return 'No connection to the generator';
@@ -76,6 +89,22 @@ function describeFailure(error: unknown): string {
 }
 
 const newJobId = (): string => `job_${Date.now().toString(36)}_${Math.floor(Math.random() * 1000)}`;
+
+/**
+ * What a submit needs, which is less than a `GenerateRequest`.
+ *
+ * `start` has the whole hairstyle in hand; `retry` has only what the job record
+ * kept, and after a restart that record is all there is. Reducing both to the
+ * four fields the API actually takes is what lets the two share one submit path
+ * — and they have to share one, because the interesting part is the error
+ * handling and a second copy of that is a second copy to forget to fix.
+ */
+interface RemoteSubmission {
+  hairstyleId: string;
+  gender: Gender;
+  hairType: HairTypeId | null;
+  photoUri: string;
+}
 
 /**
  * The server states worth rebuilding a tile from.
@@ -176,7 +205,13 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       try {
         // Onto the phone before anything else. Everything after this is
         // bookkeeping; this is the step that makes the preview the user's.
-        const resultUri = await saveLookImage(preview.result.url, `${job.hairstyleId}-${preview.id}.png`);
+        // `required`: the very next thing this function does is tell the server
+        // to delete its copy, so there is no url left to fall back to. A copy
+        // that did not land has to be a failure here rather than a blank look
+        // in the library forever.
+        const resultUri = await saveLookImage(preview.result.url, `${job.hairstyleId}-${preview.id}.png`, {
+          required: true,
+        });
 
         const look: GeneratedLook = {
           id: `look_${preview.id}`,
@@ -386,13 +421,30 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * Whether anything is worth watching — a boolean, and that matters.
+   *
+   * Both intervals below used to test this inline and depend on `jobs`. The
+   * creep writes to `jobs` every 400ms, so every 400ms both effects were torn
+   * down and re-armed: the 2000ms poll was cleared 400ms into its first second
+   * and **never fired once**. A job then creeped to its stage ceiling and stopped
+   * there — 16%, "Preparing your photo", forever, while the server had long since
+   * finished. It looked like a stalled backend and was a starved timer.
+   *
+   * Nothing here needs the array. `poll` and the creep both read `latest.current`
+   * or a functional update, so the only question an effect has to ask is *is
+   * there anything in flight*, and that answer changes twice per job instead of
+   * twice per second.
+   */
+  const watching = jobs.some((job) => job.remoteId && job.status === 'processing');
+
   /** Poll while there is something to watch, and only while anyone is looking. */
   useEffect(() => {
-    if (!jobs.some((job) => job.remoteId && job.status === 'processing')) return;
+    if (!watching) return;
 
     const timer = setInterval(() => void poll(), POLL_MS);
     return () => clearInterval(timer);
-  }, [jobs, poll]);
+  }, [watching, poll]);
 
   /**
    * The bar between reports.
@@ -403,7 +455,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
    * 40% for forty seconds.
    */
   useEffect(() => {
-    if (!jobs.some((job) => job.remoteId && job.status === 'processing')) return;
+    if (!watching) return;
 
     const timer = setInterval(() => {
       update((previous) =>
@@ -415,7 +467,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       );
     }, CREEP_MS);
     return () => clearInterval(timer);
-  }, [jobs, update]);
+  }, [watching, update]);
 
   /**
    * An adopted job knows its hairstyle's id but not its name — the catalog may
@@ -511,20 +563,27 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
    * become a second generation — or a second charge.
    */
   const runRemotely = useCallback(
-    async (jobId: string, request: GenerateRequest) => {
+    async (jobId: string, submission: RemoteSubmission, idempotencyKey: string) => {
+      /**
+       * The server's id, from the moment it exists.
+       *
+       * `update()` records it on the tile, but the tile is not reachable from
+       * the catch below and the row created by the first of `submitPreview`'s
+       * three calls has to be settled if a later one fails.
+       */
+      let created: string | null = null;
       try {
         const preview = await submitPreview({
-          hairstyleId: request.hairstyle.id,
-          gender: request.gender,
-          hairType: request.hairType,
-          photoUri: request.photoUri as string,
-          idempotencyKey: jobId,
+          ...submission,
+          idempotencyKey,
           // Recorded before the photograph goes up, so the cross works during
           // the upload rather than only after it.
-          onCreated: (previewId) =>
+          onCreated: (previewId) => {
+            created = previewId;
             update((previous) =>
               previous.map((entry) => (entry.id === jobId ? { ...entry, remoteId: previewId } : entry)),
-            ),
+            );
+          },
         });
 
         if (settleAbandoned(jobId, preview.id)) return;
@@ -550,9 +609,26 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         void registerForPreviewPush(true);
       } catch (error) {
         abandoned.current.delete(jobId);
+
+        // A submit that failed after the row was created leaves a job the phone
+        // will never finish: `awaiting_upload`, holding a `photo_key`, invisible
+        // to the queue and settled only by the retention sweep days later. The
+        // cancel is what scrubs it now — and it is the same call the cross makes,
+        // so nothing new can go wrong in it.
+        //
+        // Best effort by construction. The reason this submit failed is very
+        // often that the network is gone, in which case this fails too and the
+        // sweeper is exactly the backstop it was written to be.
+        if (created) {
+          dismissed.current.add(created);
+          void cancelPreview(created).catch(() => undefined);
+        }
+
         update((previous) =>
           previous.map((entry) =>
-            entry.id === jobId ? { ...entry, status: 'failed', error: describeFailure(error) } : entry,
+            entry.id === jobId
+              ? { ...entry, remoteId: undefined, status: 'failed', error: describeFailure(error) }
+              : entry,
           ),
         );
       }
@@ -583,7 +659,20 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       ]);
 
       requests.current.set(jobId, request);
-      if (remote) void runRemotely(jobId, request);
+      if (remote) {
+        void runRemotely(
+          jobId,
+          {
+            hairstyleId: request.hairstyle.id,
+            gender: request.gender,
+            hairType: request.hairType,
+            photoUri: request.photoUri as string,
+          },
+          // The local job id: a submit retried inside `submitPreview` is the
+          // same generation, and the same five cents.
+          jobId,
+        );
+      }
       else runLocally(jobId, request);
       return jobId;
     },
@@ -659,38 +748,24 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
 
       const request = requests.current.get(jobId);
       if (generationSource() === 'server' && canSubmit(job.sourcePhotoUri)) {
-        void (async () => {
-          try {
-            const preview = await submitPreview({
-              hairstyleId: job.hairstyleId,
-              gender: job.gender,
-              hairType: job.hairType,
-              photoUri: job.sourcePhotoUri as string,
-              idempotencyKey: `${jobId}-${Date.now().toString(36)}`,
-              onCreated: (previewId) =>
-                update((previous) =>
-                  previous.map((entry) => (entry.id === jobId ? { ...entry, remoteId: previewId } : entry)),
-                ),
-            });
-            if (settleAbandoned(jobId, preview.id)) return;
-            update((previous) =>
-              previous.map((entry) => (entry.id === jobId ? { ...entry, remoteId: preview.id } : entry)),
-            );
-          } catch (error) {
-            abandoned.current.delete(jobId);
-            update((previous) =>
-              previous.map((entry) =>
-                entry.id === jobId ? { ...entry, status: 'failed', error: describeFailure(error) } : entry,
-              ),
-            );
-          }
-        })();
+        void runRemotely(
+          jobId,
+          {
+            hairstyleId: job.hairstyleId,
+            gender: job.gender,
+            hairType: job.hairType,
+            photoUri: job.sourcePhotoUri as string,
+          },
+          // A fresh key, because this is meant to be a second generation and a
+          // second charge — which is why it is a button somebody presses.
+          `${jobId}-${Date.now().toString(36)}`,
+        );
         return;
       }
 
       if (request) runLocally(jobId, request);
     },
-    [runLocally, settleAbandoned, update],
+    [runLocally, runRemotely, update],
   );
 
   const dismissNotification = useCallback(() => setNotification(null), []);
