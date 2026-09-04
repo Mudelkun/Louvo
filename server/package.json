@@ -20,6 +20,7 @@
     "dev:worker": "tsx watch --env-file-if-exists=.env --env-file-if-exists=../.env.local src/worker.ts",
     "start:worker": "node dist/worker.js",
     "sync:shared": "node scripts/sync-shared.mjs",
+    "previews:cors": "node --env-file-if-exists=.env --env-file-if-exists=../.env.local scripts/preview-cors.mjs",
     "prebuild": "node scripts/sync-shared.mjs"
   },
   "dependencies": {

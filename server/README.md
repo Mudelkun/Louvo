@@ -104,7 +104,27 @@ deployment has no bucket and no generator key, which is what a catalog-only depl
 
 npm run api      # from the repo root: the API, watching
 npm run worker   # from the repo root: the worker, watching
+
+npm --prefix server run previews:cors            # what the bucket allows today — free, read-only
+npm --prefix server run previews:cors -- '*'     # set it
 ```
+
+**A new preview bucket needs a CORS policy or `npm run web` cannot generate anything.** The
+upload is the one request in the flow that does not go to this API: the phone `PUT`s the
+photograph straight to a presigned url on the bucket. On a phone that is an ordinary HTTPS
+request. In a browser it is a cross-origin `PUT`, so it preflights — and a bucket with no policy
+answers `403 CORS not configured for this bucket`.
+
+The browser reports that to JavaScript as a bare `TypeError: Failed to fetch`, with no status and
+no body, so the app can only say the upload failed; the job then sits in `awaiting_upload`
+looking exactly like a slow queue, and nothing server-side sees any of it. That combination —
+invisible on native, invisible in the logs, indistinguishable from a busy queue — is why this is
+a script and a paragraph rather than a line in `.env.example`.
+
+The policy grants nothing. What protects a photograph here is that its key is 32 random bytes,
+its url expires in minutes, and the bucket has no public domain and no CDN. CORS only says which
+browser origins may *use* a url they were already handed, so listing origins instead of `*` is a
+statement of where the app is served from rather than a control.
 
 The worker is a separate process and a separate Railway service. It is the only thing that holds
 the generator key and the only thing that ever touches an image. One tick recovers abandoned

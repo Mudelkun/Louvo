@@ -166,18 +166,42 @@ function mimeFor(uri: string): string | null {
  * right — `removeLook` is where a look stops existing, and nothing else should
  * be able to remove one.
  *
- * Best effort by design. Web has no file system to download into and returns the
- * url untouched, and any failure does the same rather than losing the look: a
- * remote image still displays for as long as its url lasts.
+ * **Web materialises the bytes; it does not keep the url.** It used to, on the
+ * reasoning quoted above — "a remote image still displays for as long as its url
+ * lasts". That is true of a fal url and false of the one this is usually handed:
+ * the very next thing `finish()` does is call `collectPreview`, which *deletes*
+ * the object. So the web build saved a look pointing at a signed url for an
+ * object that stopped existing about a second later, and every finished preview
+ * rendered as an empty frame — the before/after with nothing in the after.
+ *
+ * A `data:` uri rather than a `blob:` one, because a blob url dies with the
+ * document and a saved look is meant to outlive a reload. It can be a few
+ * megabytes and `localStorage` may refuse to hold it, in which case the look is
+ * simply not persisted — the library swallows that. Losing a look on reload is a
+ * bad outcome; showing a blank one is a worse one, and it is the one this
+ * function was choosing.
+ *
+ * `required` is for the caller that deletes the source. Failing loudly there
+ * becomes a failed job with a reason and a Try again button, which beats a saved
+ * look that is permanently blank. The fallback paths, whose url outlives the
+ * call, keep the old best-effort behaviour.
  */
-export async function saveLookImage(url: string, name: string): Promise<string> {
-  if (Platform.OS === 'web' || !url.startsWith('http')) return url;
+export async function saveLookImage(
+  url: string,
+  name: string,
+  { required = false }: { required?: boolean } = {},
+): Promise<string> {
+  if (!url.startsWith('http')) return url;
+
   try {
+    if (Platform.OS === 'web') return await readAsDataUri(url, 'image/png');
+
     const directory = new Directory(Paths.document, 'looks');
     if (!directory.exists) directory.create({ intermediates: true });
     const file = await File.downloadFileAsync(url, new File(directory, name));
     return file.uri;
-  } catch {
+  } catch (error) {
+    if (required) throw error;
     return url;
   }
 }
