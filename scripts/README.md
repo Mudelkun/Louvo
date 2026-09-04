@@ -207,12 +207,12 @@ shadow under its jaw. Nothing has landed between 0.7% and 9.5%, so the line has 
 both sides; if a genuinely shaved style ever trips it, lower `HAIR_COVERAGE_FLOOR` in
 `lib/sheet.mjs` rather than removing the check.
 
-A sheet with a bald panel is **re-rolled up to `--sheet-retries` times** (default 2), with a
-prompt that names the quadrant that failed — a plain re-roll of the same prompt tends to skip a
-head again, and often the same one. The best attempt is kept, not the last, and anything still
-bald after the retries is written anyway, flagged in `manifest.json`, outlined in red on the
-contact sheet, and listed at the end of the run with the `--force` command to redo it. The run
-exits non-zero.
+A sheet with a bald panel is **reported, never re-rolled**. It is written anyway, flagged in
+`manifest.json`, outlined in red on the contact sheet, and listed at the end of the run with the
+`--force` command to redo it; the run exits non-zero. The script used to re-roll it automatically
+up to twice, which made the worst case of a batch three times its quoted price, spent before
+anyone had seen the image. Redoing a sheet is a generation like any other, so it is a decision
+made by whoever is paying, from the contact sheet.
 
 To audit what is already on disk — sheets from before the check existed, or a run you want to
 re-verify — `--check` measures every sheet, needs no key and costs nothing:
@@ -305,7 +305,7 @@ node scripts/generate-hair-masks.mjs --preview masks.png  # render | mask | grad
 
 `--preview` is the check that matters: anything on the *mannequin* that changes colour in the
 third column is a mask error. Coverage outside 2–85% of the frame is warned about by name — a 0%
-mask usually means the render itself came back bald, which is a generation to re-roll rather than
+mask usually means the render itself came back bald, which is a generation to re-shoot rather than
 a mask to fix.
 
 You rarely need to run it: `writeRenderModule` masks any render whose mask is missing or older
@@ -347,11 +347,13 @@ type there and it is reworded in both. The framing is the part that deliberately
 crop is tight on the head, with no neck plate and no display base, because these are shown at the
 size of a list row where a catalog framing would be mostly white plastic.
 
-Every sheet is measured. A panel with no hair on it is re-rolled by name on the same measured 3%
-coverage line the catalog sheets use. Two panels that come back as the *same* texture are
-reported and recorded — the run prints how far apart all six pairs are — but not re-rolled: that
-threshold (`SILHOUETTE_FLOOR` in `lib/hairTypeSheet.mjs`) is an estimate until a few runs have
-been looked at, and spending re-rolls on an uncalibrated number is worse than printing it.
+Every sheet is measured and nothing is re-rolled. A panel with no hair on it is named on the
+same measured 3% coverage line the catalog sheets use; two panels that come back as the *same*
+texture are reported and recorded — the run prints how far apart all six pairs are. Both are
+reports rather than re-rolls: the second threshold (`SILHOUETTE_FLOOR` in
+`lib/hairTypeSheet.mjs`) is an estimate until a few runs have been looked at, and no measurement
+here is worth spending a second generation on without a person looking at the first. Re-run with
+`--force` when the sheet is worth redoing.
 
 ```
 assets/hair-types/
@@ -385,7 +387,6 @@ npm run hair-types -- --slice --inset 4   # re-cut the sheets on disk — free, 
 | `--force` | regenerate style images that already exist |
 | `--check` | measure the sheets already on disk for bald panels — free, no key, no generation |
 | `npm run mannequins:sync` | (not a flag) rebuild the app's render map alone — every run does this for you |
-| `--sheet-retries <n>` | re-rolls allowed when a sheet comes back with a bald head (default: 2) |
 | `--force-base` | also regenerate the base heads — they are kept by default, since every style image inherits them |
 | `--seed <n>` | reproducible re-runs |
 | `--reference <file>` | swap the look reference that seeds the base heads |

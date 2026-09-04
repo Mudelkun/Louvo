@@ -8,7 +8,7 @@
  * two styles the generic vocabulary describes badly.
  */
 
-import { SHEET, lengthSheet, panelLabel, parseLengthCell } from './sheet.mjs';
+import { SHEET, lengthSheet } from './sheet.mjs';
 
 /**
  * Left to itself the model renders hair as an editorial wig — inflated volume,
@@ -414,7 +414,7 @@ export function standaloneStylePrompt({ style, gender, angle, variant = 'any', e
  * cannot carry: the base sheet supplies a woman's *head*, not a woman's *cut*.
  * See `GENDER_CUT`.
  */
-export function styleSheetPrompt({ style, gender, variant = 'any', extra, missing = [] }) {
+export function styleSheetPrompt({ style, gender, variant = 'any', extra }) {
   const name = style.name;
   const gendered = GENDER_CUT[gender];
   // How the cut is named everywhere the prompt names it — "women's Messy
@@ -451,16 +451,6 @@ export function styleSheetPrompt({ style, gender, variant = 'any', extra, missin
     '',
     'The result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle.',
   ];
-
-  // Naming the quadrant that failed is the whole point of the retry: a plain
-  // re-roll of the same prompt tends to skip a head again, and often the same one.
-  if (missing.length) {
-    const labels = missing.map(panelLabel);
-    lines.push(
-      '',
-      `Attention: a previous attempt returned the ${listOf(labels)} ${plural(labels, 'quadrant')} still bald, with the mannequin's scalp bare. Fix that: ${listOf(labels)} must wear the same ${cut} as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the ${count} views stay consistent with each other.`,
-    );
-  }
 
   if (extra) lines.push('', extra);
   return lines.join('\n');
@@ -550,7 +540,7 @@ export const lengthLine = (length) =>
  * camera moves. Both sentences are here because dropping either one loses a
  * different half of the grid.
  */
-export function styleLengthSheetPrompt({ style, gender, lengths, variant = 'any', extra, missing = [], flat = [] }) {
+export function styleLengthSheetPrompt({ style, gender, lengths, variant = 'any', extra }) {
   const layout = lengthSheet(lengths);
   const gendered = GENDER_CUT[gender];
   const cut = gendered ? `${gendered.label} ${style.name}` : style.name;
@@ -589,38 +579,6 @@ export function styleLengthSheetPrompt({ style, gender, lengths, variant = 'any'
     'The result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.',
   ];
 
-  // Naming the panel that failed is the whole point of the retry — a plain
-  // re-roll tends to skip a panel again, and often the same one.
-  if (missing.length) {
-    const labels = missing.map((cell) => {
-      const { length, angle } = parseLengthCell(cell);
-      return `${length} ${angle}`;
-    });
-    lines.push(
-      '',
-      `Attention: a previous attempt returned the ${listOf(labels)} ${plural(labels, 'panel')} still bald, with the mannequin's scalp bare. Fix that: ${listOf(labels)} must wear the same ${cut} as the rest of the grid, at the length its own row calls for, drawn correctly for that camera angle.`,
-    );
-  }
-
-  // The other measured failure, and the one this prompt was rewritten for: the
-  // rows came back so similar that the sheet is not a length range at all.
-  // Naming the rows that failed to separate is worth more than a plain re-roll,
-  // for the same reason naming a bald quadrant is.
-  if (flat.length) {
-    lines.push(
-      '',
-      `Attention: a previous attempt returned the ${listOf(flat)} ${plural(flat, 'row')} with almost exactly the same amount of hair as the row above, so the image did not show a range of lengths at all. Fix that: make the length difference between every pair of rows far larger and obvious at a glance. The shortest row must be dramatically shorter than the middle row, and the longest row dramatically longer. Exaggerate it.`,
-    );
-  }
-
   if (extra) lines.push('', extra);
   return lines.join('\n');
 }
-
-/** `Top-left`, `Top-left and Bottom-right`, `A, B and C`. */
-function listOf(items) {
-  if (items.length <= 1) return items[0] ?? '';
-  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
-}
-
-const plural = (items, word) => (items.length === 1 ? word : `${word}s`);

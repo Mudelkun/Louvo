@@ -37,7 +37,6 @@ share, save and recommendations hanging off the result.
 | `app/(tabs)/index.tsx` | **Try on** — upload / take / sample photo |
 | `app/(tabs)/styles.tsx` | **Styles** — full catalog with search, gender, hair type and category filters, and a sort order |
 | `app/(tabs)/profile.tsx` | **Profile** — My looks grid (large tiles, in-progress previews first) and favourited styles; gear in the header opens settings |
-| `app/(tabs)/discover.tsx` | **Discover** — placeholder, not designed yet |
 | `app/settings.tsx` | Settings — preferences, data controls, build info |
 | `app/try/gender.tsx` | Step 2 — who are we styling |
 | `app/try/hair-type.tsx` | Step 3 — straight / wavy / curly / coily, or All Types, each shown with a generated example of the pattern |
@@ -127,7 +126,8 @@ earlier renders were **not** re-shot. Consistency across the catalog is the poin
 style, so that needs a reason: in sheet mode every style is an edit of the composed
 `_base/<gender>-sheet.png`, which means head, material, lighting, crop and framing come from one
 approved image regardless of model and only the hair rendering can drift. What the extra four cents
-buys is prompt adherence — the bald-quadrant re-roll `--sheet-retries` exists for. `--model`, the
+buys is prompt adherence — the bald quadrant `--check` reports, which nothing re-rolls
+automatically. `--model`, the
 text-to-image side, is still `fal-ai/nano-banana`; it runs only for `--no-edit` and for base heads
 generated without a reference.
 

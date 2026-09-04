@@ -160,8 +160,6 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // One clipper length all over — no texture survives it.
     variants: anyType(),
-    // A grade is a length: 1 to 5 is the whole range of this cut.
-    lengths: len(SML, SML),
     shape: shape(0.06, 0.1, 0, 0.08, 'straight'),
   },
   {
@@ -314,7 +312,8 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'fade', 'color'],
     // A quiff is built out of whatever the texture is.
     variants: perType(),
-    lengths: len(SML, null),
+    // No short stop: the front has to be long enough to lift.
+    lengths: len(ML, null),
     shape: shape(0.68, 0.22, 0, 0.06, 'wavy'),
   },
   {
@@ -330,7 +329,6 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'fade', 'color'],
     // Combed and set, so type 1 and 2 converge.
     variants: v('straight', 'straight', 'curly', 'coily'),
-    lengths: len(SML, null),
     shape: shape(0.85, 0.2, 0, 0.02, 'straight'),
   },
   {
@@ -493,8 +491,6 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // Worn loose, so the silhouette is the texture.
     variants: perType(),
-    // No short stop: a shoulder flow cropped short is simply a different cut.
-    lengths: len(ML, null),
     shape: shape(0.4, 0.8, 0.6, 0.1, 'wavy', { part: 'middle' }),
   },
   {
@@ -510,8 +506,6 @@ const hairstyles: Row[] = [
     adjustments: ['fade', 'color'],
     // Gathered — only the bulk of the knot changes.
     variants: v('straight', 'straight', 'curly', 'curly'),
-    // No short stop: below medium there is not enough length to gather.
-    lengths: len(ML, null),
     shape: shape(0.3, 0.3, 0.12, 0.08, 'straight', { knot: true }),
   },
   {
@@ -656,7 +650,8 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'fade', 'color'],
     // The back reads completely differently per type.
     variants: perType(),
-    lengths: len(SML, SML),
+    // No short stop: a mullet cropped short loses the back it is named for.
+    lengths: len(ML, ML),
     shape: shape(0.4, 0.18, 0.55, 0.35, 'wavy'),
   },
   {
@@ -720,7 +715,6 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'fade', 'color'],
     // Product does the work up to type 3.
     variants: v('straight', 'straight', 'curly', 'coily'),
-    lengths: len(SML, null),
     shape: shape(0.45, 0.26, 0.12, 0.0, 'straight'),
   },
 ];
