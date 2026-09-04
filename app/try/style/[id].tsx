@@ -290,7 +290,7 @@ export default function StyleDetailScreen() {
   // while it runs.
   const shownAs =
     (preview && hairstyle.variants[preview] ? preview : null) ??
-    (arrivedAt ? typesForVariant(hairstyle, arrivedAt)[0] ?? null : null) ??
+    (arrivedAt ? typesForVariant(hairstyle, arrivedAt).at(0) : null) ??
     openingType(hairstyle, gender);
   const variants = variantCandidates(hairstyle, shownAs);
   const shape = { ...hairstyle.shape, texture: textureFor(hairstyle, shownAs) };
