@@ -26,6 +26,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { NATIVE_DRIVER } from '@/lib/motion';
 import { colors, radii, spacing, type } from '@/theme/theme';
 
 export type PickerMode = 'photos' | 'camera';
@@ -49,8 +50,8 @@ const PAGE = 48;
 const CONTROL = 46;
 
 /** One spring shared by everything that moves, so the sheet feels like one object. */
-const SPRING = { useNativeDriver: true, damping: 24, stiffness: 260, mass: 0.9 } as const;
-const SPRING_SNAP = { useNativeDriver: true, damping: 16, stiffness: 340, mass: 0.6 } as const;
+const SPRING = { useNativeDriver: NATIVE_DRIVER, damping: 24, stiffness: 260, mass: 0.9 } as const;
+const SPRING_SNAP = { useNativeDriver: NATIVE_DRIVER, damping: 16, stiffness: 340, mass: 0.6 } as const;
 
 function tap(style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light) {
   if (Platform.OS === 'web') return;
@@ -80,7 +81,7 @@ export function PhotoPickerSheet({ mode, onChangeMode, onClose, onPicked }: Phot
       Animated.spring(translateY, { ...SPRING, toValue: 0 }).start();
       return;
     }
-    Animated.timing(translateY, { toValue: SHEET_H, duration: 210, useNativeDriver: true }).start(
+    Animated.timing(translateY, { toValue: SHEET_H, duration: 210, useNativeDriver: NATIVE_DRIVER }).start(
       ({ finished }) => {
         if (finished) setMounted(false);
       },
@@ -117,7 +118,7 @@ export function PhotoPickerSheet({ mode, onChangeMode, onClose, onPicked }: Phot
   if (!mounted) return null;
 
   return (
-    <View style={styles.root} pointerEvents="box-none">
+    <View style={styles.root}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.scrim, { opacity: scrim }]}>
         <Pressable accessibilityLabel="Close" style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
@@ -142,7 +143,7 @@ export function PhotoPickerSheet({ mode, onChangeMode, onClose, onPicked }: Phot
 
         {mode === 'camera' ? (
           /* The preview runs edge to edge, so the drag zone is invisible. */
-          <View {...pan.panHandlers} pointerEvents="box-only" style={styles.grabOverlay} />
+          <View {...pan.panHandlers} style={styles.grabOverlay} />
         ) : (
           <View {...pan.panHandlers} style={styles.grabArea}>
             <View style={styles.grabber} />
@@ -250,7 +251,7 @@ function PhotosPane({
         />
       )}
 
-      <View style={[styles.floatingBar, { paddingBottom: bottomInset || spacing.lg }]} pointerEvents="box-none">
+      <View style={[styles.floatingBar, { paddingBottom: bottomInset || spacing.lg, pointerEvents: 'box-none' }]}>
         <GlassPill icon="camera-outline" label="Camera" onPress={onOpenCamera} />
         <GlassPill icon="albums-outline" label="All Photos" onPress={openNativePicker} />
       </View>
@@ -315,8 +316,8 @@ function CameraPane({
     setShooting(true);
     tap(Haptics.ImpactFeedbackStyle.Medium);
     Animated.sequence([
-      Animated.timing(shutterFlash, { toValue: 1, duration: 70, useNativeDriver: true }),
-      Animated.timing(shutterFlash, { toValue: 0, duration: 260, useNativeDriver: true }),
+      Animated.timing(shutterFlash, { toValue: 1, duration: 70, useNativeDriver: NATIVE_DRIVER }),
+      Animated.timing(shutterFlash, { toValue: 0, duration: 260, useNativeDriver: NATIVE_DRIVER }),
     ]).start();
     try {
       const photo = await camera.current?.takePictureAsync({ quality: 0.85 });
@@ -370,8 +371,10 @@ function CameraPane({
           native applies it to the front lens only. */}
       <CameraView ref={camera} style={StyleSheet.absoluteFill} facing={facing} flash={flash} mirror />
       <Animated.View
-        pointerEvents="none"
-        style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF', opacity: shutterFlash }]}
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: '#FFFFFF', opacity: shutterFlash, pointerEvents: 'none' },
+        ]}
       />
 
       {menuOpen ? (
@@ -383,8 +386,13 @@ function CameraPane({
       ) : null}
 
       <View
-        style={[styles.cameraMenu, { bottom: (bottomInset || spacing.lg) + CONTROL + spacing.xl }]}
-        pointerEvents={menuOpen ? 'box-none' : 'none'}
+        style={[
+          styles.cameraMenu,
+          {
+            bottom: (bottomInset || spacing.lg) + CONTROL + spacing.xl,
+            pointerEvents: menuOpen ? 'box-none' : 'none',
+          },
+        ]}
       >
         <Animated.View style={rise(menuItems[1])}>
           <GlassButton
@@ -409,7 +417,7 @@ function CameraPane({
         </Animated.View>
       </View>
 
-      <View style={[styles.cameraBar, { paddingBottom: bottomInset || spacing.lg }]} pointerEvents="box-none">
+      <View style={[styles.cameraBar, { paddingBottom: bottomInset || spacing.lg, pointerEvents: 'box-none' }]}>
         <GlassButton icon="chevron-back" label="Close camera" onPress={onClose} />
         <Shutter onPress={capture} disabled={shooting} />
         <GlassButton
@@ -513,8 +521,8 @@ function Glass({
             renders almost clear. Kept faint — Apple's guidance is not to stack
             layers on glass, and the effect does the work here. */}
         <View
-          pointerEvents="none"
           style={[
+            { pointerEvents: 'none' },
             StyleSheet.absoluteFill,
             {
               borderRadius: radius,
@@ -540,7 +548,7 @@ function Glass({
         <BlurView
           intensity={dark ? 55 : 75}
           tint={GLASS_TINT[tone]}
-          experimentalBlurMethod="dimezisBlurView"
+          blurMethod="dimezisBlurView"
           style={StyleSheet.absoluteFill}
         />
         <LinearGradient
@@ -554,8 +562,8 @@ function Glass({
         />
       </View>
       <View
-        pointerEvents="none"
         style={[
+          { pointerEvents: 'none' },
           StyleSheet.absoluteFill,
           styles.rim,
           {
@@ -566,7 +574,12 @@ function Glass({
         ]}
       />
       {tint ? (
-        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, backgroundColor: tint, opacity: 0.45 }]} />
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { borderRadius: radius, backgroundColor: tint, opacity: 0.45, pointerEvents: 'none' },
+          ]}
+        />
       ) : null}
       {children}
     </View>
@@ -650,7 +663,7 @@ function Fade({ children, style }: { children: React.ReactNode; style?: StylePro
   const value = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.timing(value, { toValue: 1, duration: 240, useNativeDriver: true }).start();
+    Animated.timing(value, { toValue: 1, duration: 240, useNativeDriver: NATIVE_DRIVER }).start();
   }, [value]);
 
   return (
@@ -684,18 +697,15 @@ async function resolveUri(asset: MediaLibrary.Asset): Promise<string> {
 }
 
 const styles = StyleSheet.create({
-  root: { ...StyleSheet.absoluteFill, justifyContent: 'flex-end' },
+  root: {
+    pointerEvents: 'box-none', ...StyleSheet.absoluteFill, justifyContent: 'flex-end' },
   scrim: { backgroundColor: colors.scrim },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
     overflow: 'hidden',
-    shadowColor: '#120E09',
-    shadowOpacity: 0.3,
-    shadowRadius: 34,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 14,
+    boxShadow: '0px -6px 34px rgba(18, 14, 9, 0.3)',
   },
   grabArea: {
     position: 'absolute',
@@ -707,7 +717,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   grabber: { width: 40, height: 4, borderRadius: radii.pill, backgroundColor: colors.hairlineStrong },
-  grabOverlay: { position: 'absolute', top: 0, left: 0, right: 0, height: 28 },
+  grabOverlay: {
+    pointerEvents: 'box-only', position: 'absolute', top: 0, left: 0, right: 0, height: 28 },
   pane: { flex: 1 },
   cell: { width: CELL, height: CELL, backgroundColor: colors.surfaceSunken, overflow: 'hidden' },
   floatingBar: {
@@ -729,11 +740,7 @@ const styles = StyleSheet.create({
   control: { width: CONTROL, height: CONTROL, alignItems: 'center', justifyContent: 'center' },
   rim: { borderWidth: 0.8 },
   glassShadow: {
-    shadowColor: '#000',
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    boxShadow: '0px 6px 14px rgba(0, 0, 0, 0.22)',
   },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingHorizontal: spacing.xxl },
   centeredNote: { color: colors.muted, textAlign: 'center' },

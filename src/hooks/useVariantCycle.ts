@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing } from 'react-native';
 
+import { NATIVE_DRIVER } from '@/lib/motion';
 import type { VariantId } from '@/api/types';
 
 /**
@@ -71,7 +72,7 @@ function tick() {
     // neither end of the dissolve has an edge on it. A quad in-out still had a
     // discernible start, which is most of what "sudden" was.
     easing: Easing.inOut(Easing.sin),
-    useNativeDriver: true,
+    useNativeDriver: NATIVE_DRIVER,
   });
   // Once the fade has landed the outgoing render is invisible under an opaque
   // one, so every card drops it rather than leaving it mounted: a card that had
