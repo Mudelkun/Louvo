@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import { colors, radii, shadow, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, useShadow, useTheme, type Palette, type } from '@/theme/theme';
 
 type Variant = 'primary' | 'secondary' | 'soft' | 'ghost' | 'dark';
 type Size = 'lg' | 'md' | 'sm';
@@ -35,6 +35,9 @@ export function Button({
   full = true,
   style,
 }: ButtonProps) {
+  const styles = useStyles();
+  const shadow = useShadow();
+  const variantStyles = useVariantStyles();
   const isDisabled = disabled || loading;
 
   const handlePress = () => {
@@ -62,7 +65,7 @@ export function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' || variant === 'dark' ? colors.onDark : colors.ink} />
+        <ActivityIndicator color={variantStyles[variant].text.color} />
       ) : (
         <View style={styles.row}>
           {icon ? <Ionicons name={icon} size={size === 'sm' ? 15 : 18} color={variantStyles[variant].text.color} /> : null}
@@ -85,7 +88,7 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   base: {
     borderRadius: radii.md,
     alignItems: 'center',
@@ -95,35 +98,58 @@ const styles = StyleSheet.create({
   full: { alignSelf: 'stretch' },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   disabled: { opacity: 0.42 },
-});
+}));
 
-const variantStyles: Record<Variant, { container: ViewStyle; pressed: ViewStyle; text: { color: string } }> = {
-  primary: {
-    container: { backgroundColor: colors.accent },
-    pressed: { backgroundColor: colors.accentPressed, transform: [{ scale: 0.985 }] },
-    text: { color: colors.onDark },
-  },
-  dark: {
-    container: { backgroundColor: colors.ink },
-    pressed: { backgroundColor: colors.inkPressed, transform: [{ scale: 0.985 }] },
-    text: { color: colors.onDark },
-  },
-  secondary: {
-    container: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.hairlineStrong },
-    pressed: { backgroundColor: colors.surfaceAlt },
-    text: { color: colors.ink },
-  },
-  soft: {
-    container: { backgroundColor: colors.accentSoft },
-    pressed: { backgroundColor: colors.accentSoftPressed },
-    text: { color: colors.accent },
-  },
-  ghost: {
-    container: { backgroundColor: 'transparent' },
-    pressed: { backgroundColor: colors.surfaceAlt },
-    text: { color: colors.inkSoft },
-  },
-};
+/**
+ * The five fills, and the two pairs that stopped being interchangeable once
+ * there was a second scheme.
+ *
+ * `primary` is brass with `onAccent` on it, and `dark` is the neutral fill with
+ * `onInkFill` — both of which invert after dark, where the brass goes bright
+ * and the neutral fill goes bone. Writing either as `onDark` would have been
+ * right in one scheme and white-on-white in the other. `soft` takes `accentInk`
+ * rather than `accent` for the same reason: the label on a brass-tinted panel
+ * has to move to the opposite end of the brass ramp from the panel itself.
+ */
+type Variants = Record<Variant, { container: ViewStyle; pressed: ViewStyle; text: { color: string } }>;
+
+function variantsFor(colors: Palette): Variants {
+  return {
+    primary: {
+      container: { backgroundColor: colors.accent },
+      pressed: { backgroundColor: colors.accentPressed, transform: [{ scale: 0.985 }] },
+      text: { color: colors.onAccent },
+    },
+    dark: {
+      container: { backgroundColor: colors.inkFill },
+      pressed: { backgroundColor: colors.inkPressed, transform: [{ scale: 0.985 }] },
+      text: { color: colors.onInkFill },
+    },
+    secondary: {
+      container: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.hairlineStrong },
+      pressed: { backgroundColor: colors.surfaceAlt },
+      text: { color: colors.ink },
+    },
+    soft: {
+      container: { backgroundColor: colors.accentSoft },
+      pressed: { backgroundColor: colors.accentSoftPressed },
+      text: { color: colors.accentInk },
+    },
+    ghost: {
+      container: { backgroundColor: 'transparent' },
+      pressed: { backgroundColor: colors.surfaceAlt },
+      text: { color: colors.inkSoft },
+    },
+  };
+}
+
+const VARIANTS: Record<string, Variants> = {};
+
+function useVariantStyles(): Variants {
+  const { name, colors } = useTheme();
+  if (!VARIANTS[name]) VARIANTS[name] = variantsFor(colors);
+  return VARIANTS[name];
+}
 
 interface IconButtonProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -144,6 +170,7 @@ export function IconButton({
   size = 42,
   style,
 }: IconButtonProps) {
+  const colors = useColors();
   const background =
     tone === 'dark' ? 'rgba(255,255,255,0.16)' : tone === 'plain' ? 'transparent' : colors.surface;
   const tint = active ? colors.accent : tone === 'dark' ? colors.onDark : colors.ink;

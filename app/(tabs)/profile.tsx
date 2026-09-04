@@ -12,7 +12,8 @@ import { EmptyState } from '@/components/Feedback';
 import { PhotoFrame } from '@/components/PhotoFrame';
 import { ProgressRing } from '@/components/ProgressRing';
 import { Screen } from '@/components/Screen';
-import { StyleCard } from '@/components/StyleCard';
+import { SkeletonGroup } from '@/components/Skeleton';
+import { StyleCard, StyleCardSkeleton } from '@/components/StyleCard';
 import { useHairColor, useLookColor } from '@/hooks/useHairColor';
 import { confirmDestructive } from '@/lib/confirm';
 import { DEMO_BASE_SHAPE } from '@/lib/constants';
@@ -21,7 +22,7 @@ import { useCatalog } from '@/state/CatalogContext';
 import { useGeneration } from '@/state/GenerationContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { useSession } from '@/state/SessionContext';
-import { colors, radii, shadow, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - spacing.xl * 2 - spacing.md) / 2;
@@ -34,12 +35,14 @@ const TABS = [
 ];
 
 export default function ProfileTab() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState('looks');
   const { savedLooks, favouriteIds, toggleFavourite, removeLook } = useLibrary();
   const { jobs, cancel, retry } = useGeneration();
-  const { hairstyles, styleById } = useCatalog();
+  const { hairstyles, styleById, loading } = useCatalog();
   const { setLook, gender, hairTypeId } = useSession();
   const color = useHairColor();
 
@@ -119,6 +122,17 @@ export default function ProfileTab() {
               })}
             </View>
           )
+        ) : loading && favouriteIds.length ? (
+          /* The favourites are the user's, the *hairstyles* are the catalog's,
+             and until the catalog lands the first list cannot be matched to the
+             second. Saying "No favourites yet" there is a claim about the user's
+             own library that is not true — so the grid holds a card for each one
+             saved until there is something to put in it. */
+          <SkeletonGroup label="Loading your favourites" style={styles.grid}>
+            {favouriteIds.slice(0, 6).map((id) => (
+              <StyleCardSkeleton key={id} width={CARD_WIDTH} />
+            ))}
+          </SkeletonGroup>
         ) : favourites.length === 0 ? (
           <EmptyState
             icon="heart-outline"
@@ -161,6 +175,8 @@ function LookTile({
   onPress: () => void;
   onDelete: () => void;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   // Each tile is a look that was generated in some shade and for some hair
   // type, not necessarily the ones the session is on now, so the tile resolves
   // both from the look itself.
@@ -238,6 +254,8 @@ function JobTile({
   onCancel: () => void;
   onRetry: () => void;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const failed = job.status === 'failed';
 
   // Retry and Cancel are siblings of the tile rather than children of it, for
@@ -313,7 +331,7 @@ function JobTile({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors, shadow }) => ({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   settingsButton: {
     width: 38,
@@ -338,7 +356,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   jobTile: {
-    backgroundColor: colors.ink,
+    backgroundColor: colors.stage,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
@@ -368,4 +386,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(24,21,19,0.55)',
   },
-});
+}));

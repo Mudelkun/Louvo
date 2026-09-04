@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -17,12 +16,13 @@ import type { Gender, HairLengthId, HairTypeId, Hairstyle, TryOnOptions } from '
 import { Button } from '@/components/Button';
 import { ControlCard } from '@/components/ControlCard';
 import { FavouriteHeart } from '@/components/FavouriteHeart';
-import { EmptyState, LoadingState } from '@/components/Feedback';
+import { EmptyState } from '@/components/Feedback';
 import { HairTypeChoice } from '@/components/HairTypeChoice';
 import { LengthChoice } from '@/components/LengthChoice';
 import { Mannequin } from '@/components/Mannequin';
 import { PhotoFrame } from '@/components/PhotoFrame';
 import { Header, Screen } from '@/components/Screen';
+import { StyleScreenSkeleton } from '@/components/StyleScreenSkeleton';
 import { VariantCrossfade } from '@/components/VariantCrossfade';
 import { useHairColor } from '@/hooks/useHairColor';
 import { usePhotoPicker } from '@/hooks/usePhotoPicker';
@@ -45,42 +45,13 @@ import {
 } from '@/lib/hairTypes';
 import { preloadVariants } from '@/lib/mannequinPreload';
 import { renderedVariants, renderLength, renderVariant } from '@/lib/mannequinRender';
+import { HERO_ART, HERO_PAGE, THUMB_HEIGHT, THUMB_WIDTH } from '@/lib/styleLayout';
 import { useCatalog } from '@/state/CatalogContext';
 import { useGeneration } from '@/state/GenerationContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { useSession } from '@/state/SessionContext';
-import { colors, radii, shadow, spacing, type } from '@/theme/theme';
+import { makeStyles, onPlateAccent, onPlateMuted, plate, radii, spacing, useColors, type } from '@/theme/theme';
 
-const { width, height } = Dimensions.get('window');
-/**
- * One page of the angle pager, so a swipe moves exactly one angle. It is the
- * hero card's *inner* width — the card's own hairline border on each side, or
- * the pages drift out of step with the snap by 2px a page.
- */
-const HERO_PAGE = width - spacing.xl * 2 - 2;
-/** The mannequin's box is 200x250, so a head is 1.25x as tall as it is wide. */
-const HEAD_RATIO = 250 / 200;
-/**
- * How wide the hero mannequin is drawn, and the number this screen's whole
- * layout is budgeted around.
- *
- * It used to be a flat `width * 0.68`, which on a 414pt phone is a 352pt-tall
- * head: the hero alone took nearly half the viewport, and everything the screen
- * asks the user to *decide* — the texture, the length — started below the fold.
- * A screen whose controls have to be found by scrolling is a screen with one
- * control, and the length slider was the one nobody found.
- *
- * So it is capped by the window's height as well as its width, and the height
- * cap is the one that binds on every phone. The fraction is what is left after
- * the parts that do not scale — the header, the footer's button, the control
- * card — so it is tuned against the smallest screen the app runs on rather than
- * chosen for looks: at 0.29 the second control still clears the fold on a 4.7"
- * phone carrying both of its footnotes. The hero is still the largest thing
- * here by a wide margin; it is simply no longer the only thing.
- */
-const HERO_ART = Math.min(width * 0.56, (height * 0.29) / HEAD_RATIO);
-const THUMB_WIDTH = (width - spacing.xl * 2 - spacing.sm * 3) / 4;
-const THUMB_HEIGHT = THUMB_WIDTH * 0.86 + 18;
 
 /** Caption on the tile, and the longer label a screen reader announces. */
 const ANGLE_LABELS: Record<ViewAngle, { short: string; long: string }> = {
@@ -126,6 +97,8 @@ function openingType(hairstyle: Hairstyle, gender: Gender | null): HairTypeId | 
  * adjustable; the cut is the product.
  */
 export default function StyleDetailScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const { id, hairType, gender: browsedGender, length: askedLength } = useLocalSearchParams<{
     id: string;
@@ -271,9 +244,13 @@ export default function StyleDetailScreen() {
 
   if (loading && !hairstyle) {
     return (
-      <Screen>
-        <Header />
-        <LoadingState />
+      // Unpadded like the screen it stands in for: the hero and the cards carry
+      // their own margins, and a second inset would move every one of them.
+      <Screen padded={false}>
+        <Header step={{ current: 5, total: TRY_ON_STEPS }} />
+        {/* The screen that is coming, with its content not yet in it — rather
+            than a spinner on an empty page that then reflows into this. */}
+        <StyleScreenSkeleton />
       </Screen>
     );
   }
@@ -610,7 +587,7 @@ export default function StyleDetailScreen() {
                 backdrop={null}
                 style={{ marginTop: THUMB_HEIGHT * 0.04 }}
               />
-              <Text style={[styles.thumbLabel, entry === angle && { color: colors.accent }]}>
+              <Text style={[styles.thumbLabel, entry === angle && { color: onPlateAccent }]}>
                 {ANGLE_LABELS[entry].short}
               </Text>
             </Pressable>
@@ -692,12 +669,15 @@ export default function StyleDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors, shadow }) => ({
   hero: {
     marginHorizontal: spacing.xl,
     marginTop: spacing.md,
     borderRadius: radii.xl,
-    backgroundColor: colors.surface,
+    // A plate, not a surface: the render is a square of flat white, so after
+    // dark a scheme-coloured card here framed it as a bright rectangle. The
+    // border, the dots and everything under the card still follow the scheme.
+    backgroundColor: plate,
     borderWidth: 1,
     borderColor: colors.hairline,
     overflow: 'hidden',
@@ -730,7 +710,9 @@ const styles = StyleSheet.create({
     width: THUMB_WIDTH,
     height: THUMB_HEIGHT,
     borderRadius: radii.md,
-    backgroundColor: colors.surface,
+    // The same plate as the hero, for the same reason — these are four more
+    // renders, at a quarter of the size.
+    backgroundColor: plate,
     borderWidth: 2,
     borderColor: colors.hairline,
     alignItems: 'center',
@@ -739,7 +721,8 @@ const styles = StyleSheet.create({
   thumbSelected: { borderColor: colors.accent },
   thumbLabel: {
     ...type.caption,
-    color: colors.muted,
+    // On the plate, so it comes from the light palette in both schemes.
+    color: onPlateMuted,
     marginTop: 'auto',
     marginBottom: spacing.xs,
     fontSize: 11,
@@ -766,4 +749,4 @@ const styles = StyleSheet.create({
   photoActions: { flexDirection: 'row', gap: spacing.sm },
   link: { ...type.caption, color: colors.accent, fontWeight: '700' as const },
   note: { color: colors.muted, marginTop: spacing.md, marginBottom: spacing.xl },
-});
+}));

@@ -6,13 +6,14 @@ import React, { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { hairTypesFor } from '@/api/client';
-import type { HairTypeId } from '@/api/types';
-import { LoadingState } from '@/components/Feedback';
+import type { Gender, HairTypeId } from '@/api/types';
 import { Header, Screen } from '@/components/Screen';
+import { Skeleton, SkeletonGroup, SkeletonLine } from '@/components/Skeleton';
 import { hairTypeExample, hasHairTypeExamples } from '@/lib/hairTypeExample';
+import { HAIR_TYPE_IDS } from '@/lib/hairTypes';
 import { useCatalog } from '@/state/CatalogContext';
 import { useSession } from '@/state/SessionContext';
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, plate, radii, spacing, useColors, type } from '@/theme/theme';
 
 /**
  * Step 3 — the catalog's primary dimension, asked before the catalog is shown.
@@ -47,6 +48,8 @@ import { colors, radii, spacing, type } from '@/theme/theme';
  * unset; the session is only ever written from here.
  */
 export default function HairTypeScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const { hairTypes, loading } = useCatalog();
   const { gender, setHairType } = useSession();
@@ -88,7 +91,7 @@ export default function HairTypeScreen() {
         </Text>
 
         {loading ? (
-          <LoadingState label="Loading hair types…" />
+          <HairTypeSkeleton gender={gender} />
         ) : (
           <>
             <View style={styles.group} accessibilityRole="radiogroup">
@@ -122,7 +125,7 @@ export default function HairTypeScreen() {
                         <Ionicons
                           name={entry.icon as never}
                           size={18}
-                          color={selected ? colors.onDark : colors.inkSoft}
+                          color={selected ? colors.onAccent : colors.inkSoft}
                         />
                       </View>
                     )}
@@ -182,7 +185,53 @@ export default function HairTypeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * The list before the catalog answers: four rows in the group they will fill,
+ * with the divider already ruled between them.
+ *
+ * Four is not a guess. The types come from the catalog like everything else, but
+ * *how many* there are is the one thing about them this screen may assume — the
+ * matrix is four types wide and `HAIR_TYPE_IDS` is that fact — so the
+ * placeholder is the same height as what replaces it and the page does not jump
+ * when the names land.
+ *
+ * The avatar is asked the same question the real row asks (`hasHairTypeExamples`)
+ * rather than guessing at the larger of the two: an example is a 56pt rounded
+ * square and an icon is a 38pt circle, and a row built around the wrong one is
+ * 18 points out four times over.
+ */
+function HairTypeSkeleton({ gender }: { gender: Gender | null }) {
+  const styles = useStyles();
+  const illustrated = hasHairTypeExamples(gender, HAIR_TYPE_IDS);
+  return (
+    <SkeletonGroup label="Loading hair types">
+      <View style={styles.group}>
+        {HAIR_TYPE_IDS.map((id, index) => (
+          <View key={id} style={[styles.row, index > 0 && styles.rowDivided]}>
+            {illustrated ? (
+              <Skeleton width={56} height={56} radius={radii.md} />
+            ) : (
+              <Skeleton width={38} height={38} radius={radii.pill} />
+            )}
+            <View style={{ flex: 1, gap: spacing.sm }}>
+              <SkeletonLine width={44} height={9} />
+              <SkeletonLine width="55%" height={14} />
+              <SkeletonLine width="80%" height={10} />
+            </View>
+          </View>
+        ))}
+      </View>
+      {/* The way out is part of the shape of this screen, so it holds its place
+          too — its width is the label it is waiting for. */}
+      <View style={styles.allPill}>
+        <SkeletonLine width={186} height={11} />
+        <Skeleton width={15} height={15} radius={radii.pill} />
+      </View>
+    </SkeletonGroup>
+  );
+}
+
+const useStyles = makeStyles(({ colors }) => ({
   body: { paddingHorizontal: spacing.xl, paddingTop: spacing.xxl },
   title: { color: colors.ink },
   subtitle: {
@@ -228,7 +277,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.hairline,
-    backgroundColor: colors.surfaceAlt,
+    // Generated on the catalog's own white ground, so it gets the plate.
+    backgroundColor: plate,
   },
   exampleSelected: { borderColor: colors.accent },
   tier: { color: colors.muted },
@@ -245,4 +295,4 @@ const styles = StyleSheet.create({
     borderColor: colors.hairlineStrong,
   },
   allPillSelected: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-});
+}));

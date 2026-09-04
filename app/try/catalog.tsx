@@ -7,7 +7,7 @@ import { Header } from '@/components/Screen';
 import { ALL_HAIR_TYPES } from '@/lib/hairTypes';
 import { useCatalog } from '@/state/CatalogContext';
 import { useSession } from '@/state/SessionContext';
-import { colors, spacing } from '@/theme/theme';
+import { spacing, useColors } from '@/theme/theme';
 
 /** The whole catalog, reached straight from the hair type step.
  *
@@ -16,6 +16,7 @@ import { colors, spacing } from '@/theme/theme';
  *  and the blurb that used to explain the catalog said nothing the styles do
  *  not say better. */
 export default function CatalogScreen() {
+  const colors = useColors();
   const router = useRouter();
   const params = useLocalSearchParams<{ categoryId?: string }>();
   const { gender, hairTypeId, setHairType, setCategory, hairstyleId } = useSession();
