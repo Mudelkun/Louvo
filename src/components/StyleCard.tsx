@@ -6,13 +6,14 @@ import { Animated, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-na
 import type { Gender, HairColor, HairTypeId, Hairstyle, VariantId } from '@/api/types';
 import { FavouriteHeart } from '@/components/FavouriteHeart';
 import { Mannequin } from '@/components/Mannequin';
+import { Skeleton, SkeletonLine } from '@/components/Skeleton';
 import { VariantCrossfade } from '@/components/VariantCrossfade';
 import { useVariantCycle } from '@/hooks/useVariantCycle';
 import { HERO_ANGLE } from '@/lib/hairShape';
 import { textureFor, typesForVariant, variantCandidates } from '@/lib/hairTypes';
 import { renderedVariants } from '@/lib/mannequinRender';
 import { useCatalog } from '@/state/CatalogContext';
-import { colors, radii, shadow, spacing, type } from '@/theme/theme';
+import { makeStyles, onPlate, plate, radii, spacing, useColors, type } from '@/theme/theme';
 
 interface StyleCardProps {
   hairstyle: Hairstyle;
@@ -50,6 +51,8 @@ export function StyleCard({
   compact,
   style,
 }: StyleCardProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const { hairTypes } = useCatalog();
   const imageHeight = compact ? width * 0.94 : width * 1.02;
   const shape = { ...hairstyle.shape, texture: textureFor(hairstyle, hairType) };
@@ -180,7 +183,7 @@ export function StyleCard({
 
           {selected ? (
             <View style={styles.selectedBadge}>
-              <Ionicons name="checkmark" size={13} color={colors.onDark} />
+              <Ionicons name="checkmark" size={13} color={colors.onAccent} />
             </View>
           ) : null}
         </View>
@@ -210,7 +213,32 @@ export function StyleCard({
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * The card before its hairstyle exists — same box, same image square, same two
+ * lines of meta, in placeholder blocks.
+ *
+ * It lives here rather than with the other skeletons so it cannot drift from
+ * the card: it shares the card's `styles` and its one piece of arithmetic (the
+ * image is `width * 1.02` tall), so a change to the card's shape is a change to
+ * both. A placeholder grid whose cards are the wrong height is worse than a
+ * spinner — the page reflows the moment the data lands, which is the exact jump
+ * the skeleton is there to prevent.
+ */
+export function StyleCardSkeleton({ width, compact }: { width: number; compact?: boolean }) {
+  const styles = useStyles();
+  const imageHeight = compact ? width * 0.94 : width * 1.02;
+  return (
+    <View style={[styles.card, { width }]}>
+      <Skeleton width="100%" height={imageHeight} radius={0} />
+      <View style={[styles.meta, styles.metaSkeleton]}>
+        <SkeletonLine width="72%" height={13} />
+        {compact ? null : <SkeletonLine width="52%" height={10} />}
+      </View>
+    </View>
+  );
+}
+
+const useStyles = makeStyles(({ colors, shadow }) => ({
   card: {
     borderRadius: radii.lg,
     backgroundColor: colors.surface,
@@ -220,8 +248,11 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   cardSelected: { borderColor: colors.accent, borderWidth: 2 },
+  // A plate rather than a scheme surface: the renders are shot on flat white,
+  // so in dark mode a `surfaceAlt` image area drew a white square with a
+  // charcoal strip under it. The card's border and its meta row still invert.
   imageWrap: {
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: plate,
     alignItems: 'center',
     justifyContent: 'flex-start',
     overflow: 'hidden',
@@ -251,6 +282,11 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     backgroundColor: 'rgba(255,255,255,0.88)',
   },
-  variantTagText: { color: colors.inkSoft, fontWeight: '700' },
+  // The tag sits on a white pill on the plate, so its ink does not invert
+  // either — `colors.inkSoft` after dark is bone on white.
+  variantTagText: { color: onPlate, fontWeight: '700' },
   meta: { paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: 2 },
-});
+  // The placeholder lines need the air the two real text lines get from their
+  // line height, which a 13pt and a 10pt bar do not have.
+  metaSkeleton: { gap: spacing.sm },
+}));

@@ -25,7 +25,16 @@ reports which of the three the running app actually got. The reasoning, the meas
 the rejected options are in `docs/catalog-architecture.md`; the operational detail is in
 `server/README.md`.
 
-Still simulated: accounts, favourites and saved looks (device-local), and sharing.
+**Sharing.** A finished look is composed into a branded card on the device, handed to the
+operating system's own share sheet, and carries a caption with a referral link the backend
+minted. Following that link opens the app if it is installed and a landing page with the store
+buttons if it is not, and the whole funnel — opened, channel picked, initiated, completed, link
+opened, install attributed — is recorded. The picture never comes back to us: a share link names
+a *hairstyle*, and what unfurls in somebody else's chat is the catalog's mannequin render of that
+cut. `docs/sharing.md` has the design, what the operating systems actually permit, and exactly
+which installs are honestly attributable.
+
+Still simulated: accounts, favourites and saved looks (device-local).
 
 Commands (run from the repo root):
 
@@ -45,7 +54,7 @@ npm run try-on -- --photo me.jpg --style buzz-cut --dry-run   # one preview — 
 npm run api                   # the API in watch mode
 npm run worker                # the preview generation worker in watch mode
 npm run catalog:migrate       # apply server/migrations/*.sql
-npm run catalog:check         # sync check + catalog round trip + preview lifecycle — free
+npm run catalog:check         # sync check + round trip + preview lifecycle + share funnel — free
 npm run catalog:publish:dry   # transcode + report; uploads nothing, writes nothing — free
 npm run catalog:publish       # metadata into Postgres, imagery into R2
 ```
@@ -56,6 +65,11 @@ app; the server has its own (`npm --prefix server run typecheck`) plus its real 
 described below. The root `tsconfig.json` excludes `server/`: the two programs have different
 `lib`s (React Native versus Node) and typechecking one under the other's globals produces
 failures that are not bugs.
+
+The app follows the phone's light/dark setting by default and Settings can pin it either way;
+the palettes and the rule that keeps them live are `src/theme/tokens.ts` and the theming
+section below. Anything drawing a colour uses `makeStyles()` or `useColors()`, never a
+module-scope palette read.
 
 Reference material: `project.md` (product spec) and `App-reference.png` (the original flow
 mockup — treated as inspiration, not a spec; the implemented design departs from it).
@@ -361,6 +375,63 @@ is missing or stale before it writes the module that points at the render, so a 
 a `npm start` is enough. A render with no mask is graded whole rather than not at all — the old
 behaviour, which is close but tints the head slightly and lands hardest on the jaw shadow.
 
+**The app has a light and a dark scheme, and the palette is a runtime value.**
+Not to be confused with the paragraphs above it: those are about the colour of *hair*, this is
+about the colour of the *app*. They do not interact — a hair colour is catalog data graded onto a
+render, and the scheme is a UI palette. The one place they touch is `plate`, below.
+
+`src/theme/tokens.ts` holds `lightColors` and `darkColors`, and `src/theme/ThemeContext.tsx`
+picks between them. Settings has a three-way control — **System / Light / Dark** — defaulting to
+`system`, which is a deferral rather than a value: the phone decides and *keeps* deciding, so a
+device on a dusk schedule flips the app with it. The choice is one AsyncStorage key
+(`hairify.theme.v1`) and `app.json` is `userInterfaceStyle: "automatic"`, without which iOS never
+reports dark at all.
+
+The three things that made this more than swapping a hex map:
+
+- **`StyleSheet.create` runs at module load, so no stylesheet may read the palette at module
+  scope.** That is the whole reason there is no `colors` export from `@/theme/theme` any more.
+  Repointing the old export at a live palette would have compiled and silently left every screen
+  in the app frozen at whatever it was imported with; *deleting* the name is what made the
+  compiler list all 38 files. What replaced it is `makeStyles(({ colors, shadow }) => ({...}))`,
+  written at the bottom of a file exactly where the old `StyleSheet.create` sat and read as
+  `const styles = useStyles()` at the top of the component, plus `useColors()` for the inline
+  cases. Both sheets are built once each and cached, so flipping the scheme is a context change
+  and a map lookup — the factory is called at most twice and must be pure.
+- **"Dark" meant two different things and both were spelled `ink`.** A near-black *text* colour
+  and a near-black *fill* invert in opposite directions, and one token cannot do both: text goes
+  light, but a selected chip that stayed dark on a dark canvas stops reading as selected. So the
+  fills are `inkFill` / `onInkFill` (white on near-black in light, near-black on bone in dark),
+  and `stage` is the third case — surfaces that are dark *on purpose* in both schemes, where
+  `onDark` stays white because what is under it is still dark: the welcome hero, the finished-look
+  toast, a scrim over somebody's photograph. The same split runs through the brass: `accent` is
+  the fill with `onAccent` on it, `accentInk` is the brass used as a *label*, deep in light and
+  light in dark. A single brass cannot be both a panel and legible text on that panel.
+- **`plate` does not invert, and neither does `<ShareCard>`.** Every catalog render is shot on
+  flat white, so a dark ground under one would frame a bright rectangle of the render's own white
+  — `plate` is that ground and it is a constant, not a palette entry. `<ShareCard>` is the one
+  component that reads `lightColors` directly and on purpose: it is captured as an image and
+  posted somewhere else, so what it looks like is a fact about Hairify's branding rather than
+  about the phone that made it. Two people sharing the same look must produce the same picture.
+
+**`plate` is `#FFFFFF`, and every surface that holds a render is one.** That was the open design
+call — the grid card's image area was `surfaceAlt` and the style screen's hero and angle tiles
+were `surface`, so after dark a published render was a white square inside a charcoal box, with
+the seam falling exactly on the render's own edge. It was settled once the renders were on screen,
+and the answer is the one the token already implied: match the imagery rather than the scheme. A
+warm bone plate does not do it — `#EFE9E1` leaves a visible square in *both* schemes — so the
+plate is the render's own white, and the card's border, its meta row and the canvas behind it are
+what carry the scheme. The surfaces on it: `<StyleCard>`'s image area, the style screen's hero
+card and its four angle tiles, `<MannequinBadge>`, the hair-type picker's examples and the sample
+photo's stand-in.
+
+Ink on a plate does not invert either, for the same reason `onDark` does not: `onPlate`,
+`onPlateMuted` and `onPlateAccent` are taken from `lightColors` so a caption on a plate is not
+bone-on-white after dark. That is the whole cost of the decision, and it is bounded — anything
+that draws *on* a render needs them, and nothing else does. The skeletons are deliberately
+outside it: `<Skeleton>` is one grey on every ground by design, so the hero placeholder keeps
+`colors.surface` and the plate arrives with the render it belongs to.
+
 **`half` is the hero, and it is a turn of the front head — never a copy of the reference.**
 `half` is `HERO_ANGLE`, so it is the image on every catalog card and at the top of every style
 screen. It used to be produced by telling the model to keep `scripts/reference-head.png`'s pose,
@@ -476,6 +547,28 @@ pool that runs out visibly loops, and a visible loop is what gives a timer away.
 The predecessor to all of this was a ticking three-row checklist. It was honest and it was dull —
 it read as a build log — and a wait nobody enjoys watching is a wait they leave. A fake percentage
 or a timed fake word stream would be easier than either and would work exactly once.
+
+**Waiting for content is a skeleton, never a spinner.** The same rule as the paragraph above,
+applied to every other wait in the app: a spinner says something is happening and nothing about
+what, and the page under it reflows completely the moment the data lands. So a wait for content is
+drawn as the layout that is coming, with its content not yet in it — `src/components/Skeleton.tsx`
+is the primitive and the compositions live *beside the layouts they mirror* (`<StyleCardSkeleton>`
+in `StyleCard.tsx`, `<StyleScreenSkeleton>` off `src/lib/styleLayout.ts`, the grid in
+`CatalogBrowser.tsx`, the rows in `hair-type.tsx`), so a change to a layout is a change to its
+placeholder. `<LoadingState>` is gone; `<Button loading>` is still a spinner, because an *action*
+in flight has no shape to stand in for.
+
+Two rules keep it honest, and they are the ones to hold on to:
+
+- **A placeholder may state the layout, never the data.** Six cards, four hair types, four angle
+  tiles — those are facts about the screen. How many styles came back is not known yet, so the
+  count row shows a placeholder rather than "0 styles", and Profile's favourites grid holds a card
+  per saved id rather than claiming "No favourites yet" while the catalog is still in flight.
+- **Nothing in a placeholder moves except one shared breath.** One module-level clock for every
+  block on screen, for the reason `useVariantCycle` shares its own — a dozen blocks each pulsing
+  from their own mount fan out into noise — and it resolves to a still frame under reduced motion
+  (`useReducedMotion`, now shared by both). No bar, no percentage, nothing that could be read as
+  progress: there is none to report while a fetch is in flight.
 
 **The preview is shown the haircut, never told it.** This is the whole design of the try-on and
 the reason the catalog's renders exist at all beyond the browse grid. The model is handed the
@@ -715,6 +808,52 @@ can only ever be wrong.
 The whole thing assumes the artwork's house style — a dark tile on a light ground, subject in a
 warm tone. `findTile` and `goldBounds` are what break first if that changes.
 
+**Sharing is a referral loop, and the picture never comes back to us.** That is the one rule the
+whole feature is arranged around, and it is the same promise `docs/preview-generation.md` makes
+one step further along: the finished preview lives on the phone that generated it and nowhere
+else. Branding it server-side with `sharp` would have taken an afternoon and would have undone
+that, so it is not done. Four consequences, and `docs/sharing.md` has the rest:
+
+- **The shared image is composed on the device**, by photographing a view
+  (`src/components/ShareCard.tsx`, captured by `src/lib/shareImage.ts`). `expo-image-manipulator`
+  cannot draw, so a view capture is the only compositor here. The card is laid out at 360 points
+  and captured at 1080 pixels, which is what every social app resamples to, and it takes the
+  **photograph's own aspect** — a fixed 4:5 frame would crop the top of a tall selfie's head,
+  which is the haircut. The branding is one line over the gradient that was already making the
+  bottom edge readable, and the size of it is the whole design: **the moment it is big enough to
+  be embarrassing nobody posts it and the reach is zero.**
+- **A share link names a hairstyle, not an image.** So the landing page's `og:image` — the picture
+  a scraper renders into a chat card before any human sees it — is the catalog's own mannequin
+  render of that cut, public and CDN-hosted and identical for everybody who shared it. Never a
+  Hairify user's face. `check-shares.mjs` asserts no local file uri can reach that page.
+- **The three named buttons are shortcuts into the OS share sheet, and the screen says so.**
+  Neither platform lets managed Expo code target a specific app with an image: iOS has no
+  targeting API at all, and Android's needs an intent with `setPackage` plus a `FileProvider`
+  grant. The url schemes that look like a way round it are not one — `whatsapp://send?text=`
+  carries text and no image. A row of buttons each opening the same sheet while *pretending* to
+  be a direct hand-off is the fake social-sharing button the brief rules out; a row that says
+  "your share sheet opens with the picture and caption ready" is the platform's real behaviour
+  with a shorter path to it. `shareTo()` in `src/lib/shareTargets.ts` is the seam where a native
+  intent module would give Android genuine targeting, and nothing above it would change.
+  The caption is the part that differs per platform: iOS carries it with the image in one
+  activity and reports which app took it, Android's `expo-sharing` sends the file alone so the
+  caption goes to the clipboard, and web uses the real `wa.me` and Facebook sharer intents. One
+  asymmetry falls out of that and is worth knowing when reading the funnel: on iOS
+  `share_completed` means "an app took it", on Android it means "the sheet closed".
+- **What is attributable is stated rather than assumed.** A link followed by an installed app is
+  fully attributable and is the only source anything writes. The Android Play `referrer`
+  parameter is carried through the landing page and *nothing reads it* — that needs a native
+  module. An iOS install from the App Store is not attributable without a third-party SDK, full
+  stop. Attribution is first-write-wins per device and a sharer opening their own link is refused
+  outright, because counting it makes the funnel a measure of curiosity rather than of reach.
+
+The two slow things — composing the card and minting the link — both start when the share screen
+opens and are promises the buttons await, so a user who looks at their picture for two seconds
+waits for nothing. **Neither failure stops a share**: no card sends the raw preview, no link
+sends the caption without one, and both are recorded as `share_failed`. That is the same rule as
+everywhere else here — a degraded outcome is reported, never disguised — and `shareSource()`
+reports `api` or `local` in Settings beside the catalog's and the generator's.
+
 ## Where the backend plugs in
 
 `src/api/client.ts` is the only module that knows where the data comes from. The exported
@@ -775,6 +914,13 @@ database and no credentials.
 `scripts/lib/variants.mjs` mirrors `src/lib/hairTypes.ts`: the app and the server are separate
 programs and neither may import across the boundary. Both sides must agree, and the round-trip
 check is what makes them.
+
+**Sharing has two outcomes, reported the same way.** `shareSource()` returns `api` (the backend
+minted a real, countable referral link) or `local` (no API, so the caption carries
+`EXPO_PUBLIC_SHARE_URL` or nothing). The share itself always works — the image and the caption are
+composed on the phone — but only a minted link can be followed back and counted, which is the
+half the feature exists for, so Settings says which happened. `src/api/share.ts` is the only
+module that knows.
 
 **Generation has three outcomes, in the same shape as the catalog's three.** `generationSource()`
 returns `server` (a job on the API — the one that ships), `direct` (no API url but a fal key in

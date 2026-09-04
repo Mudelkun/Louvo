@@ -6,7 +6,7 @@ import Svg, { Circle, Defs, G, LinearGradient as SvgGradient, Path, Rect, Stop }
 
 import { NATIVE_DRIVER } from '@/lib/motion';
 import { useSmoothProgress } from '@/components/ProgressRing';
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
@@ -107,6 +107,7 @@ const BLADE_OPEN = 15;
  * mechanism idling and this should read as somebody working.
  */
 export function Scissors({ size = 58 }: { size?: number }) {
+  const colors = useColors();
   const snip = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -193,6 +194,8 @@ export function ScanningPhoto({
   /** The photo (or the mannequin standing in for it) being worked on. */
   children: React.ReactNode;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const inset = 3;
   const radius = radii.xl;
@@ -257,7 +260,7 @@ export function ScanningPhoto({
         <View
           style={[
             StyleSheet.absoluteFill,
-            { backgroundColor: colors.ink, opacity: 0.04 + 0.3 * (1 - clarity), pointerEvents: 'none' },
+            { backgroundColor: colors.stage, opacity: 0.04 + 0.3 * (1 - clarity), pointerEvents: 'none' },
           ]}
         />
 
@@ -410,6 +413,7 @@ export function WordTicker({
   intervalMs?: number;
   style?: React.ComponentProps<typeof Animated.Text>['style'];
 }) {
+  const styles = useStyles();
   const [index, setIndex] = useState(0);
   const enter = useRef(new Animated.Value(1)).current;
 
@@ -462,6 +466,8 @@ export function WordTicker({
  * choosing a haircut rather than being entertained until the spinner finishes.
  */
 export function FactTicker({ facts, intervalMs = 4200 }: { facts: string[]; intervalMs?: number }) {
+  const styles = useStyles();
+  const colors = useColors();
   const [index, setIndex] = useState(0);
   const fade = useRef(new Animated.Value(1)).current;
 
@@ -488,7 +494,7 @@ export function FactTicker({ facts, intervalMs = 4200 }: { facts: string[]; inte
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   stageClip: { overflow: 'hidden', backgroundColor: colors.surfaceSunken },
   scanLine: {
     position: 'absolute',
@@ -510,4 +516,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft,
   },
   tickerText: { color: colors.accentInk, flex: 1, fontWeight: '600' },
-});
+}));

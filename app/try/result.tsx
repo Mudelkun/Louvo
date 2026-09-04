@@ -19,7 +19,7 @@ import { ALL_HAIR_TYPES, textureFor, variantCandidates } from '@/lib/hairTypes';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { useSession } from '@/state/SessionContext';
-import { colors, radii, shadow, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 const { width } = Dimensions.get('window');
 const STAGE_WIDTH = width - spacing.xl * 2;
@@ -28,6 +28,8 @@ const STAGE_HEIGHT = STAGE_WIDTH * 1.28;
 const RAIL_CARD_WIDTH = Math.min(136, (width - spacing.xl * 2 - spacing.md * 2) / 2.4);
 
 export default function ResultScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const { hairstyles, styleById, hairTypes, hairLengths } = useCatalog();
   const { look, gender: sessionGender, hairTypeId, restartStyleChoice } = useSession();
@@ -307,6 +309,8 @@ function ResultAction({
   onPress: () => void;
   active?: boolean;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <Pressable
       accessibilityRole="button"
@@ -322,7 +326,7 @@ function ResultAction({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors, shadow }) => ({
   stage: { alignItems: 'center', paddingVertical: spacing.lg },
   styleTag: {
     position: 'absolute',
@@ -378,4 +382,4 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     padding: spacing.lg,
   },
-});
+}));

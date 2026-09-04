@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Platform, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 
 import { NATIVE_DRIVER } from '@/lib/motion';
-import { colors } from '@/theme/theme';
+import { makeStyles, onPlate, useColors, type Palette } from '@/theme/theme';
 
 /**
  * The favourite toggle.
@@ -61,6 +61,8 @@ export function FavouriteHeart({
   tone = 'light',
   style,
 }: FavouriteHeartProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const diameter = size ?? TONE_SIZE[tone];
   const iconSize = Math.round(diameter * (tone === 'chip' ? 0.54 : 0.45));
 
@@ -155,7 +157,7 @@ export function FavouriteHeart({
       <Animated.View
         style={[
           styles.button,
-          toneStyle(tone),
+          toneStyle(tone, colors),
           { width: diameter, height: diameter, borderRadius: diameter / 2 },
           { transform: [{ scale: press }, { scale: pop }] },
         ]}
@@ -215,7 +217,7 @@ export function FavouriteHeart({
         {/* Outline and fill are stacked rather than swapped, so the filled heart
             springs in over an outline that stays where it is. */}
         <Animated.View style={{ opacity: outlineOpacity }}>
-          <Ionicons name="heart-outline" size={iconSize} color={outlineTint(tone)} />
+          <Ionicons name="heart-outline" size={iconSize} color={outlineTint(tone, colors)} />
         </Animated.View>
         <Animated.View
           style={[
@@ -230,7 +232,16 @@ export function FavouriteHeart({
   );
 }
 
-function toneStyle(tone: Tone): ViewStyle {
+/**
+ * The tones that are not the palette's, and the one that is.
+ *
+ * `dark`, `plain` and `chip` sit on a photograph rather than on the canvas, so
+ * they are the same translucent white in both schemes — a heart over somebody's
+ * hair has no business changing colour when the app does. `light` is the only
+ * one on a themed surface, which is why these take a palette rather than
+ * reading one.
+ */
+function toneStyle(tone: Tone, colors: Palette): ViewStyle {
   switch (tone) {
     case 'dark':
       return { backgroundColor: 'rgba(255,255,255,0.16)' };
@@ -243,16 +254,19 @@ function toneStyle(tone: Tone): ViewStyle {
   }
 }
 
-function outlineTint(tone: Tone): string {
+function outlineTint(tone: Tone, colors: Palette): string {
   if (tone === 'dark') return colors.onDark;
-  return tone === 'chip' ? colors.inkSoft : colors.ink;
+  // The chip is a near-white circle on the card's plate, so its outline comes
+  // from the light palette in both schemes — `colors.inkSoft` after dark is
+  // bone on white.
+  return tone === 'chip' ? onPlate : colors.ink;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   button: { alignItems: 'center', justifyContent: 'center' },
   overlay: {
     pointerEvents: 'none', ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   ring: { position: 'absolute', borderWidth: 2, borderColor: colors.accent },
   spark: { position: 'absolute', width: 4, height: 4, borderRadius: 2, backgroundColor: colors.accent },
   fillLayer: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
-});
+}));

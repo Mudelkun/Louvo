@@ -5,8 +5,9 @@ import { Dimensions, FlatList, Pressable, StyleSheet, Text, TextInput, View } fr
 import { categoriesFor, filterHairstyles, hairTypesFor, type SortId } from '@/api/client';
 import type { Gender, HairTypeId, Hairstyle } from '@/api/types';
 import { FilterSelect, type SelectOption } from '@/components/Controls';
-import { EmptyState, LoadingState } from '@/components/Feedback';
-import { StyleCard } from '@/components/StyleCard';
+import { EmptyState } from '@/components/Feedback';
+import { SkeletonGroup, SkeletonLine } from '@/components/Skeleton';
+import { StyleCard, StyleCardSkeleton } from '@/components/StyleCard';
 import { useHairColor } from '@/hooks/useHairColor';
 import { hairTypeExample, hasHairTypeExamples } from '@/lib/hairTypeExample';
 import { HERO_ANGLE } from '@/lib/hairShape';
@@ -14,7 +15,7 @@ import { ALL_HAIR_TYPES, variantsOf } from '@/lib/hairTypes';
 import { preloadVariants } from '@/lib/mannequinPreload';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 const { width } = Dimensions.get('window');
 const GUTTER = spacing.xl;
@@ -64,6 +65,8 @@ export function CatalogBrowser({
   header,
   bottomInset = spacing.xxxl,
 }: CatalogBrowserProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const { hairstyles, categories, hairTypes, loading } = useCatalog();
   const { favouriteIds, toggleFavourite } = useLibrary();
   // One shade for the whole grid, whichever one the user is browsing in: the
@@ -216,9 +219,16 @@ export function CatalogBrowser({
           {/* The filters state themselves now, so the count says only what the
               controls above it cannot: how many styles came back. */}
           <View style={styles.countRow}>
-            <Text style={[type.caption, { color: colors.muted }]}>
-              {results.length} {results.length === 1 ? 'style' : 'styles'}
-            </Text>
+            {/* "0 styles" while the catalog is still in flight is a count of an
+                empty catalog, which is not what is true — the number is not
+                known yet, so the row says nothing and holds its place. */}
+            {loading ? (
+              <SkeletonLine width={64} height={11} />
+            ) : (
+              <Text style={[type.caption, { color: colors.muted }]}>
+                {results.length} {results.length === 1 ? 'style' : 'styles'}
+              </Text>
+            )}
             <FilterSelect
               placeholder="Sort"
               options={SORTS}
@@ -231,7 +241,7 @@ export function CatalogBrowser({
       }
       ListEmptyComponent={
         loading ? (
-          <LoadingState label="Loading the catalog…" />
+          <CatalogSkeleton />
         ) : (
           <EmptyState
             icon="search-outline"
@@ -259,8 +269,35 @@ export function CatalogBrowser({
   );
 }
 
-const styles = StyleSheet.create({
+/**
+ * The grid before the catalog arrives: six cards the size of the six that are
+ * about to land, in the same two columns with the same gutters.
+ *
+ * Six rather than a screenful, and rather than one: it fills the fold on every
+ * phone without pretending to know how many styles came back. The count is a
+ * property of the *layout*, which is known, and never of the data, which is
+ * not — the row above it says nothing at all until the number is real.
+ */
+function CatalogSkeleton() {
+  const styles = useStyles();
+  return (
+    <SkeletonGroup label="Loading the catalog" style={styles.skeleton}>
+      {[0, 1, 2].map((row) => (
+        <View key={row} style={styles.skeletonRow}>
+          <StyleCardSkeleton width={CARD_WIDTH} />
+          <StyleCardSkeleton width={CARD_WIDTH} />
+        </View>
+      ))}
+    </SkeletonGroup>
+  );
+}
+
+const useStyles = makeStyles(({ colors }) => ({
   filterRow: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: GUTTER },
+  // The list's own `columnWrapperStyle` and `contentContainerStyle`, since the
+  // placeholder stands in for rows the list is not drawing yet.
+  skeleton: { gap: spacing.md },
+  skeletonRow: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: GUTTER },
   countRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -292,4 +329,4 @@ const styles = StyleSheet.create({
     borderColor: colors.hairline,
   },
   input: { flex: 1, color: colors.ink, paddingVertical: 0 },
-});
+}));

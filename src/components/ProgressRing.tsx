@@ -4,7 +4,7 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { createAnimatedSvg } from '@/components/animatedSvg';
 import { NATIVE_DRIVER } from '@/lib/motion';
-import { colors, type } from '@/theme/theme';
+import { makeStyles, useColors, type } from '@/theme/theme';
 
 const AnimatedCircle = createAnimatedSvg(Circle);
 
@@ -55,7 +55,7 @@ export function ProgressRing({
   progress,
   size = 190,
   strokeWidth = 12,
-  trackColor = colors.surfaceSunken,
+  trackColor,
   labelStyle,
   sublabel,
   sublabelStyle,
@@ -84,6 +84,8 @@ export function ProgressRing({
   pulse?: boolean;
   children?: React.ReactNode;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -126,7 +128,7 @@ export function ProgressRing({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={trackColor}
+          stroke={trackColor ?? colors.surfaceSunken}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -183,7 +185,7 @@ export function ProgressRing({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   center: { alignItems: 'center', justifyContent: 'center' },
   head: { alignSelf: 'center', backgroundColor: colors.accent },
-});
+}));
