@@ -534,7 +534,7 @@ export default function StyleDetailScreen() {
           ))}
         </ScrollView>
 
-        <View style={styles.dots} pointerEvents="none">
+        <View style={styles.dots}>
           {VIEW_ANGLES.map((entry) => (
             <View key={entry} style={[styles.dot, entry === angle && styles.dotActive]} />
           ))}
@@ -713,6 +713,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
   dots: {
+    pointerEvents: 'none',
     position: 'absolute',
     left: 0,
     right: 0,

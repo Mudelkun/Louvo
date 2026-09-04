@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Platform, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 
+import { NATIVE_DRIVER } from '@/lib/motion';
 import { colors } from '@/theme/theme';
 
 /**
@@ -78,7 +79,7 @@ export function FavouriteHeart({
 
     Animated.spring(fill, {
       toValue: favourite ? 1 : 0,
-      useNativeDriver: true,
+      useNativeDriver: NATIVE_DRIVER,
       damping: favourite ? 7 : 14,
       stiffness: favourite ? 220 : 260,
       mass: 0.7,
@@ -89,11 +90,11 @@ export function FavouriteHeart({
         toValue: favourite ? 0.78 : 0.9,
         duration: 90,
         easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
+        useNativeDriver: NATIVE_DRIVER,
       }),
       Animated.spring(pop, {
         toValue: 1,
-        useNativeDriver: true,
+        useNativeDriver: NATIVE_DRIVER,
         damping: favourite ? 6 : 12,
         stiffness: 240,
         mass: 0.7,
@@ -117,7 +118,7 @@ export function FavouriteHeart({
         toValue: 1,
         duration: 520,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: NATIVE_DRIVER,
       }).start();
     }
 
@@ -127,7 +128,7 @@ export function FavouriteHeart({
   const setPressed = (down: boolean) => {
     Animated.spring(press, {
       toValue: down ? 0.88 : 1,
-      useNativeDriver: true,
+      useNativeDriver: NATIVE_DRIVER,
       damping: 15,
       stiffness: 400,
       mass: 0.6,
@@ -161,7 +162,7 @@ export function FavouriteHeart({
       >
         {/* The ring and the sparks leave the button, so they are drawn over it
             rather than inside its flow, and never take a touch. */}
-        <View style={styles.overlay} pointerEvents="none">
+        <View style={styles.overlay}>
           <Animated.View
             style={[
               styles.ring,
@@ -217,8 +218,10 @@ export function FavouriteHeart({
           <Ionicons name="heart-outline" size={iconSize} color={outlineTint(tone)} />
         </Animated.View>
         <Animated.View
-          style={[styles.fillLayer, { opacity: fill, transform: [{ scale: filledScale }] }]}
-          pointerEvents="none"
+          style={[
+            styles.fillLayer,
+            { opacity: fill, transform: [{ scale: filledScale }], pointerEvents: 'none' },
+          ]}
         >
           <Ionicons name="heart" size={iconSize} color={colors.accent} />
         </Animated.View>
@@ -247,7 +250,8 @@ function outlineTint(tone: Tone): string {
 
 const styles = StyleSheet.create({
   button: { alignItems: 'center', justifyContent: 'center' },
-  overlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
+  overlay: {
+    pointerEvents: 'none', ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   ring: { position: 'absolute', borderWidth: 2, borderColor: colors.accent },
   spark: { position: 'absolute', width: 4, height: 4, borderRadius: 2, backgroundColor: colors.accent },
   fillLayer: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },

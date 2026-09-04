@@ -81,21 +81,18 @@ export const type = {
   overline: { fontSize: 11, lineHeight: 14, fontWeight: '800' as const, letterSpacing: 1.1 },
 } as const;
 
+/**
+ * One shadow property rather than the four `shadow*` ones plus `elevation`.
+ *
+ * `shadowColor`/`shadowOpacity`/`shadowRadius`/`shadowOffset` are deprecated —
+ * react-native-web logs it on every load — and `elevation` was always the
+ * Android-only half of the same picture. `boxShadow` is the one property that
+ * means the same thing on all three platforms, so these are the same two
+ * shadows written once: offset, blur, colour at the old opacity.
+ */
 export const shadow = {
-  card: {
-    shadowColor: '#2A2018',
-    shadowOpacity: 0.07,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 3,
-  },
-  raised: {
-    shadowColor: '#2A2018',
-    shadowOpacity: 0.14,
-    shadowRadius: 26,
-    shadowOffset: { width: 0, height: 14 },
-    elevation: 8,
-  },
+  card: { boxShadow: '0px 8px 18px rgba(42, 32, 24, 0.07)' },
+  raised: { boxShadow: '0px 14px 26px rgba(42, 32, 24, 0.14)' },
 } as const;
 
 export const theme = { colors, spacing, radii, type, shadow };

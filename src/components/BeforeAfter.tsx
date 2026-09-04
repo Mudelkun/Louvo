@@ -96,15 +96,15 @@ export function BeforeAfter({
         />
       </View>
 
-      <View pointerEvents="none" style={[styles.divider, { left: splitX - 1 }]} />
-      <View pointerEvents="none" style={[styles.handle, { left: splitX - 20 }]}>
+      <View style={[styles.divider, { left: splitX - 1, pointerEvents: 'none' }]} />
+      <View style={[styles.handle, { left: splitX - 20, pointerEvents: 'none' }]}>
         <Ionicons name="code-outline" size={18} color={colors.ink} />
       </View>
 
-      <View pointerEvents="none" style={[styles.tag, { left: spacing.md }]}>
+      <View style={[styles.tag, { left: spacing.md, pointerEvents: 'none' }]}>
         <Text style={[type.overline, { color: colors.onDark }]}>BEFORE</Text>
       </View>
-      <View pointerEvents="none" style={[styles.tag, { right: spacing.md }]}>
+      <View style={[styles.tag, { right: spacing.md, pointerEvents: 'none' }]}>
         <Text style={[type.overline, { color: colors.onDark }]}>AFTER</Text>
       </View>
     </View>
@@ -129,11 +129,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.onDark,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+    boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.2)',
   },
   tag: {
     position: 'absolute',
