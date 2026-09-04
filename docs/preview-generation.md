@@ -37,6 +37,14 @@ and the server deletes its copy. After that the only copy in existence is the on
 and it stays there until the user deletes it. A preview nobody collects is deleted anyway after
 `PREVIEW_RETENTION_DAYS`, which is a hand-off window rather than a retention policy.
 
+**And sharing does not undo it.** The obvious way to brand a shared image is to send the finished
+preview back to a server with an image library on it — `sharp` is already a dependency of the
+publish script — which would put a photograph of somebody's face back on our machines for the one
+feature whose whole purpose is to show it to other people. It is not done. The share card is
+composed on the device by photographing a view, and a share link names a *hairstyle*, so the
+image that unfurls in somebody else's chat is the catalog's mannequin render of that cut. See
+[`sharing.md`](sharing.md).
+
 **What this does not claim.** The worker handles the bytes: it fetches the finished image from
 fal and writes it to the bucket. During that moment it is in a process of ours. "No access" here
 means *no retained access* — there is no standing copy, no index of who generated what image, and

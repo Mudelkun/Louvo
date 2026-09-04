@@ -26,8 +26,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Skeleton, SkeletonGroup } from '@/components/Skeleton';
 import { NATIVE_DRIVER } from '@/lib/motion';
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 export type PickerMode = 'photos' | 'camera';
 
@@ -70,6 +71,7 @@ function tap(style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Li
  * as a layer above the photo rather than a bar cutting into it.
  */
 export function PhotoPickerSheet({ mode, onChangeMode, onClose, onPicked }: PhotoPickerSheetProps) {
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   const visible = mode !== null;
   const [mounted, setMounted] = useState(visible);
@@ -165,6 +167,8 @@ function PhotosPane({
   onOpenCamera: () => void;
   bottomInset: number;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const [permission, requestPermission] = MediaLibrary.usePermissions();
   const [assets, setAssets] = useState<MediaLibrary.Asset[] | null>(null);
 
@@ -227,9 +231,10 @@ function PhotosPane({
           </Pressable>
         </Centered>
       ) : assets === null ? (
-        <Centered>
-          <ActivityIndicator color={colors.accent} />
-        </Centered>
+        // The library's own grid, in placeholder tiles: permission has been
+        // granted and photographs are coming, so the sheet shows the shape of
+        // them rather than a spinner in the middle of an empty pane.
+        <LibrarySkeleton bottomInset={bottomInset} />
       ) : assets.length === 0 ? (
         <Centered>
           <Ionicons name="images-outline" size={30} color={colors.muted} />
@@ -259,7 +264,31 @@ function PhotosPane({
   );
 }
 
+/**
+ * Three columns of placeholder tiles at the cell size the real photographs use,
+ * filling the pane the grid will fill. The count is the layout's, never the
+ * library's — how many photographs there are is exactly what is not known yet.
+ */
+function LibrarySkeleton({ bottomInset }: { bottomInset: number }) {
+  const rows = Math.ceil(SHEET_H / (CELL + GAP));
+  return (
+    <SkeletonGroup
+      label="Loading your photos"
+      style={{ gap: GAP, paddingTop: spacing.xxl, paddingBottom: CONTROL + spacing.xl + bottomInset }}
+    >
+      {Array.from({ length: rows }, (unused, row) => (
+        <View key={row} style={{ flexDirection: 'row', gap: GAP }}>
+          {Array.from({ length: COLUMNS }, (spare, column) => (
+            <Skeleton key={column} width={CELL} height={CELL} radius={0} />
+          ))}
+        </View>
+      ))}
+    </SkeletonGroup>
+  );
+}
+
 function Cell({ asset, onPress }: { asset: MediaLibrary.Asset; onPress: () => void }) {
+  const styles = useStyles();
   const press = usePressScale(0.94);
   return (
     <Pressable
@@ -290,6 +319,8 @@ function CameraPane({
   onUsePhotos: () => void;
   bottomInset: number;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('front');
   const [flash, setFlash] = useState<FlashMode>('off');
@@ -441,6 +472,7 @@ function CameraPane({
 }
 
 function Shutter({ onPress, disabled }: { onPress: () => void; disabled?: boolean }) {
+  const styles = useStyles();
   const ring = usePressScale(0.9);
   const inner = useRef(new Animated.Value(1)).current;
 
@@ -512,6 +544,7 @@ function Glass({
   style?: StyleProp<ViewStyle>;
   children?: React.ReactNode;
 }) {
+  const styles = useStyles();
   const dark = tone === 'dark';
 
   if (NATIVE_GLASS) {
@@ -597,6 +630,8 @@ function GlassButton({
   onPress: () => void;
   active?: boolean;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const press = usePressScale();
   return (
     <Pressable
@@ -625,6 +660,8 @@ function GlassPill({
   label: string;
   onPress: () => void;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const press = usePressScale(0.95);
   return (
     <Pressable
@@ -660,6 +697,7 @@ function usePressScale(to = 0.9) {
 
 /** Fades and settles its children in — used wherever content swaps in place. */
 function Fade({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
+  const styles = useStyles();
   const value = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -682,6 +720,7 @@ function Fade({ children, style }: { children: React.ReactNode; style?: StylePro
 }
 
 function Centered({ children }: { children: React.ReactNode }) {
+  const styles = useStyles();
   return <View style={styles.centered}>{children}</View>;
 }
 
@@ -696,7 +735,7 @@ async function resolveUri(asset: MediaLibrary.Asset): Promise<string> {
   }
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   root: {
     pointerEvents: 'box-none', ...StyleSheet.absoluteFill, justifyContent: 'flex-end' },
   scrim: { backgroundColor: colors.scrim },
@@ -784,4 +823,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   shutterInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.onDark },
-});
+}));

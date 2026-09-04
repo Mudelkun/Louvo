@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 /**
  * The card the style screen's adjustments live in — one card, not one each.
@@ -25,6 +25,7 @@ import { colors, radii, spacing, type } from '@/theme/theme';
  * control, so the divider count is always one fewer than what is actually shown.
  */
 export function ControlCard({ children }: { children: React.ReactNode }) {
+  const styles = useStyles();
   const sections = React.Children.toArray(children);
   if (!sections.length) return null;
 
@@ -52,6 +53,8 @@ export function ControlCard({ children }: { children: React.ReactNode }) {
  * verb small and muted at the right, where a control's hint belongs.
  */
 export function ControlHeading({ title, hint }: { title: string; hint?: string }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={styles.heading}>
       <Text style={[type.label, { color: colors.ink }]} accessibilityRole="header">
@@ -66,7 +69,7 @@ export function ControlHeading({ title, hint }: { title: string; hint?: string }
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   card: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
@@ -88,4 +91,4 @@ const styles = StyleSheet.create({
   },
   heading: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   hint: { color: colors.muted, marginLeft: 'auto', flexShrink: 1 },
-});
+}));

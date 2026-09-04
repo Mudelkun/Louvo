@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Gender } from '@/api/types';
 import { Header, Screen } from '@/components/Screen';
 import { useSession } from '@/state/SessionContext';
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 const OPTIONS: { id: Gender; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { id: 'male', label: 'Male', icon: 'man-outline' },
@@ -29,6 +29,8 @@ const OPTIONS: { id: Gender; label: string; icon: keyof typeof Ionicons.glyphMap
  * so the highlight is local to this visit and the session is only ever written.
  */
 export default function GenderScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const { setGender } = useSession();
   const [chosen, setChosen] = useState<Gender | null>(null);
@@ -82,7 +84,7 @@ export default function GenderScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   body: { paddingHorizontal: spacing.xl, paddingTop: spacing.xxl },
   title: { color: colors.ink },
   subtitle: { color: colors.muted, marginTop: spacing.sm, marginBottom: spacing.xxl },
@@ -99,4 +101,4 @@ const styles = StyleSheet.create({
     borderColor: colors.hairline,
   },
   tileSelected: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-});
+}));

@@ -6,7 +6,7 @@ import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import type { Gender, HairColor, HairShape, TryOnOptions, VariantId } from '@/api/types';
 import { Mannequin } from '@/components/Mannequin';
 import { DEMO_PHOTO } from '@/lib/constants';
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, plate, radii, spacing, useColors, type } from '@/theme/theme';
 
 export interface DemoSubject {
   /** The style being tried on, so the generated render is used when there is one. */
@@ -57,6 +57,8 @@ export function PhotoFrame({
   demo,
   demoWidth = 300,
 }: PhotoFrameProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const isDemo = uri === DEMO_PHOTO;
 
   return (
@@ -92,12 +94,12 @@ export function PhotoFrame({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   frame: {
     overflow: 'hidden',
     backgroundColor: colors.surfaceSunken,
   },
-  demo: { alignItems: 'center', justifyContent: 'flex-end', backgroundColor: '#E8E1D8' },
+  demo: { alignItems: 'center', justifyContent: 'flex-end', backgroundColor: plate },
   empty: { alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   emptyBadge: {
     width: 62,
@@ -107,4 +109,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

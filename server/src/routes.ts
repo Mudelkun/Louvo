@@ -18,6 +18,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { currentRevision, getCatalog, invalidateCatalog } from './catalog.js';
 import { env } from './env.js';
 import { previewRoutes } from './previews.js';
+import { shareRoutes } from './shares.js';
 import { storage } from './storage.js';
 import { filterHairstyles, recommendationsFor, SORT_IDS, type HairstyleQuery, type SortId } from './hairstyles.js';
 import { HAIR_TYPE_IDS, type Gender, type HairTypeId } from './types.js';
@@ -86,6 +87,16 @@ export async function routes(app: FastifyInstance): Promise<void> {
    * service — see `src/worker.ts`.
    */
   await app.register(previewRoutes);
+
+  /**
+   * Sharing, the referral links it mints and the landing page they open.
+   *
+   * Registered here for the same reason the previews are: it is the same small
+   * amount of JSON, plus one HTML document, and none of it touches storage or
+   * the worker. A share is a hairstyle id and a code — the picture stays on the
+   * phone that made it.
+   */
+  await app.register(shareRoutes);
 
   /**
    * Liveness and readiness in one, because Railway asks for one URL.

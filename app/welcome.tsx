@@ -10,7 +10,7 @@ import { useHairColor } from '@/hooks/useHairColor';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { HERO_ANGLE } from '@/lib/hairShape';
 import { useCatalog } from '@/state/CatalogContext';
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -18,6 +18,8 @@ const { width } = Dimensions.get('window');
 const HERO_COUNT = 3;
 
 export default function WelcomeScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { catalog, hairstyles } = useCatalog();
@@ -78,7 +80,7 @@ export default function WelcomeScreen() {
           {highlights.slice(0, 4).map((highlight) => (
             <View key={highlight} style={styles.highlightRow}>
               <View style={styles.tick}>
-                <Ionicons name="checkmark" size={13} color={colors.onDark} />
+                <Ionicons name="checkmark" size={13} color={colors.onAccent} />
               </View>
               <Text style={[type.body, { color: colors.inkSoft, flex: 1 }]}>{highlight}</Text>
             </View>
@@ -94,8 +96,8 @@ export default function WelcomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.ink },
+const useStyles = makeStyles(({ colors }) => ({
+  root: { flex: 1, backgroundColor: colors.stage },
   hero: { flex: 1, paddingHorizontal: spacing.xl, justifyContent: 'space-between' },
   skip: { position: 'absolute', right: spacing.xl, top: 0, padding: spacing.md, zIndex: 5 },
   heroRow: {
@@ -131,4 +133,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   disclaimer: { color: colors.muted, textAlign: 'center', marginTop: spacing.md },
-});
+}));

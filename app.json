@@ -6,14 +6,17 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hairify.app",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Hairify needs access to your photos so you can try hairstyles on your own picture.",
         "NSCameraUsageDescription": "Hairify needs your camera so you can take a selfie to try hairstyles on."
-      }
+      },
+      "associatedDomains": [
+        "applinks:hairify.app"
+      ]
     },
     "android": {
       "package": "com.hairify.app",
@@ -22,7 +25,24 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "hairify.app",
+              "pathPrefix": "/s"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -62,10 +82,15 @@
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
           "backgroundColor": "#FAF8F5",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#15130F"
+          },
           "enableFullScreenImage_legacy": true
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": false

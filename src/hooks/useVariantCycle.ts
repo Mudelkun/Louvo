@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing } from 'react-native';
+import { Animated, Easing } from 'react-native';
 
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { NATIVE_DRIVER } from '@/lib/motion';
 import type { VariantId } from '@/api/types';
 
@@ -97,35 +98,6 @@ function subscribe(listener: { advance: () => void; settle: () => void }) {
     animation = null;
     beat.setValue(1);
   };
-}
-
-/**
- * Whether the platform has been asked to keep motion down.
- *
- * This is the one animation in the app that nobody started and nothing stops:
- * every card in the grid moving on its own, indefinitely. That is exactly the
- * kind the setting exists for, so under it the cycle resolves to its first
- * render and simply stays there — the same image the grid showed before any of
- * this, rather than a degraded version of it.
- */
-function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    AccessibilityInfo.isReduceMotionEnabled()
-      .then((on) => {
-        if (alive) setReduced(on);
-      })
-      .catch(() => {});
-    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduced);
-    return () => {
-      alive = false;
-      subscription?.remove?.();
-    };
-  }, []);
-
-  return reduced;
 }
 
 /**

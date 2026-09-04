@@ -21,7 +21,7 @@ import { baseHairColor } from '@/lib/constants';
 import { buildHairPaths, effectiveShape, headFor, HERO_ANGLE, turnFor, type ViewAngle } from '@/lib/hairShape';
 import { ANCHOR_LENGTH, parseLength } from '@/lib/hairLengths';
 import { mannequinMask, mannequinRender, renderLength, renderVariant } from '@/lib/mannequinRender';
-import { colors as tokens } from '@/theme/theme';
+import { plate } from '@/theme/theme';
 
 interface MannequinProps {
   /**
@@ -79,7 +79,7 @@ export function Mannequin({
   variants,
   angle = 'front',
   size = 160,
-  backdrop = '#EFE9E1',
+  backdrop = plate,
   style,
 }: MannequinProps) {
   // SVG gradient ids share one namespace per document on web, so every instance
@@ -227,7 +227,7 @@ function MannequinDrawing({
   gender,
   angle = 'front',
   size = 160,
-  backdrop = '#EFE9E1',
+  backdrop = plate,
   style,
 }: MannequinDrawingProps) {
   // As in `<Mannequin>`: gradient ids share one namespace per document on web.
@@ -361,7 +361,7 @@ export function MannequinBadge({
         height: size,
         borderRadius: size / 2,
         overflow: 'hidden',
-        backgroundColor: tokens.surfaceAlt,
+        backgroundColor: plate,
         alignItems: 'center',
       }}
     >

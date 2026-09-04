@@ -11,9 +11,11 @@
  * `mockCatalog` behind a simulated delay exactly as it always did, so a fresh
  * checkout still runs with no backend, no bucket and no key.
  *
- * What is still simulated: accounts, sharing, and the `generateLook` fallback
- * for a photo with no pixels behind it. Preview generation itself is real — see
- * `tryOn.ts`.
+ * What is still simulated: accounts, and the `generateLook` fallback for a photo
+ * with no pixels behind it. Preview generation itself is real — see `tryOn.ts` —
+ * and so is sharing, which lives in `share.ts` rather than here: it mints a
+ * referral link and hands a composed image to the operating system, and neither
+ * half is a fetch of catalog data.
  */
 
 import { setHairTypeExamples } from '@/lib/hairTypeExample';
@@ -539,10 +541,4 @@ function runSimulatedGeneration(
       cancelled = true;
     },
   };
-}
-
-/** Placeholder for the share sheet — phase 3 hands this a real file uri. */
-export async function shareLook(look: GeneratedLook, channel: string): Promise<void> {
-  await latency(500);
-  if (__DEV__) console.log(`[mock] shared ${look.id} to ${channel}`);
 }

@@ -5,14 +5,17 @@ import React from 'react';
 import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { API_BASE_URL, catalogSource, generationSource, hasApi } from '@/api/client';
+import { shareLinksConfigured, shareSource } from '@/api/share';
 import { TRY_ON_MODEL, generationConfigured } from '@/api/tryOn';
+import { ChoiceRow } from '@/components/Controls';
 import { MockNotice, Pill } from '@/components/Feedback';
 import { Header, Screen, SectionLabel } from '@/components/Screen';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { useSession } from '@/state/SessionContext';
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, useThemePreference, type } from '@/theme/theme';
+import type { ThemePreference } from '@/theme/theme';
 
 /**
  * Where this launch's catalog actually came from, in words.
@@ -72,15 +75,42 @@ const GENERATION_TONE: Record<ReturnType<typeof generationSource>, 'jade' | 'rus
 
 
 /**
+ * Whether a shared look carries a link anybody can follow.
+ *
+ * Two states rather than three, because there is no cached middle: a link is
+ * either minted by the backend and countable, or it is the local stand-in. It is
+ * reported for the same reason the other two are — the share sheet looks
+ * identical either way, and a user whose shares are going out with no link
+ * deserves to be told rather than to find out from a friend.
+ */
+const SHARE_LABEL: Record<ReturnType<typeof shareSource>, string> = {
+  api: 'Share links live',
+  local: 'Share links off',
+};
+
+/**
+ * The three answers to "what should the app look like", in the order they make
+ * sense: the one that needs no decision first.
+ */
+const APPEARANCE_OPTIONS: { id: ThemePreference; label: string }[] = [
+  { id: 'system', label: 'System' },
+  { id: 'light', label: 'Light' },
+  { id: 'dark', label: 'Dark' },
+];
+
+/**
  * Settings screen, reached from the gear in the Profile tab's header. There are no
  * accounts yet — this is where the prototype's simulated behaviour is spelled out.
  */
 export default function SettingsScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const { savedLooks, favouriteIds, clearAll } = useLibrary();
   const { hairstyles, categories, reload } = useCatalog();
   const { reset: resetSession, gender } = useSession();
   const { reset: resetOnboarding } = useOnboarding();
+  const { preference, setPreference, systemName } = useThemePreference();
   const [saveOriginals, setSaveOriginals] = React.useState(true);
   const [hdPreviews, setHdPreviews] = React.useState(false);
 
@@ -97,7 +127,7 @@ export default function SettingsScreen() {
       <View style={{ paddingTop: spacing.lg, paddingHorizontal: spacing.xl, gap: spacing.xl }}>
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
-            <Ionicons name="person" size={26} color={colors.onDark} />
+            <Ionicons name="person" size={26} color={colors.onInkFill} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[type.heading, { color: colors.ink }]}>Guest</Text>
@@ -124,6 +154,26 @@ export default function SettingsScreen() {
         <MockNotice>
           {`${CATALOG_SOURCE_COPY[catalogSource()]} ${GENERATION_COPY[generationSource()]}`}
         </MockNotice>
+
+        <View>
+          <SectionLabel>Appearance</SectionLabel>
+          <View style={[styles.group, styles.appearance]}>
+            <ChoiceRow
+              options={APPEARANCE_OPTIONS}
+              value={preference}
+              onChange={(id) => setPreference(id as ThemePreference)}
+            />
+            {/* What the choice means, rather than a restatement of it. On
+                `System` the useful fact is which way the phone is currently
+                leaning — the control looks identical at noon and at midnight,
+                and this is the line that tells them apart. */}
+            <Text style={[type.caption, { color: colors.muted }]}>
+              {preference === 'system'
+                ? `Following your phone, which is set to ${systemName}. It changes with the phone.`
+                : `Always ${preference}, whatever your phone is set to.`}
+            </Text>
+          </View>
+        </View>
 
         <View>
           <SectionLabel>Preferences</SectionLabel>
@@ -192,6 +242,11 @@ export default function SettingsScreen() {
                 exactly like a model that declined to change anything. This row
                 is how that gets told apart from a bad prompt. */}
             <Pill tone={GENERATION_TONE[generationSource()]} label={GENERATION_LABEL[generationSource()]} />
+            {/* The third of the same kind. A share always works — the image and
+                the caption are composed on this phone — but only a minted link
+                can be followed back to the app and counted, and that is the half
+                the whole feature exists for. */}
+            <Pill tone={shareSource() === 'api' ? 'jade' : 'rust'} label={SHARE_LABEL[shareSource()]} />
           </View>
           <Text style={[type.caption, { color: colors.muted }]}>
             {generationSource() === 'server'
@@ -205,6 +260,13 @@ export default function SettingsScreen() {
               ? `Catalog API: ${API_BASE_URL}`
               : 'Set EXPO_PUBLIC_API_URL and restart the dev server to load the catalog from the API.'}
           </Text>
+          <Text style={[type.caption, { color: colors.muted }]}>
+            {shareSource() === 'api'
+              ? 'Shared looks carry a Hairify link that opens the app if it is installed and the store if it is not, and the shares it brings in are counted against it.'
+              : shareLinksConfigured()
+                ? 'Shared looks carry EXPO_PUBLIC_SHARE_URL. Nothing is counted without EXPO_PUBLIC_API_URL.'
+                : 'Shared looks carry the image and the caption but no link — set EXPO_PUBLIC_API_URL (or EXPO_PUBLIC_SHARE_URL) to give people a way back.'}
+          </Text>
         </View>
       </View>
     </Screen>
@@ -212,6 +274,8 @@ export default function SettingsScreen() {
 }
 
 function Stat({ value, label }: { value: number; label: string }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={styles.stat}>
       <Text style={[type.title, { color: colors.ink }]}>{value}</Text>
@@ -233,6 +297,8 @@ function ToggleRow({
   value: boolean;
   onChange: (next: boolean) => void;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={styles.row}>
       <Ionicons name={icon} size={19} color={colors.inkSoft} />
@@ -263,6 +329,8 @@ function LinkRow({
   onPress: () => void;
   destructive?: boolean;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const tint = destructive ? colors.danger : colors.inkSoft;
   return (
     <Pressable
@@ -283,10 +351,11 @@ function LinkRow({
 }
 
 function Divider() {
+  const styles = useStyles();
   return <View style={styles.divider} />;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -301,7 +370,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.inkFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -328,6 +397,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
   },
+  // The one group whose contents are a control rather than a list of rows, so
+  // it gets the padding the rows were carrying themselves.
+  appearance: { padding: spacing.lg, gap: spacing.md },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.hairline, marginLeft: 52 },
   about: { gap: spacing.md, alignItems: 'flex-start', paddingBottom: spacing.xl },
-});
+}));

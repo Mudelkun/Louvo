@@ -16,7 +16,7 @@ import { textureFor, variantCandidates } from '@/lib/hairTypes';
 import { useCatalog } from '@/state/CatalogContext';
 import { useGeneration } from '@/state/GenerationContext';
 import { useSession } from '@/state/SessionContext';
-import { colors, radii, shadow, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 const { width, height } = Dimensions.get('window');
 const STAGE_WIDTH = width - spacing.xl * 2;
@@ -45,6 +45,8 @@ const ADOPT_GRACE_MS = 1500;
  * screen has to earn the wait rather than enforce it.
  */
 export default function GeneratingScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const { job: jobId } = useLocalSearchParams<{ job?: string }>();
   const { jobs, cancel, retry, notification, dismissNotification } = useGeneration();
@@ -327,7 +329,7 @@ export default function GeneratingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors, shadow }) => ({
   blank: { paddingTop: spacing.xxxl, alignItems: 'center' },
   intro: { paddingHorizontal: spacing.xl, gap: spacing.xs, marginTop: spacing.sm },
   stage: { alignItems: 'center', paddingVertical: spacing.lg },
@@ -370,4 +372,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
   },
   failureBody: { color: colors.muted, textAlign: 'center', paddingHorizontal: spacing.lg },
-});
+}));

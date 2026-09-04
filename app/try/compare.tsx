@@ -13,7 +13,7 @@ import { BASE_HAIR_COLOR, DEMO_BASE_SHAPE } from '@/lib/constants';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { useSession } from '@/state/SessionContext';
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 const { width } = Dimensions.get('window');
 const STAGE_WIDTH = width - spacing.xl * 2;
@@ -24,6 +24,8 @@ const MODES = [
 ];
 
 export default function CompareScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const { look, gender: sessionGender } = useSession();
   const { styleById } = useCatalog();
@@ -144,6 +146,7 @@ function Column({
   tint?: string;
   demo: React.ComponentProps<typeof PhotoFrame>['demo'];
 }) {
+  const colors = useColors();
   const columnWidth = (STAGE_WIDTH - spacing.md) / 2;
   return (
     <View style={{ gap: spacing.sm }}>
@@ -161,7 +164,7 @@ function Column({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   splitRow: { flexDirection: 'row', gap: spacing.md },
   noticeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-});
+}));

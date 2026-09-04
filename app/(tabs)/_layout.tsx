@@ -4,9 +4,11 @@ import React from 'react';
 import { Platform, StyleSheet } from 'react-native';
 
 import { useGeneration } from '@/state/GenerationContext';
-import { colors, type } from '@/theme/theme';
+import { makeStyles, useColors, type } from '@/theme/theme';
 
 export default function TabsLayout() {
+  const styles = useStyles();
+  const colors = useColors();
   const { processingCount } = useGeneration();
 
   return (
@@ -55,7 +57,7 @@ export default function TabsLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   bar: {
     backgroundColor: colors.surface,
     borderTopColor: colors.hairline,
@@ -63,4 +65,4 @@ const styles = StyleSheet.create({
     height: Platform.select({ ios: 86, default: 66 }),
     paddingBottom: Platform.select({ ios: 26, default: 8 }),
   },
-});
+}));

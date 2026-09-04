@@ -5,7 +5,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { DemoSubject, PhotoFrame } from '@/components/PhotoFrame';
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 /** Stops either photo being wiped away entirely — there is always a sliver of both. */
 const MIN_RATIO = 0.04;
@@ -72,6 +72,8 @@ export function BeforeAfter({
   beforeDemo,
   afterDemo,
 }: BeforeAfterProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const [width, setWidth] = useState(0);
   /** The split as a fraction, so a rotation moves it rather than resetting it. */
   const ratio = useSharedValue(0.5);
@@ -183,7 +185,7 @@ export function BeforeAfter({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   wrap: {
     borderRadius: radii.xl,
     overflow: 'hidden',
@@ -221,4 +223,4 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     backgroundColor: 'rgba(24,21,19,0.6)',
   },
-});
+}));

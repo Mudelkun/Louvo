@@ -10,7 +10,10 @@ the app binary.
 to a private bucket, a worker runs the model, and the finished preview is handed to the phone and
 then deleted here.
 
-Still absent: accounts, favourites, sharing.
+**Sharing** — referral links, the landing page they open, and the funnel underneath. A share is a
+hairstyle id and a code; the picture is composed on the phone and never comes back here.
+
+Still absent: accounts and favourites.
 
 ```
 mobile app  ->  this API  ->  Postgres (metadata + jobs)
@@ -22,7 +25,9 @@ mobile app  ->  this API  ->  Postgres (metadata + jobs)
 Why the catalog is shaped this way, what was measured, and why R2 rather than S3 or a Railway
 volume: [`docs/catalog-architecture.md`](../docs/catalog-architecture.md). Why the preview
 pipeline is shaped this way, and what "we do not store your photo" is precise about:
-[`docs/preview-generation.md`](../docs/preview-generation.md).
+[`docs/preview-generation.md`](../docs/preview-generation.md). How a shared look becomes a
+countable referral without the picture ever reaching this process, and exactly which installs
+are honestly attributable: [`docs/sharing.md`](../docs/sharing.md).
 
 ## The short version
 
@@ -94,6 +99,21 @@ deployment has no bucket and no generator key, which is what a catalog-only depl
 | `POST /v1/previews/:id/collected` | **The delete.** The phone has the preview; ours is removed and the row can no longer name it. Idempotent. |
 | `DELETE /v1/previews/:id` | Cancel, and mean it: fal is asked to stop, the photograph is deleted at once, and a result that arrives anyway is discarded rather than stored. A generation already rendering may still be billed — that is fal's behaviour, not a shortcut here. |
 | `POST /v1/devices/push` | Register (or clear) an Expo push token. |
+
+Sharing is the third group, and it is the cheapest of the three: no bucket, no worker, no image
+bytes anywhere. A share link names a **hairstyle**, so the picture that unfurls in somebody
+else's group chat is the catalog's own mannequin render of that cut and never a Hairify user's
+face. See [`docs/sharing.md`](../docs/sharing.md).
+
+| | |
+| --- | --- |
+| `POST /v1/shares` | Mints a referral link for a look and returns its url, deep link and caption. Device-authenticated. `clientRef` makes a retried press one link rather than two. |
+| `GET /v1/shares/:code` | What a code points at, as JSON. **Public** — the app calling it may be thirty seconds old and have no device secret yet. |
+| `POST /v1/events` | The funnel, batched. Device header optional; unknown event names are dropped and counted rather than rejected. |
+| `POST /v1/attribution` | "This device arrived on that link." First write wins; a sharer opening their own link is refused. |
+| `GET /s/:code` | The landing page. Open Graph tags in the markup for the scrapers, then the app for whoever has it and the store for whoever does not. Counts the open. |
+| `GET /.well-known/apple-app-site-association` | Universal links. **404s until `IOS_TEAM_ID` is set** — an association file naming a team id that is not ours is worse than none, because iOS caches it. |
+| `GET /.well-known/assetlinks.json` | The Android half, on `ANDROID_SHA256_FINGERPRINTS`. |
 
 ## Preview generation
 
@@ -201,13 +221,19 @@ So `scripts/check-roundtrip.mjs` runs the real schema, the real publish writers 
 offers, the `shape` descriptor and the manifest nesting. It needs no database and no
 credentials.
 
-`npm run check` runs two more things beside it:
+`npm run check` runs three more things beside it:
 
 - **`scripts/check-previews.mjs`** walks the whole job lifecycle against the same in-memory
   Postgres — idempotent submit, the compare-and-set claim, the per-device cap, every terminal
   transition — and asserts that no settled job still names an object. That last assertion is the
   privacy promise expressed as a test: one new status, one new path out of `running`, and a
   photograph sits in a bucket with nobody looking for it.
+- **`scripts/check-shares.mjs`** guards the three things that go silently wrong in a referral
+  loop: a funnel that double-counts (a retried create minting a second code, a sharer's own tap
+  counted as an install), a landing page whose Open Graph tags are missing — it is scraped with
+  no JavaScript, so a card that does not unfurl is the whole feature failing in a group chat —
+  and attribution drifting to a later link. It also asserts the thing the design rests on: the
+  image on that page is the catalog's mannequin render, never a file uri from somebody's phone.
 - **`scripts/check-signing.mjs`** checks the SigV4 in `src/storage.ts` two ways, neither of which
   needs a bucket or a credential: the header-signed path must produce a signature byte-identical
   to `scripts/lib/r2.mjs`, which has been publishing the catalog for months, and the presigned
@@ -273,6 +299,9 @@ src/tryOn.ts                 one job -> one fal request
 src/reference.ts             which render the model is shown — mirrors the app's matrix read
 src/devices.ts               the device secret, stored as a hash
 src/push.ts                  Expo push
+src/shareLinks.ts            share links, the event log and attribution — the data layer
+src/shares.ts                the share routes and the landing page they serve
+src/landing.ts               the HTML a shared link opens, plus the two association files
 src/generated/               copies of the authored prompt and size arithmetic — do not edit
 src/index.ts                 Fastify bootstrap
 scripts/migrate.mjs          apply migrations/*.sql, once each
@@ -282,6 +311,7 @@ scripts/lib/media.mjs        PNG -> WebP, and why masks are lossless
 scripts/lib/r2.mjs           SigV4 against any S3-compatible endpoint
 scripts/check-roundtrip.mjs  the catalog check above
 scripts/check-previews.mjs   the job lifecycle check above
+scripts/check-shares.mjs     the referral funnel and the landing page's OG card
 scripts/check-signing.mjs    SigV4, against the proven signer and against the spec
 scripts/sync-shared.mjs      regenerates src/generated/ from src/lib/*.ts
 ```
