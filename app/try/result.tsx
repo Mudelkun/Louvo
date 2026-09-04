@@ -14,7 +14,8 @@ import { StyleCard } from '@/components/StyleCard';
 import { useHairColor, useLookColor } from '@/hooks/useHairColor';
 import { useLookDownload } from '@/hooks/useLookDownload';
 import { DEMO_PHOTO } from '@/lib/constants';
-import { textureFor, variantCandidates } from '@/lib/hairTypes';
+import { parseLength } from '@/lib/hairLengths';
+import { ALL_HAIR_TYPES, textureFor, variantCandidates } from '@/lib/hairTypes';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { useSession } from '@/state/SessionContext';
@@ -28,7 +29,7 @@ const RAIL_CARD_WIDTH = Math.min(136, (width - spacing.xl * 2 - spacing.md * 2) 
 
 export default function ResultScreen() {
   const router = useRouter();
-  const { hairstyles, styleById } = useCatalog();
+  const { hairstyles, styleById, hairTypes, hairLengths } = useCatalog();
   const { look, gender: sessionGender, hairTypeId, restartStyleChoice } = useSession();
   // The look's own gender, not the session's — a look generated from the women's
   // catalog has to keep being drawn on the women's mannequin after the session
@@ -63,6 +64,43 @@ export default function ResultScreen() {
   const related = useMemo(
     () => recommendationsFor(hairstyles, hairstyle?.id ?? '', gender, 8, hairType),
     [hairstyles, hairstyle?.id, gender, hairType],
+  );
+
+  /**
+   * The length this preview was generated at, where the cut offers a choice of
+   * one. Recorded on every look of a cut with a length row, chosen or defaulted
+   * — see `generate()` on the style screen — so a look made at the anchor names
+   * it as plainly as one made short. Suppressing the anchor is the more tempting
+   * reading ("they never touched the slider") and it is the wrong one: it would
+   * leave a Medium look labelled exactly like a cut that has no length at all,
+   * sitting in the library beside a Short look of the same cut that is labelled.
+   * A facet that appears only sometimes cannot be read as a fact.
+   */
+  const lookLength = parseLength(look?.options.length);
+  /**
+   * What this preview was generated *for*, in the catalog's own words: the
+   * length first, then the hair type — the order they qualify the cut in when
+   * the tag is read straight through, "Long, Coily, Textured Crop".
+   *
+   * These are the two things that make this picture different from the next
+   * preview of the same cut, and until they were on the tag the only record of
+   * them was the pixels: the look has always carried `hairType` and
+   * `options.length`, and nothing on screen ever said so.
+   *
+   * The names come from the catalog's own records rather than from the ids, so
+   * no screen contains the word "Coily" — the rule `<HairTypeChoice>` and
+   * `<LengthChoice>` are built on. An id the catalog has no record for drops out
+   * rather than being rendered from itself, which is also how a look with
+   * nothing declared — All Types, or one saved before either field existed —
+   * ends up with an empty row and the plain name the tag has always shown.
+   */
+  const facets = useMemo(
+    () =>
+      [
+        hairLengths.find((entry) => entry.id === lookLength)?.name,
+        hairTypes.find((entry) => entry.id === look?.hairType)?.name,
+      ].filter((name): name is string => Boolean(name)),
+    [hairLengths, hairTypes, lookLength, look?.hairType],
   );
 
   if (!look || !hairstyle) {
@@ -128,11 +166,44 @@ export default function ResultScreen() {
           {/* The tag names the cut in the picture, so it is the obvious way back
               to that cut's page. It does not clear the style choice the way the
               "try next" rail does — this is the look the user is standing on,
-              and dropping it would empty this screen behind them. */}
+              and dropping it would empty this screen behind them.
+
+              It names the *look* rather than the cut: the texture and the length
+              this preview was generated in, set over the cut's own name. Two
+              lines rather than one run-on caption, because the halves are
+              different kinds of thing — the small brass line is what was asked
+              for, the white line is what it was asked of — and stacking them
+              keeps the pill short enough to sit over a photograph.
+
+              Those same two answers travel on the tap, so the style page opens
+              on the texture and the length this preview was made in rather than
+              on whatever the session has moved on to browsing. It is the params
+              object the catalog grid already sends, plus the length and the
+              look's own gender — the catalog is shot per gender, so the wrong
+              one there is a different haircut. */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`View ${hairstyle.name} details`}
-            onPress={() => router.push(`/try/style/${hairstyle.id}`)}
+            accessibilityLabel={
+              facets.length
+                ? `${hairstyle.name}, ${facets.join(', ')}. View details.`
+                : `View ${hairstyle.name} details`
+            }
+            onPress={() =>
+              router.push({
+                pathname: '/try/style/[id]',
+                params: {
+                  id: hairstyle.id,
+                  // `ALL_HAIR_TYPES` rather than nothing when the look declared
+                  // none: an absent param means "fall back to the session's
+                  // type", which is the one answer this tag must never give —
+                  // the picture above it was generated without a type, and the
+                  // session may well have acquired one since.
+                  hairType: look.hairType ?? ALL_HAIR_TYPES,
+                  ...(gender ? { gender } : null),
+                  ...(lookLength ? { length: lookLength } : null),
+                },
+              })
+            }
             style={({ pressed }) => [styles.styleTag, pressed && { opacity: 0.75 }]}
           >
             <MannequinBadge
@@ -143,10 +214,17 @@ export default function ResultScreen() {
               variants={lookVariants}
               size={34}
             />
-            <Text style={[type.caption, { color: colors.onDark, fontWeight: '700' }]}>
-              {hairstyle.name}
-            </Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.onDark} />
+            <View style={styles.styleTagCopy}>
+              {facets.length ? (
+                <Text style={styles.styleTagFacets} numberOfLines={1}>
+                  {facets.join(' · ')}
+                </Text>
+              ) : null}
+              <Text style={styles.styleTagName} numberOfLines={1}>
+                {hairstyle.name}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color={colors.onDarkMuted} />
           </Pressable>
         </PhotoFrame>
       </View>
@@ -250,6 +328,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.md,
     bottom: spacing.md,
+    // Content-width, but never wider than the frame it sits in: a long cut name
+    // over two facets would otherwise run off the photograph instead of
+    // eliding. A `right` inset would stretch it edge to edge in every case,
+    // which turns a tag into a banner.
+    maxWidth: STAGE_WIDTH - spacing.md * 2,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -259,6 +342,21 @@ const styles = StyleSheet.create({
     paddingRight: spacing.md,
     paddingVertical: 6,
   },
+  styleTagCopy: { flexShrink: 1, gap: 1 },
+  /**
+   * The brass at its brightest, which is the one step of it that survives being
+   * set at 9pt on a dark scrim over a photograph. Uppercased in the style rather
+   * than in the string, so what gets rendered is the catalog's own copy.
+   */
+  styleTagFacets: {
+    ...type.overline,
+    fontSize: 9,
+    lineHeight: 12,
+    letterSpacing: 0.9,
+    textTransform: 'uppercase',
+    color: colors.accentGlow,
+  },
+  styleTagName: { ...type.label, color: colors.onDark },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   actionRow: {
     flexDirection: 'row',
