@@ -117,7 +117,7 @@ export function ProgressRing({
         <Defs>
           <LinearGradient id={`ring${uid}`} x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor={colors.accent} />
-            <Stop offset="1" stopColor="#FF9A6C" />
+            <Stop offset="1" stopColor={colors.accentGlow} />
           </LinearGradient>
         </Defs>
         <Circle

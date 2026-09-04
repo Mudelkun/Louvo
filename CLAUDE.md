@@ -17,7 +17,10 @@ npm install
 npm start          # Expo dev server (syncs the generated render + example maps first)
 npm run ios / android / web
 npm run typecheck  # tsc --noEmit
+npm run icons      # re-cut the launcher icon set from the artwork — free, no key
 npm run mannequins -- --matrix   # the hairstyle x hair type matrix — free, no key
+npm run mannequins -- --plan     # the length batch, one command per style — free, no key
+npm run mannequins -- --check    # re-measure sheets on disk: bald panels, length range — free
 npm run hair-types -- --dry-run  # the hair-type picker's examples — free, no key
 npm run try-on -- --photo me.jpg --style buzz-cut --dry-run   # one preview — free with --dry-run
 ```
@@ -93,6 +96,163 @@ Two consequences worth knowing:
   render of a cut they asked to see straight is a wrong image, not a partial one. *All Types* is
   the one case that accepts any variant, because nothing has been declared to be wrong about; that
   is what keeps today's all-curly catalog browsable. See `variantCandidates()`.
+- **Under *All Types* a card does not pick one of them — it shows them all, in turn.** Taking the
+  first candidate and stopping made a cut generated in three textures look exactly like a cut
+  generated in one, and the only way to find out otherwise was to open it. `<StyleCard>` cross-fades
+  through the style's renders instead (`useVariantCycle` in `src/hooks/`), captioned with the types
+  each one stands for, so the matrix is visible from the grid. It cycles only over variants that
+  **exist and differ** — `renderedVariants()`, deduped by source, since two candidates resolving to
+  one file would read as a stutter rather than as a second version — so a single-render style and
+  the whole women's catalog stay still, and the procedural drawing is never cycled at all (under
+  *All Types* it is drawn in the style's own texture whichever variant is asked for). The whole
+  thing resolves to the first render under reduce-motion: it is the one animation here that nobody
+  started and nothing stops.
+
+  **Every card changes on the same beat**, and that is one module-level clock and one shared
+  `Animated.Value`, not a per-card timer set to the same delay — cards mount as they are scrolled
+  into view, so equal delays measured from each card's own mount drift apart within a screenful.
+  Cards were staggered off a hash of the id first, on the theory that a grid moving in lockstep
+  reads as a glitch; watched, it reads as the catalog turning a page, and the simultaneity is what
+  makes it one thing the app is doing rather than several cards each doing their own. Only *when*
+  is shared: each card advances one step through *its own* list, so a card scrolled into view
+  mid-loop still opens on the render it would have opened on, and a two-render cut stays in step
+  with a three-render one without either skipping. The clock runs only while a card is subscribed.
+
+  **The style screen cycles on the same beat**, so a card opened from a cycling grid carries on
+  rather than freezing on one texture (`app/try/style/[id].tsx`, sharing `<VariantCrossfade>` with
+  the card). It stops the instant the user presses a hair type in `<HairTypeChoice>` — a choice
+  outranks a demonstration — and that is the whole condition: the cycle runs only while `preview`
+  is null. The control is how the cycle is *read* rather than something it bypasses, since the
+  selected tile follows it. Only the hero's top layer moves: the selected tile, the thumbnails,
+  the fallback drawing's texture and the type handed to `start()` all read the render the screen
+  has **arrived at** (the
+  outgoing one until a dissolve lands), so nothing says "Coily" over a picture that is still
+  mostly curly. One consequence to keep in mind: with nothing declared, the type sent to the
+  generator is whichever the hero is on when Generate is pressed.
+
+  **That control is a chooser, not a caption.** It was a "Shown on" line over a scrolling chip row
+  listing only the types the cut is offered for — a caption plus a filter strip, sitting where a
+  gallery's caption sits, which is how it was read: something naming the picture rather than
+  something to press. `<HairTypeChoice>` is the same state as a titled control: all four types every
+  time in one non-scrolling row, the ones this cut is not offered for held in place as dimmed
+  outlined slots, the selection in the app's active-filter brass rather than in the solid ink it
+  uses for buttons. A row whose length changes per style is a list of what exists; a row that is
+  always the same four is a question with four answers. The one line under it says the thing the
+  row cannot: that a cut with a single render will not change when the selection moves.
+
+  **Both adjustments share one card, because the second one was below the fold.** Hair type and
+  hair length were a card each, stacked, each with its own border, its own padding and a heading
+  over a full sentence of caption — nearly 400 points between them, under a hero that was a flat
+  `width * 0.68` and so 352 points tall on its own. The length slider was therefore off the bottom
+  of every phone, and a control found only by scrolling is a control most people never find. The
+  fix is `<ControlCard>` plus three cuts that each pay for themselves:
+
+  - **One card, one hairline.** The two ask the same question — how should this cut be shown — so
+    two bordered cards were claiming they were two subjects. `<ControlCard>` takes children and
+    rules a full-bleed hairline between whatever it is actually handed, so a cut with no length
+    row is one section and no seam, and a cut with neither renders nothing.
+  - **The question and the verb on one line.** `<ControlHeading>` keeps both things that made the
+    row read as a control rather than a caption — the name in ink, a verb saying what to do with
+    it — and sets them side by side instead of stacked. Do not drop the verb to save the last few
+    points; that hint is what the paragraph above is about.
+  - **The cut's name moved into the header.** `<Header>` takes `title` and `right`, and was
+    carrying only a step counter, so the 24pt heading and the favourite heart cost a row of their
+    own for something the header had an empty centre for.
+
+  `HERO_ART` is what the rest is budgeted against: capped by the window's *height* as well as its
+  width, since the height cap is the one that binds on a phone. The whole screen is arithmetic
+  against the fold — a change to the card's copy, the tile height or the hero fraction can put the
+  slider back under the footer on a small phone, so check a 4.7" viewport before shipping one.
+
+**Length is a slider, and `medium` is an anchor rather than a midpoint.**
+A minority of cuts are offered at two or three lengths (`lengths` on the hairstyle,
+`HairLengthOffer` in `src/api/types.ts`) and the style screen shows a slider for them.
+Most of the catalog has no row and no slider: a fade's variable is its fade height, and a
+Caesar cut that got longer would stop being one. The row is **per gender**, because the
+men's and women's readings of one cut do not travel the same distance.
+
+The rule the whole design rests on: **every render already on disk was shot from a prompt
+that says nothing about length**, so what is there is the cut *as the catalog authored it*
+— and that is what `medium` names. Three consequences follow, and they are why this was
+cheap to add:
+
+- **Every offered range must contain `medium`.** A range without it would open the screen
+  on a length the catalog has never shot. `SM` and `ML` are the two-step ranges for cuts
+  that only travel one way — a Pixie Cut grown out is a bob.
+- **The anchor keeps the path it already has.** `short` and `long` go in
+  `<style>/<variant>/<length>/`; the anchor stays loose in the variant directory. No
+  migration of 356 renders and 356 masks, and a style with no length row is simply a style
+  whose only render is its anchor. `lengthDir()` in `scripts/lib/lengths.mjs` is the one
+  place that decides it.
+- **The untouched slider changes nothing.** `effectiveShape()` has no `medium` branch, so a
+  screen at rest draws exactly what it drew before length existed.
+
+**Length falls back to the anchor; hair type does not.** That is not an inconsistency — it
+is the same rule applied to two different things. A hair type is *declared*, so a curly
+render shown to someone who said coily is a wrong image and falls through to the drawing. A
+length is *asked for*, in a control the user is holding, on a cut whose anchor render they
+were already looking at; dropping to a line drawing mid-drag is worse than showing the cut
+at its usual length. The screen says which it got — `renderLength()` reports the resolved
+length, and when it disagrees with the asked-for one the control carries a line saying so.
+That line appears per stop and clears itself as renders land, with nothing to remove.
+
+**One sheet per style x variant x gender, holding every length.** `--lengths` composes a
+4 x N grid — one row per length, one column per angle — from the same four approved base
+heads, edits it in a single generation, and cuts it into one render per length x angle.
+Three separate sheets would be three independent rolls, and a length slider is *more*
+exposed to drift than the angle set is: the user A/Bs the images directly by dragging, so a
+wandering fringe reads as the slider changing the haircut rather than its length. The
+prompt says so twice, in the grid's own terms — down any column only the length changes,
+across any row only the camera moves (`styleLengthSheetPrompt`).
+
+**The frame has to grow with the panel count, and that is what makes it cheap.** Twelve
+panels in the 1K frame the four-view sheet uses would be 256x256 against today's 512x512 —
+the same lost-detail failure the try-on hit, where a fade's stubble field lands under a
+pixel and comes back as a smooth mass. So a length sheet is asked for at **2K**, where a
+4:3 frame is 2048x1536 and a panel is exactly 512x512. That is **$0.12 for twelve panels
+against $0.24 for three 1K sheets of the same twelve** — half the money, the same
+resolution, and a set that is internally consistent where separate sheets could not be.
+`--resolution` overrides the tier; the four-view path sends no tier at all and is byte for
+byte the request it always was.
+
+**The length difference has to be big, and wanting it is not enough.** The first version of
+the prompt asked for rows "noticeably shorter" and "noticeably longer" and told the model to
+keep them unmistakably the same haircut. Those two sentences fight, the second wins, and the
+sheet comes back as three rows a viewer has to compare side by side — a slider that appears
+not to respond, which is the exact failure the app spends a line of copy on elsewhere. Two
+fixes, both needed:
+
+- **Lengths are stated as ratios against the middle row** — half and twice — not as
+  adjectives. A ratio means the same thing for a buzz cut and a wolf cut, which
+  "four inches" does not, and the prompt has to stay derived from catalog data.
+- **"The same haircut" is scoped to identity, not amount**: same parting, shaping, hairline
+  and finish, explicitly *not* the same quantity of hair. `LENGTH_CONTRAST` closes with
+  "if in doubt, exaggerate" — the mirror of `baseHalfFromFrontPrompt`'s "if in doubt, turn
+  it less", and for the same reason: a known bias in one direction is worth spending words
+  against.
+
+**And it is measured, because wanting it is still not enough.** A length sheet has two silent
+failure modes, not one. A bald panel is a head the model skipped; a *flat* sheet is a range
+it never drew, and nothing in the response says so. `lengthContrast()` takes the per-panel
+coverage `inspectLengthSheet` already computed, means it per row, and trips on either a step
+that did not move (`MIN_LENGTH_CONTRAST`) or a short→long spread that is too small overall
+(`MIN_LENGTH_SPREAD`). Both are needed: the second catches the case every step clears the
+floor and the range is still invisible. A sheet that trips either is re-rolled with the rows
+named, exactly as a bald quadrant is, and the best attempt across retries is ranked on both
+faults together so a re-roll cannot "fix" a bald panel by flattening the range.
+
+Both thresholds are **measured from real sheets, not guessed** — the numbers and the sheets
+they came from are in `lib/sheet.mjs`. The one that set the floor is `afro/coily`, which came
+back at x1.09 per step and a x1.20 spread: it cleared an earlier, more lenient floor
+comfortably and still looked like one haircut three times. `--check` re-measures anything
+already on disk for free and prints the re-roll commands.
+
+**The anchor row is re-shot and replaces what is there.** Three lengths only mean anything
+as a set if they came out of one image, so the medium row has to replace the separately-shot
+medium it sits between. That is the real cost of the dimension: 29 style x gender pairs, 78
+sheets, about $9.36. `--plan` prints one command per pair, derived from the catalog's own
+rows rather than typed out, with what each costs and what is already shot. It is free and
+needs no key — **run it before any length batch.**
 
 **The picker's own imagery is a second, separate generation.** Before any of the above the user
 has to answer *what does my hair do*, and `app/try/hair-type.tsx` shows a generated example of
@@ -441,6 +601,29 @@ fallback for a style with no render. Described rather than shown, a cut is whate
 already thinks that name means and a different one each run — that is the thing being measured, and
 `REFERENCE_VIEWS` stays at one either way.
 
+**The launcher icon is cut from the artwork, not hand-exported.** `assets/Hairify - icon.png` is
+the only icon file anyone edits; `npm run icons` (`scripts/generate-app-icons.mjs`) derives all
+five files the platforms load — `icon.png`, `splash-icon.png`, `favicon.png` and the two Android
+adaptive layers — and `app.json` points at those. It is free, needs no key, and takes about a
+second, so re-run it rather than editing an output by hand.
+
+The work it does is not resizing. The artwork arrives as an icon *mockup*: the tile is
+photographed with a drop shadow on a cream ground, and shipped unprocessed every platform would
+put its own corner mask over a shrunken tile floating in a pale border. So the script finds the
+tile, crops it square, and replaces the ground — with the tile's own black for iOS, which rounds
+the corners itself, and with transparency for the splash, the favicon and Android. Two things in
+there took a second attempt and are commented at the code: the ground is **bled outwards from the
+nearest tile pixel rather than filled flat**, because the tile is lit and a flat black beside it
+reads as a patch; and the Android foreground is **full-bleed and opaque**, because padding the
+safe-zone-sized art with transparency over a flat `backgroundColor` drew a faint rounded square
+inside the icon for exactly the same reason. `android.adaptiveIcon.backgroundColor` is now the
+measured `#171716` and is a fallback nothing should see. `assets/android-icon-background.png` is
+gone: it was the Expo template's, and a background layer under an opaque foreground is a file that
+can only ever be wrong.
+
+The whole thing assumes the artwork's house style — a dark tile on a light ground, subject in a
+warm tone. `findTile` and `goldBounds` are what break first if that changes.
+
 ## Where the backend plugs in
 
 `src/api/client.ts` is the only module that knows the data is mocked. It holds a `USE_MOCKS`
@@ -474,6 +657,29 @@ knows about any of it: pass `styleId` and `variants` to `<Mannequin>` and the lo
 `src/lib/mannequinRender.ts` (`mannequinRender` for the image, `mannequinMask` for its hair
 mask). The variant is resolved once by `renderVariant()` and the mask is then taken from that same
 variant, so a graded copy is never masked by the mask of a different shot of the cut.
+
+**Render directories are created empty, ahead of time, and that is load-bearing.** `npm start`
+and the top of every generator run call `ensureRenderDirs()`, which makes every
+`<style>/<variant>/` and `<style>/<variant>/<length>/` the catalog's own `variants` and `lengths`
+rows imply — 124 of them were empty on the day it was added. It looks like tidiness and is not.
+Metro's `NativeWatcher` is `platform() === 'darwin'`, so on Windows and Linux the bundler runs
+`FallbackWatcher`: one non-recursive `fs.watch` per directory, recursion by hand. When a directory
+appears, the watcher walks it to start watching it *and* to register the files in it **at that
+instant**; a file created in the gap between the walk and the watch is never registered and no
+later event fires for it. It is invisible to the bundler until the next full crawl — until the dev
+server restarts.
+
+`--lengths` was the only thing that hit this, because it is the only thing that creates
+directories mid-session: `short/` and `long/`, filled with four panels each within milliseconds.
+The early angles win the race, the late ones lose it, and then `writeRenderModule` emits a
+`require()` for all four because on disk all four are genuinely there — a bundling failure naming
+a file you can see in the folder, always a late angle and never `front`. A directory that already
+existed when Metro crawled is watched, and files landing inside a watched directory are picked up
+reliably, so the fix is that no render directory is ever born while the server is up. Empty
+directories are free: git does not track them, and every `existsSync` in the generator tests a
+file rather than its directory, so an empty `short/` is never mistaken for work already done.
+If a render ever goes missing from the bundle again, this is the first thing to check — and the
+one-off cure is still to restart the dev server, which forces the crawl.
 
 **Generation goes one hair type at a time.** `--hair-type <t>` narrows a run to a batch, and it is
 read as a *hair type* rather than as a directory name: `--hair-type coily` means "everything a

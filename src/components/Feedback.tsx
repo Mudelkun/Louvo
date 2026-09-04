@@ -53,12 +53,12 @@ export function MockNotice({ children }: { children: string }) {
   );
 }
 
-export function Pill({ label, tone = 'neutral' }: { label: string; tone?: 'neutral' | 'accent' | 'jade' | 'gold' }) {
+export function Pill({ label, tone = 'neutral' }: { label: string; tone?: 'neutral' | 'accent' | 'jade' | 'rust' }) {
   const palette = {
     neutral: { bg: colors.surfaceAlt, fg: colors.inkSoft },
     accent: { bg: colors.accentSoft, fg: colors.accentInk },
     jade: { bg: colors.jadeSoft, fg: colors.jade },
-    gold: { bg: colors.goldSoft, fg: '#8A6520' },
+    rust: { bg: colors.rustSoft, fg: colors.rust },
   }[tone];
 
   return (

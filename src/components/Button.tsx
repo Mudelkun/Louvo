@@ -105,7 +105,7 @@ const variantStyles: Record<Variant, { container: ViewStyle; pressed: ViewStyle;
   },
   dark: {
     container: { backgroundColor: colors.ink },
-    pressed: { backgroundColor: '#2A2630', transform: [{ scale: 0.985 }] },
+    pressed: { backgroundColor: colors.inkPressed, transform: [{ scale: 0.985 }] },
     text: { color: colors.onDark },
   },
   secondary: {
@@ -115,7 +115,7 @@ const variantStyles: Record<Variant, { container: ViewStyle; pressed: ViewStyle;
   },
   soft: {
     container: { backgroundColor: colors.accentSoft },
-    pressed: { backgroundColor: '#E4DAFD' },
+    pressed: { backgroundColor: colors.accentSoftPressed },
     text: { color: colors.accent },
   },
   ghost: {

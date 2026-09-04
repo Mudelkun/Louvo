@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { fetchCatalog } from '@/api/client';
-import type { Catalog, Category, HairColor, HairType, Hairstyle } from '@/api/types';
+import type { Catalog, Category, HairColor, HairLength, HairType, Hairstyle } from '@/api/types';
 
 interface CatalogState {
   catalog: Catalog | null;
@@ -12,6 +12,7 @@ interface CatalogState {
   categories: Category[];
   /** The four hair types, catalog data like everything else. */
   hairTypes: HairType[];
+  hairLengths: HairLength[];
   colors: HairColor[];
   styleById: (id: string | undefined | null) => Hairstyle | undefined;
   categoryById: (id: string | undefined | null) => Category | undefined;
@@ -62,6 +63,7 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
       hairstyles,
       categories,
       hairTypes: catalog?.hairTypes ?? [],
+      hairLengths: catalog?.hairLengths ?? [],
       colors: catalog?.colors ?? [],
       styleById: (id) => (id ? hairstyles.find((style) => style.id === id) : undefined),
       categoryById: (id) => (id ? categories.find((category) => category.id === id) : undefined),

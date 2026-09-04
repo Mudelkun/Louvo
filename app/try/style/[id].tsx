@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dimensions,
   NativeScrollEvent,
@@ -12,18 +12,24 @@ import {
   View,
 } from 'react-native';
 
-import type { Gender, HairTypeId, Hairstyle } from '@/api/types';
+import { hairTypesFor } from '@/api/client';
+import type { Gender, HairLengthId, HairTypeId, Hairstyle, TryOnOptions } from '@/api/types';
 import { Button } from '@/components/Button';
-import { ChipRow } from '@/components/Controls';
+import { ControlCard } from '@/components/ControlCard';
 import { FavouriteHeart } from '@/components/FavouriteHeart';
 import { EmptyState, LoadingState } from '@/components/Feedback';
+import { HairTypeChoice } from '@/components/HairTypeChoice';
+import { LengthChoice } from '@/components/LengthChoice';
 import { Mannequin } from '@/components/Mannequin';
 import { PhotoFrame } from '@/components/PhotoFrame';
 import { Header, Screen } from '@/components/Screen';
+import { VariantCrossfade } from '@/components/VariantCrossfade';
 import { useHairColor } from '@/hooks/useHairColor';
 import { usePhotoPicker } from '@/hooks/usePhotoPicker';
+import { useVariantCycle } from '@/hooks/useVariantCycle';
 import { DEMO_BASE_SHAPE, DEMO_PHOTO, TRY_ON_STEPS } from '@/lib/constants';
 import { HERO_ANGLE, VIEW_ANGLES, type ViewAngle } from '@/lib/hairShape';
+import { defaultLength, hairLengthsFor, lengthsFor } from '@/lib/hairLengths';
 import {
   HAIR_TYPE_IDS,
   parseHairType,
@@ -32,20 +38,42 @@ import {
   variantCandidates,
   variantsOf,
 } from '@/lib/hairTypes';
-import { renderVariant } from '@/lib/mannequinRender';
+import { preloadVariants } from '@/lib/mannequinPreload';
+import { renderedVariants, renderLength, renderVariant } from '@/lib/mannequinRender';
 import { useCatalog } from '@/state/CatalogContext';
 import { useGeneration } from '@/state/GenerationContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { useSession } from '@/state/SessionContext';
 import { colors, radii, shadow, spacing, type } from '@/theme/theme';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 /**
  * One page of the angle pager, so a swipe moves exactly one angle. It is the
  * hero card's *inner* width — the card's own hairline border on each side, or
  * the pages drift out of step with the snap by 2px a page.
  */
 const HERO_PAGE = width - spacing.xl * 2 - 2;
+/** The mannequin's box is 200x250, so a head is 1.25x as tall as it is wide. */
+const HEAD_RATIO = 250 / 200;
+/**
+ * How wide the hero mannequin is drawn, and the number this screen's whole
+ * layout is budgeted around.
+ *
+ * It used to be a flat `width * 0.68`, which on a 414pt phone is a 352pt-tall
+ * head: the hero alone took nearly half the viewport, and everything the screen
+ * asks the user to *decide* — the texture, the length — started below the fold.
+ * A screen whose controls have to be found by scrolling is a screen with one
+ * control, and the length slider was the one nobody found.
+ *
+ * So it is capped by the window's height as well as its width, and the height
+ * cap is the one that binds on every phone. The fraction is what is left after
+ * the parts that do not scale — the header, the footer's button, the control
+ * card — so it is tuned against the smallest screen the app runs on rather than
+ * chosen for looks: at 0.29 the second control still clears the fold on a 4.7"
+ * phone carrying both of its footnotes. The hero is still the largest thing
+ * here by a wide margin; it is simply no longer the only thing.
+ */
+const HERO_ART = Math.min(width * 0.56, (height * 0.29) / HEAD_RATIO);
 const THUMB_WIDTH = (width - spacing.xl * 2 - spacing.sm * 3) / 4;
 const THUMB_HEIGHT = THUMB_WIDTH * 0.86 + 18;
 
@@ -64,13 +92,13 @@ function parseGender(value: string | string[] | undefined): Gender | null {
 }
 
 /**
- * Which hair type to open the preview chips on when the user arrived without
+ * Which hair type to open the preview control on when the user arrived without
  * declaring one — an unfiltered grid, a deep link, a saved look.
  *
- * The chips used to carry an "All types" entry for this case. As a *display*
+ * The control used to carry an "All types" entry for this case. As a *display*
  * choice it said nothing the types themselves do not: it only meant "whichever
  * render of this cut exists", which is a fact about what has been generated
- * rather than an answer about hair. So the opening chip is a real type, picked
+ * rather than an answer about hair. So the opening tile is a real type, picked
  * as the one standing behind the image the grid card just showed — resolve the
  * card's own render and name the first type it stands in for, so the detail
  * screen never disagrees with the card that opened it. A style with no render
@@ -99,7 +127,7 @@ export default function StyleDetailScreen() {
     hairType?: string;
     gender?: string;
   }>();
-  const { styleById, hairTypes, loading } = useCatalog();
+  const { styleById, hairTypes, hairLengths, loading } = useCatalog();
   const { isFavourite, toggleFavourite } = useLibrary();
   const { gender: sessionGender, hairTypeId, photoUri, setPhoto, setHairstyle } = useSession();
   /**
@@ -140,16 +168,84 @@ export default function StyleDetailScreen() {
    * the Styles tab browses a hair type locally and never writes it to the
    * session, so following the session here would land on a different texture
    * than the card the user just pressed. Browsed with no type declared it is
-   * null and `openingType()` picks the chip; reached without the param at all
+   * null and `openingType()` picks the tile; reached without the param at all
    * (a deep link, a saved look) it falls back to the session's type.
    */
   const browsedAs = parseHairType(hairType);
   const [preview, setPreview] = useState<HairTypeId | null>(
     browsedAs === undefined ? hairTypeId : browsedAs,
   );
+  /**
+   * How long the cut is being shown, and — like `preview` — only on this screen.
+   *
+   * Null until the user moves the slider, which is not the same as "medium":
+   * null means *untouched*, and the two have to be distinguishable because
+   * untouched is what lets the hero keep cycling and what keeps `options` free of
+   * a length the user never chose. The slider still shows a position while it is
+   * null — `defaultLength()` supplies the anchor — so there is no unset state on
+   * screen, only in the data.
+   */
+  const [length, setLength] = useState<HairLengthId | null>(null);
+  /**
+   * What the drawing is adjusted by, and nothing until the slider is touched.
+   *
+   * `effectiveShape()` leaves the anchor alone, so passing the resolved default
+   * here would be a no-op that allocated a new object on every render and busted
+   * the memo behind eight mannequins. Undefined until there is an actual choice
+   * is both cheaper and more honest.
+   */
+  const lengthOptions = useMemo<TryOnOptions | undefined>(
+    () => (length ? { length } : undefined),
+    [length],
+  );
   const pager = useRef<ScrollView>(null);
   /** The pager starts on `HERO_ANGLE`, which is not page 0 — set once, on first layout. */
   const positioned = useRef(false);
+
+  /**
+   * With nothing declared, the hero walks this cut's renders exactly as the card
+   * that opened it does — the same beat, so a screen reached from a cycling grid
+   * carries on rather than freezing on one texture.
+   *
+   * Untouched is the whole condition, and there are two ways to touch this cut
+   * now: `preview` for the hair type, `length` for the slider. Either one being
+   * set stops the cycle there and then, because a choice outranks a
+   * demonstration — and that holds for the slider even though length is not what
+   * the cycle is cycling. A user dragging a length slider is deliberately
+   * working on this cut, and a hero that kept swapping texture underneath them
+   * would be answering a question they had stopped asking. Neither control is
+   * bypassed by any of this: the hair-type row is how the cycle is *read*, since
+   * the selected tile follows what the hero has arrived at.
+   *
+   * The set comes from `HERO_ANGLE`, like the card's, rather than from the page
+   * on screen: all four views of a style are shot in one sheet, so a variant that
+   * exists at the hero angle exists at the others, and picking the set per page
+   * would let a swipe change how many renders the cut appears to have.
+   */
+  const cycle = useVariantCycle(
+    hairstyle && preview == null && length == null
+      ? renderedVariants(hairstyle.id, gender, HERO_ANGLE, variantCandidates(hairstyle, null))
+      : [],
+  );
+
+  /**
+   * Every render this cut has, fetched while the user is still reading the
+   * hair-type row.
+   *
+   * One tap there changes what eight mannequins are drawing at once — four pager
+   * pages and four thumbnails, each a render with a mask over it — and none of
+   * those images had been asked for before the tap. Nothing here is slow to
+   * decide; the files simply were not loaded yet, and the old texture stayed on
+   * screen until they were. Warming them on arrival turns the tap into a swap.
+   *
+   * All variants rather than the neighbouring one: the types are a row and any
+   * of them can be next. It is bounded by the matrix — four renders at the very
+   * most, usually two — and `preloadVariants` fetches each source once per
+   * process, so backing out and opening the style again costs nothing.
+   */
+  useEffect(() => {
+    if (hairstyle) preloadVariants(hairstyle.id, gender, variantsOf(hairstyle));
+  }, [hairstyle, gender]);
 
   if (loading && !hairstyle) {
     return (
@@ -178,14 +274,88 @@ export default function StyleDetailScreen() {
   const favourite = isFavourite(hairstyle.id);
   // The types this cut is actually offered for, and the renders behind them.
   const offered = HAIR_TYPE_IDS.filter((entry) => hairstyle.variants[entry]);
-  // Always a type: the chips are the types the cut is offered for, and one of
-  // them is selected even when the user declared nothing on the way in.
+  /**
+   * The render the screen has *arrived* at — the outgoing one for as long as a
+   * dissolve is running, since mid-fade neither is yet the image.
+   *
+   * Everything that is not the hero's top layer reads from this: the selected
+   * tile, the thumbnails, the fallback drawing's texture, and the type the
+   * generation is told about. So one thing moves and the rest of the screen
+   * changes over when it has finished moving, rather than a tile lighting up
+   * under "Coily" while the picture above it is still mostly curly.
+   */
+  const arrivedAt = cycle.previous ?? cycle.current;
+  // Always a type: one tile is selected even when the user declared nothing on
+  // the way in — the cut's own first type at rest, and whichever the cycle is on
+  // while it runs.
   const shownAs =
     (preview && hairstyle.variants[preview] ? preview : null) ??
+    (arrivedAt ? typesForVariant(hairstyle, arrivedAt)[0] ?? null : null) ??
     openingType(hairstyle, gender);
   const variants = variantCandidates(hairstyle, shownAs);
   const shape = { ...hairstyle.shape, texture: textureFor(hairstyle, shownAs) };
-  const typeName = (entry: HairTypeId) => hairTypes.find((t) => t.id === entry)?.name ?? entry;
+  /**
+   * The length positions this cut is offered at for this gender, and the one the
+   * slider is sitting on.
+   *
+   * Empty for most of the catalog — length is a per-style judgement and most cuts
+   * have no useful range (see `HairLengthOffer`) — so the control is absent far
+   * more often than it is present, exactly like the hair-type row above it on a
+   * single-render cut. Gendered, because the row is: the men's and women's
+   * readings of one cut do not travel the same distance.
+   */
+  const lengthEntries = hairLengthsFor(hairLengths, lengthsFor(hairstyle, gender));
+  const shownLength = length ?? defaultLength(hairstyle, gender);
+  /**
+   * The one thing that is true of this cut's length row and cannot be seen in
+   * it — the same job `typeNote` does for the row above, and raised for the same
+   * reason.
+   *
+   * Length moves the procedural drawing, because `effectiveShape()` has always
+   * known how to shorten and lengthen a silhouette. It cannot move a *render*
+   * that has not been shot: a stop with no render of its own falls back to the
+   * anchor (`lengthOrder()` in mannequinRender.ts), so the picture stays put
+   * while the control says it moved. A control that appears not to respond is
+   * the failure this app has already decided is worth a line of copy.
+   *
+   * The test is the resolved length against the asked-for one rather than
+   * anything about which lengths happen to be generated today, so the line
+   * appears per stop — a cut shot short but not long says nothing on Short and
+   * says this on Long — and disappears on its own as the renders land, with
+   * nothing here to remove.
+   *
+   * Scoped to the hero rather than to the page on screen for the same reason the
+   * cycle's set is: every angle of one length comes out of a single sheet, so a
+   * length that exists at the hero angle exists at the others.
+   */
+  const resolvedLength = shownLength
+    ? renderLength(hairstyle.id, gender, HERO_ANGLE, variants, shownLength)
+    : null;
+  const lengthNote =
+    resolvedLength && resolvedLength !== shownLength
+      ? 'This cut has not been rendered at that length yet.'
+      : null;
+  /**
+   * Every hair type the catalog has, in its own order — not just this cut's.
+   * The control shows the full set and dims what this cut is not offered for,
+   * so the row is the same four answers on every style. See `<HairTypeChoice>`.
+   */
+  const hairTypeEntries = hairTypesFor(hairTypes);
+  /**
+   * The one thing that is true of *this* cut's row and cannot be seen in it.
+   *
+   * A cut with a single render across several types does not change when the
+   * selection moves, which looks broken unless it is said; and a dimmed tile
+   * needs a reason. Both at once reads as an apology, so the more surprising
+   * one wins — a control that appears not to respond outranks an option that is
+   * visibly unavailable.
+   */
+  const typeNote =
+    variantsOf(hairstyle).length === 1
+      ? 'This cut looks the same on every hair type.'
+      : offered.length < hairTypeEntries.length
+        ? 'Dimmed types are not offered for this cut.'
+        : null;
 
   const scrollToAngle = (next: ViewAngle, animated: boolean) =>
     pager.current?.scrollTo({ x: VIEW_ANGLES.indexOf(next) * HERO_PAGE, y: 0, animated });
@@ -228,7 +398,23 @@ export default function StyleDetailScreen() {
     // is the field for that and it stays unset while there is no colour picker,
     // so the preview keeps the subject's own hair colour instead of putting
     // everyone in the catalog's display default. See the note on that field.
-    const options = color ? { color: color.id } : {};
+    //
+    // The length goes on for a different reason than the colour: it is a choice
+    // about the *cut*, so a saved look has to keep the length it was made at or
+    // "Long Layers" in the library stops meaning anything in particular. It is
+    // recorded whenever the cut offers a range, chosen or defaulted, since the
+    // anchor is as much a position as the other two.
+    //
+    // It is not passed to the generator either, and for a sharper reason than
+    // the colour is not: there are no length renders yet. The reference the
+    // model is handed is the cut at its anchor length, and telling it "long" in
+    // words while showing it a medium reference is the disagreement the prompt
+    // exists to avoid. Wiring that up is a change to `tryOnPrompt.ts` and waits
+    // on the imagery.
+    const options = {
+      ...(color ? { color: color.id } : null),
+      ...(shownLength ? { length: shownLength } : null),
+    };
     setHairstyle(hairstyle.id, options);
     const jobId = start({
       hairstyle,
@@ -239,6 +425,12 @@ export default function StyleDetailScreen() {
       // the texture the reference images the generator is about to be handed
       // actually depict. Falling through to null there would let the model be
       // shown a curly reference and told nothing about texture at all.
+      //
+      // While the hero is cycling that means the render the screen has arrived
+      // at, so pressing Generate takes the cut as it is on screen at that
+      // moment. It does make an undeclared type depend on *when* the button is
+      // pressed — but the alternative is generating from a texture the user was
+      // not looking at, and the row is right there to settle it deliberately.
       hairType: hairTypeId ?? shownAs,
       photoUri,
       options,
@@ -263,7 +455,24 @@ export default function StyleDetailScreen() {
         )
       }
     >
-      <Header step={{ current: 5, total: TRY_ON_STEPS }} />
+      {/* The cut's name is the header's title rather than a 24pt heading under
+          the hero, and the favourite toggle rides in the slot beside it. As a
+          row of its own that pair cost 56 points to say something the header
+          had an empty centre for — and this screen's problem was never that it
+          wanted a headline, it was that its controls were off the bottom of the
+          screen. Naming a screen after its subject is what a header is for; it
+          was carrying only the step counter. */}
+      <Header
+        title={hairstyle.name}
+        step={{ current: 5, total: TRY_ON_STEPS }}
+        right={
+          <FavouriteHeart
+            accessibilityLabel={favourite ? 'Remove from favourites' : 'Add to favourites'}
+            favourite={favourite}
+            onToggle={() => toggleFavourite(hairstyle.id)}
+          />
+        }
+      />
 
       {/* The four angles are pages, swiped like a carousel. The thumbnails
           below are the same pager by another name — tapping one and swiping to
@@ -284,16 +493,21 @@ export default function StyleDetailScreen() {
               style={styles.heroPage}
               accessibilityLabel={ANGLE_LABELS[entry].long}
             >
-              <Mannequin
-                styleId={hairstyle.id}
-                shape={shape}
-                color={color}
-                gender={gender}
-                variants={variants}
-                angle={entry}
-                size={width * 0.68}
-                backdrop={null}
-              />
+              <VariantCrossfade cycle={cycle} fallback={variants}>
+                {(shown) => (
+                  <Mannequin
+                    styleId={hairstyle.id}
+                    shape={shape}
+                    options={lengthOptions}
+                    color={color}
+                    gender={gender}
+                    variants={shown}
+                    angle={entry}
+                    size={HERO_ART}
+                    backdrop={null}
+                  />
+                )}
+              </VariantCrossfade>
             </View>
           ))}
         </ScrollView>
@@ -306,35 +520,44 @@ export default function StyleDetailScreen() {
       </View>
 
       <View style={styles.body}>
-        <View style={styles.titleRow}>
-          <Text style={[type.title, { color: colors.ink, flex: 1 }]} numberOfLines={2}>
-            {hairstyle.name}
-          </Text>
-          <FavouriteHeart
-            accessibilityLabel={favourite ? 'Remove from favourites' : 'Add to favourites'}
-            favourite={favourite}
-            onToggle={() => toggleFavourite(hairstyle.id)}
-          />
-        </View>
-
-        {/* How the cut sits on each texture. Only the types this style is
-            offered for appear, and two types that share a render show the same
-            image on purpose — that is the matrix saying they look alike. */}
-        {offered.length > 1 ? (
-          <View style={styles.typeBlock}>
-            <Text style={[type.caption, { color: colors.muted, paddingHorizontal: spacing.xl }]}>
-              {variantsOf(hairstyle).length === 1
-                ? 'This cut looks the same on every hair type'
-                : 'Shown on'}
-            </Text>
-            <ChipRow
-              items={offered.map((entry) => ({ id: entry, label: typeName(entry) }))}
+        {/* Both adjustments in one card, so both are on screen at once. They ask
+            the same question — how should this cut be shown — and as two stacked
+            cards the second one was always below the fold. `<ControlCard>` rules
+            a hairline between whatever it is actually handed, so a cut with no
+            length row is one section and no seam. */}
+        <ControlCard>
+          {/* Which texture the cut is shown on — a choice, presented as one. All
+              four types are on screen whether or not this cut is offered for
+              them (see `<HairTypeChoice>`), and two types that share a render
+              show the same image on purpose: that is the matrix saying they look
+              alike, which is what `typeNote` says out loud. */}
+          {offered.length > 1 ? (
+            <HairTypeChoice
+              types={hairTypeEntries}
+              available={offered}
               value={shownAs}
-              onChange={(next) => setPreview(next as HairTypeId)}
-              contentPaddingHorizontal={spacing.xl}
+              onChange={setPreview}
+              note={typeNote}
             />
-          </View>
-        ) : null}
+          ) : null}
+
+          {/* How long the cut is worn — present only on the cuts that have a
+              useful range, which is a minority of the catalog and deliberately
+              so. Two stops and three are both normal: a Pixie Cut grown out is a
+              bob, so it goes short and stops. Until the length renders exist
+              this moves the procedural drawing rather than the render —
+              `effectiveShape()` has always known how to shorten and lengthen a
+              silhouette — so the control is real on the fallback and inert on a
+              generated cut. */}
+          {lengthEntries.length > 1 && shownLength ? (
+            <LengthChoice
+              lengths={lengthEntries}
+              value={shownLength}
+              onChange={setLength}
+              note={lengthNote}
+            />
+          ) : null}
+        </ControlCard>
 
         {/* The same style from four angles — the fringe reads dead-on, the taper
             and the ear from the half turn, the fade in profile, the nape from
@@ -356,6 +579,7 @@ export default function StyleDetailScreen() {
               <Mannequin
                 styleId={hairstyle.id}
                 shape={shape}
+                options={lengthOptions}
                 color={color}
                 gender={gender}
                 variants={variants}
@@ -449,7 +673,7 @@ export default function StyleDetailScreen() {
 const styles = StyleSheet.create({
   hero: {
     marginHorizontal: spacing.xl,
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     borderRadius: radii.xl,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -461,24 +685,24 @@ const styles = StyleSheet.create({
     width: HERO_PAGE,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingTop: spacing.lg,
+    paddingTop: spacing.sm,
+    // Clears the dots underneath. The head is bottom-aligned in the page, so
+    // this is the only thing keeping the jaw off them.
     paddingBottom: spacing.xl,
   },
   dots: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: spacing.md,
+    bottom: spacing.sm,
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 6,
   },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.hairline },
   dotActive: { width: 18, backgroundColor: colors.accent },
-  body: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  typeBlock: { gap: spacing.sm, marginTop: spacing.lg, marginHorizontal: -spacing.xl },
-  angleRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
+  body: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
+  angleRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   thumb: {
     width: THUMB_WIDTH,
     height: THUMB_HEIGHT,
@@ -498,7 +722,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   photoCard: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     padding: spacing.lg,
     borderRadius: radii.lg,
     backgroundColor: colors.surface,
@@ -518,5 +742,5 @@ const styles = StyleSheet.create({
   },
   photoActions: { flexDirection: 'row', gap: spacing.sm },
   link: { ...type.caption, color: colors.accent, fontWeight: '700' as const },
-  note: { color: colors.muted, marginTop: spacing.lg, marginBottom: spacing.xl },
+  note: { color: colors.muted, marginTop: spacing.md, marginBottom: spacing.xl },
 });
