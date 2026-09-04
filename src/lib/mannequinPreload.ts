@@ -28,13 +28,19 @@
 import { Asset } from 'expo-asset';
 import { Image } from 'react-native';
 
-import type { RenderSource } from '@/api/mannequinRenders.generated';
+import { sourceKey, type RenderSource } from '@/api/renderIndex';
 import type { Gender, VariantId } from '@/api/types';
 import { HERO_ANGLE, VIEW_ANGLES, type ViewAngle } from '@/lib/hairShape';
 import { mannequinMask, mannequinRender } from '@/lib/mannequinRender';
 
-/** Sources already fetched — a warm asset is warm for the life of the process. */
-const warmed = new Set<RenderSource>();
+/**
+ * Sources already fetched — a warm asset is warm for the life of the process.
+ *
+ * Keyed by url (or asset handle) rather than by the source object, because a
+ * catalog-supplied source is parsed out of JSON: the same render reached through
+ * two candidates is two objects, and a `Set` of those would warm it twice.
+ */
+const warmed = new Set<string | number>();
 const queue: RenderSource[] = [];
 let draining = false;
 
@@ -45,6 +51,12 @@ let draining = false;
  * id, and at worst it guarantees the file is local before anything draws it.
  */
 async function fetchSource(source: RenderSource): Promise<void> {
+  // A catalog render is already a url and needs none of the resolution below —
+  // this is the path every warm takes once the app is talking to the API.
+  if (typeof source !== 'number') {
+    await Image.prefetch(source.uri);
+    return;
+  }
   const uri = Image.resolveAssetSource(source)?.uri;
   if (uri) {
     await Image.prefetch(uri);
@@ -63,16 +75,20 @@ async function drain(): Promise<void> {
     } catch {
       // A warm that failed only costs a slow first draw, never a wrong image, so
       // it is forgotten rather than reported — and forgetting it is what lets the
-      // next screen that needs this render try again.
-      warmed.delete(source);
+      // next screen that needs this render try again. That matters more now than
+      // it did: a bundled asset could only fail to decode, whereas a catalog
+      // render can fail because the network dropped for a second.
+      warmed.delete(sourceKey(source));
     }
   }
   draining = false;
 }
 
 function enqueue(source: RenderSource | null): void {
-  if (!source || warmed.has(source)) return;
-  warmed.add(source);
+  if (!source) return;
+  const key = sourceKey(source);
+  if (warmed.has(key)) return;
+  warmed.add(key);
   queue.push(source);
 }
 

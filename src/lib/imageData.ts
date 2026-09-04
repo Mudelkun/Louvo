@@ -2,6 +2,7 @@ import { Asset } from 'expo-asset';
 import { Directory, File, Paths } from 'expo-file-system';
 import { Image, Platform } from 'react-native';
 
+import type { RenderSource } from '@/api/renderIndex';
 import type { PixelSize } from '@/lib/imageSize';
 
 /**
@@ -22,6 +23,26 @@ import type { PixelSize } from '@/lib/imageSize';
 
 /** Bundled assets never change under us, so their encoding is cached forever. */
 const dataUriCache = new Map<string | number, Promise<string>>();
+
+/**
+ * The catalog's reference render, in whatever form fal can fetch it.
+ *
+ * This is where hosting the catalog pays off at runtime rather than at install
+ * time. A bundled reference has to be read off the device and base64-inlined
+ * into the request — roughly 550 KB of text on the user's uplink, on every
+ * single preview, for an image that is identical for every user who taps that
+ * card. A hosted one is already at a public url, so the request carries the url
+ * and fal fetches the bytes itself, from a CDN, over a much better connection
+ * than a phone has.
+ *
+ * The user's own photo is still inlined and always will be while generation runs
+ * from the app: it is private, it has never left the device, and uploading it
+ * somewhere public so a model could fetch it would be a worse arrangement than
+ * the one we are trying to improve.
+ */
+export function referenceImageUri(source: RenderSource): Promise<string> {
+  return typeof source === 'number' ? assetDataUri(source) : Promise.resolve(source.uri);
+}
 
 /** `require()`d PNG -> `data:image/png;base64,...`. */
 export function assetDataUri(module: number): Promise<string> {

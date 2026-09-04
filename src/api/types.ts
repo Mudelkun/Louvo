@@ -1,11 +1,14 @@
 /**
  * Domain types.
  *
- * These mirror the shape of the future Railway/Node API responses exactly, so the
- * mock client in `mockClient.ts` can be swapped for `fetch` calls without any
- * screen changing. Nothing in the UI may hardcode a hairstyle: screens receive
- * catalog data at runtime and reference styles by id only.
+ * These are the shape of the Railway/Node API's responses — `server/src/types.ts`
+ * is the deliberate mirror on the other side, in the same way
+ * `scripts/lib/variants.mjs` mirrors `src/lib/hairTypes.ts`. Nothing in the UI
+ * may hardcode a hairstyle: screens receive catalog data at runtime and
+ * reference styles by id only.
  */
+
+import type { ViewAngle } from '@/lib/hairShape';
 
 export type Gender = 'male' | 'female';
 
@@ -302,6 +305,56 @@ export interface LookJob {
   error?: string;
 }
 
+/**
+ * One hosted render of one hairstyle, as the API serves it.
+ *
+ * Both URLs are absolute and their path is a content hash, so they never change
+ * meaning and may be cached for as long as the device likes — see
+ * `docs/catalog-architecture.md`. `maskUrl` is null when a hair mask could not
+ * be computed for that render, which `<Mannequin>` already handles by grading
+ * the whole frame instead of the hair alone.
+ */
+export interface RenderRef {
+  url: string;
+  maskUrl: string | null;
+  width: number;
+  height: number;
+}
+
+/**
+ * Every render the catalog has, keyed
+ * `styleId -> variant -> length -> gender -> angle`.
+ *
+ * Exactly the nesting `mannequinRenders.generated.ts` uses, which is what makes
+ * installing this as the runtime render index a swap rather than a translation
+ * (`src/api/renderIndex.ts`). The bundled module exists because Metro can only
+ * bundle an asset some module `require`s by a literal path; a URL has no such
+ * constraint, so the map becomes data.
+ */
+export type RenderManifest = Record<
+  string,
+  Partial<
+    Record<
+      VariantId,
+      Partial<Record<HairLengthId, Partial<Record<Gender, Partial<Record<ViewAngle, RenderRef>>>>>>
+    >
+  >
+>;
+
+/**
+ * The hair-type picker's example images, keyed `gender -> hair type`.
+ *
+ * Exactly the nesting `hairTypeExamples.generated.ts` uses, so the catalog's
+ * copy installs over the bundled one as a swap — the same trick `RenderManifest`
+ * plays for the mannequins.
+ *
+ * These are not catalog imagery and never carry a mask: they illustrate what
+ * hair *does*, and a texture has no shade to be graded into. The server sends a
+ * gender only when all four of its types are present, because the picker shows a
+ * partial set as no set at all.
+ */
+export type HairTypeExampleMap = Partial<Record<Gender, Partial<Record<HairTypeId, string>>>>;
+
 export interface Catalog {
   categories: Category[];
   hairTypes: HairType[];
@@ -311,4 +364,19 @@ export interface Catalog {
   colors: HairColor[];
   /** Server-driven copy for the "why you'll love it" panel on the welcome screen. */
   highlights: string[];
+  /**
+   * The catalog's imagery.
+   *
+   * Optional because the app still runs with no server: without one, the
+   * bundled render module stands in and this is absent. Present, it is
+   * installed as the render index and the bundle is not consulted at all.
+   */
+  renders?: RenderManifest;
+  /**
+   * The hair-type picker's imagery. Optional for the same reason `renders` is:
+   * without a server the bundled examples stand in.
+   */
+  hairTypeExamples?: HairTypeExampleMap;
+  /** Bumped by every publish. Used as the cache key, never shown. */
+  revision?: number;
 }
