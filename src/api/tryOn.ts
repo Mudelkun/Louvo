@@ -26,7 +26,8 @@
 
 import { firstImageUrl, runModel, type ImageResponse, type QueueStatus } from '@/api/fal';
 import type { Gender, HairColor, HairTypeId, Hairstyle, VariantId } from '@/api/types';
-import { assetDataUri, photoDataUri, photoPixelSize } from '@/lib/imageData';
+import type { RenderSource } from '@/api/renderIndex';
+import { photoDataUri, photoPixelSize, referenceImageUri } from '@/lib/imageData';
 import { fitOutputSize, type PixelSize } from '@/lib/imageSize';
 import { DEMO_PHOTO } from '@/lib/constants';
 import { variantCandidates } from '@/lib/hairTypes';
@@ -55,9 +56,13 @@ import { tryOnPrompt } from '@/lib/tryOnPrompt';
  * What that costs is the back of the head: a nape or a fade's rear blend is
  * inferred rather than copied. The fix for that is a single reference image that
  * happens to contain four views — the composed `<gender>-sheet.png` the
- * generator already writes — which keeps the count at two. It is not wired up
- * because the sheets are 1.6MB masters that would have to be downscaled and
- * bundled; see the note in README. Do not solve it by adding images back.
+ * generator already writes — which keeps the count at two.
+ *
+ * That is now much cheaper than it was. The objection used to be that the sheets
+ * are 1.6MB masters which would have to be downscaled and *bundled*; with the
+ * catalog hosted, a sheet is one more object in the bucket and one more url in
+ * the manifest, and the request carries the url rather than the bytes. What has
+ * not changed is the rule: do not solve it by adding images back.
  */
 const REFERENCE_VIEWS: ViewAngle[] = [HERO_ANGLE];
 
@@ -302,7 +307,7 @@ function resolveReference(
   hairstyle: Hairstyle,
   gender: Gender,
   hairType: HairTypeId | null,
-): { variant: VariantId; views: { angle: ViewAngle; source: number }[] } | null {
+): { variant: VariantId; views: { angle: ViewAngle; source: RenderSource }[] } | null {
   return (
     mannequinViews(hairstyle.id, gender, variantCandidates(hairstyle, hairType)) ??
     mannequinViews(hairstyle.id, gender, null)
@@ -338,7 +343,7 @@ export async function generateTryOn(
   // keep their tuple type and the measurement — which resolves to null rather
   // than rejecting — cannot take the generation down with it.
   const [[photo, ...referenceImages], photoSize] = await Promise.all([
-    Promise.all([photoDataUri(photoUri), ...views.map((view) => assetDataUri(view.source))]),
+    Promise.all([photoDataUri(photoUri), ...views.map((view) => referenceImageUri(view.source))]),
     photoPixelSize(photoUri),
   ]);
 

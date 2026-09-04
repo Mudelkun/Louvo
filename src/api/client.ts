@@ -1,18 +1,28 @@
 /**
  * Hairify API client.
  *
- * PHASE 1 (now): every call is served from `mockCatalog` behind a simulated
- * network delay. No network, no database, no Fal.ai.
+ * The one module that knows where the data comes from, which is the whole point
+ * of it: every screen calls these functions and none of them can tell whether
+ * the answer arrived over a network.
  *
- * PHASE 2 (later): flip `USE_MOCKS` to false and fill in the `fetch` bodies
- * marked `TODO(backend)`. The exported function signatures are the contract the
- * screens depend on — keep them stable and nothing in `app/` needs to change.
+ * The catalog is now **real** when `EXPO_PUBLIC_API_URL` is set — metadata from
+ * Postgres on Railway, imagery from R2, fetched once at start and cached on the
+ * device (`catalogCache.ts`). With the variable unset the app serves
+ * `mockCatalog` behind a simulated delay exactly as it always did, so a fresh
+ * checkout still runs with no backend, no bucket and no key.
+ *
+ * What is still simulated: accounts, sharing, and the `generateLook` fallback
+ * for a photo with no pixels behind it. Preview generation itself is real — see
+ * `tryOn.ts`.
  */
 
+import { setHairTypeExamples } from '@/lib/hairTypeExample';
 import { supportsHairType } from '@/lib/hairTypes';
 import { cacheRemoteImage } from '@/lib/imageData';
 
+import { readCachedCatalog, writeCachedCatalog } from './catalogCache';
 import { mockCatalog } from './mockCatalog';
+import { setRenderIndex } from './renderIndex';
 import { canGenerateFor, generateTryOn, type TryOnStage } from './tryOn';
 import type {
   Catalog,
@@ -27,19 +37,59 @@ import type {
   TryOnOptions,
 } from './types';
 
-const USE_MOCKS = true;
+/**
+ * The Railway deployment, or nothing.
+ *
+ * Deliberately **not** defaulted to a plausible-looking URL. A default pointing
+ * at a host that may or may not be deployed turns "no backend configured" into
+ * "the backend is down", which is a far worse thing to debug — and it would fire
+ * the offline path on every launch of a checkout that never intended to have a
+ * server.
+ */
+export const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? '').replace(/\/$/, '');
 
-/** Railway deployment target, read from app config once the API exists. */
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://hairify.up.railway.app';
+/** Whether this build has a backend to talk to at all. */
+export const hasApi = (): boolean => API_BASE_URL.length > 0;
+
+/** How the catalog on screen was actually obtained. Reported, never guessed. */
+export type CatalogSource = 'api' | 'cache' | 'bundled';
+
+let lastCatalogSource: CatalogSource = 'bundled';
+
+/** What the last `fetchCatalog()` actually managed. Read by Settings. */
+export const catalogSource = (): CatalogSource => lastCatalogSource;
 
 const latency = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** Random-ish but bounded delay so loading states are visible while testing. */
 const networkDelay = () => latency(280 + Math.random() * 320);
 
-function assertMocks() {
-  if (!USE_MOCKS) {
-    throw new Error('Real API not implemented yet — see TODO(backend) in src/api/client.ts');
+/**
+ * A request that gives up.
+ *
+ * `fetch` on a phone behind a captive portal or on a dead cell hangs for a long
+ * time and then fails, and the whole browse experience sits behind this one
+ * call. Ten seconds and then the cache is a better app than thirty seconds of a
+ * spinner over data we already have.
+ */
+const REQUEST_TIMEOUT_MS = 10_000;
+
+async function api<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const onAbort = () => controller.abort();
+  signal?.addEventListener('abort', onAbort);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: { accept: 'application/json' },
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`GET ${path} -> ${response.status} ${response.statusText}`);
+    return (await response.json()) as T;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', onAbort);
   }
 }
 
@@ -47,11 +97,63 @@ function assertMocks() {
 // Catalog
 // ---------------------------------------------------------------------------
 
+/**
+ * The catalog, and the imagery index that comes with it.
+ *
+ * Three outcomes in preference order, and the app is honest about which it got
+ * (`catalogSource()`):
+ *
+ * - **`api`** — fetched and cached. The render manifest is installed, so every
+ *   `<Mannequin>` draws a CDN url and the bundled renders are never consulted.
+ * - **`cache`** — the network failed and a previous catalog is on the device.
+ *   Its render urls are content-addressed and so still valid, and the images
+ *   behind them are very likely still in the platform image cache. This is what
+ *   an offline launch looks like.
+ * - **`bundled`** — no API configured, or nothing cached to fall back to. The
+ *   mock catalog and the bundled render module, exactly as phase 1 behaved.
+ *
+ * The render index is installed here rather than in `CatalogProvider` because it
+ * has to happen for *whichever* of the three won, and this is the only place
+ * that knows which did.
+ */
 export async function fetchCatalog(): Promise<Catalog> {
-  assertMocks();
-  // TODO(backend): return (await fetch(`${API_BASE_URL}/catalog`)).json();
-  await networkDelay();
-  return mockCatalog;
+  if (!hasApi()) {
+    await networkDelay();
+    setRenderIndex(null);
+    setHairTypeExamples(null);
+    lastCatalogSource = 'bundled';
+    return mockCatalog;
+  }
+
+  try {
+    const catalog = await api<Catalog>('/v1/catalog');
+    // Not awaited: a failed write is a slower next launch, and making the user
+    // wait on AsyncStorage to see a catalog already in hand is the wrong trade.
+    void writeCachedCatalog(catalog);
+    setRenderIndex(catalog.renders);
+    setHairTypeExamples(catalog.hairTypeExamples);
+    lastCatalogSource = 'api';
+    return catalog;
+  } catch (error) {
+    const cached = await readCachedCatalog();
+    if (cached) {
+      if (__DEV__) console.warn(`[catalog] using cached copy: ${(error as Error).message}`);
+      setRenderIndex(cached.catalog.renders);
+      setHairTypeExamples(cached.catalog.hairTypeExamples);
+      lastCatalogSource = 'cache';
+      return cached.catalog;
+    }
+
+    // The last resort is the bundled catalog rather than an error screen. A
+    // first launch with no network is the one case where the procedural
+    // drawings earn their keep: the flow is complete and every mannequin is a
+    // line drawing, which is a working app rather than a spinner.
+    if (__DEV__) console.warn(`[catalog] falling back to bundled data: ${(error as Error).message}`);
+    setRenderIndex(null);
+    setHairTypeExamples(null);
+    lastCatalogSource = 'bundled';
+    return mockCatalog;
+  }
 }
 
 /** The orders the catalog can be read in. Labels belong to the screen. */
@@ -82,9 +184,35 @@ export interface HairstyleQuery {
   limit?: number;
 }
 
+/**
+ * A filtered slice of the catalog.
+ *
+ * Screens mostly do not call this: they hold the whole catalog from
+ * `CatalogProvider` and re-filter it locally with `filterHairstyles`, which is
+ * why that function is exported. This is for the callers that do not already
+ * have it, and it goes over the wire so the server stays the thing that defines
+ * what a filter means.
+ */
 export async function fetchHairstyles(query: HairstyleQuery = {}): Promise<Hairstyle[]> {
-  assertMocks();
-  // TODO(backend): GET /hairstyles?gender=&hairType=&category=&q=
+  if (hasApi()) {
+    try {
+      const search = new URLSearchParams();
+      if (query.gender) search.set('gender', query.gender);
+      if (query.hairType) search.set('hairType', query.hairType);
+      if (query.categoryId) search.set('category', query.categoryId);
+      if (query.sort) search.set('sort', query.sort);
+      if (query.search) search.set('q', query.search);
+      if (query.tag) search.set('tag', query.tag);
+      if (typeof query.limit === 'number') search.set('limit', String(query.limit));
+      const { hairstyles } = await api<{ hairstyles: Hairstyle[] }>(`/v1/hairstyles?${search}`);
+      return hairstyles;
+    } catch (error) {
+      // Filtering is a pure function of data the app very likely already has,
+      // so a failure here degrades to doing it locally rather than to nothing.
+      if (__DEV__) console.warn(`[hairstyles] filtering locally: ${(error as Error).message}`);
+    }
+  }
+
   await networkDelay();
   return filterHairstyles(mockCatalog.hairstyles, query);
 }
@@ -116,7 +244,15 @@ export function filterHairstyles(source: Hairstyle[], query: HairstyleQuery): Ha
 }
 
 export async function fetchHairstyle(id: string): Promise<Hairstyle | null> {
-  assertMocks();
+  if (hasApi()) {
+    try {
+      const { hairstyle } = await api<{ hairstyle: Hairstyle }>(`/v1/hairstyles/${encodeURIComponent(id)}`);
+      return hairstyle;
+    } catch (error) {
+      if (__DEV__) console.warn(`[hairstyle] ${id}: ${(error as Error).message}`);
+    }
+  }
+
   await networkDelay();
   return mockCatalog.hairstyles.find((style) => style.id === id) ?? null;
 }
@@ -321,8 +457,9 @@ function runSimulatedGeneration(
   request: GenerateRequest,
   onProgress: (update: GenerateProgress) => void,
 ): { promise: Promise<GeneratedLook>; cancel: () => void } {
-  assertMocks();
-
+  // No catalog gate here on purpose: whether a preview is simulated is a fact
+  // about the *generator* — a missing fal key, or the sample photo that has no
+  // pixels behind it — and has nothing to do with where the catalog came from.
   let cancelled = false;
   let timer: ReturnType<typeof setInterval> | null = null;
 
