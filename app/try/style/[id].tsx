@@ -29,7 +29,12 @@ import { usePhotoPicker } from '@/hooks/usePhotoPicker';
 import { useVariantCycle } from '@/hooks/useVariantCycle';
 import { DEMO_BASE_SHAPE, DEMO_PHOTO, TRY_ON_STEPS } from '@/lib/constants';
 import { HERO_ANGLE, VIEW_ANGLES, type ViewAngle } from '@/lib/hairShape';
-import { defaultLength, hairLengthsFor, lengthsFor } from '@/lib/hairLengths';
+import {
+  defaultLength,
+  hairLengthsFor,
+  lengthsFor,
+  parseLengthParam,
+} from '@/lib/hairLengths';
 import {
   HAIR_TYPE_IDS,
   parseHairType,
@@ -122,10 +127,11 @@ function openingType(hairstyle: Hairstyle, gender: Gender | null): HairTypeId | 
  */
 export default function StyleDetailScreen() {
   const router = useRouter();
-  const { id, hairType, gender: browsedGender } = useLocalSearchParams<{
+  const { id, hairType, gender: browsedGender, length: askedLength } = useLocalSearchParams<{
     id: string;
     hairType?: string;
     gender?: string;
+    length?: string;
   }>();
   const { styleById, hairTypes, hairLengths, loading } = useCatalog();
   const { isFavourite, toggleFavourite } = useLibrary();
@@ -178,14 +184,30 @@ export default function StyleDetailScreen() {
   /**
    * How long the cut is being shown, and — like `preview` — only on this screen.
    *
-   * Null until the user moves the slider, which is not the same as "medium":
-   * null means *untouched*, and the two have to be distinguishable because
-   * untouched is what lets the hero keep cycling and what keeps `options` free of
-   * a length the user never chose. The slider still shows a position while it is
-   * null — `defaultLength()` supplies the anchor — so there is no unset state on
-   * screen, only in the data.
+   * Null until the user moves the slider — or until one arrives on the route,
+   * which is the same choice made on a screen they were already standing on. It
+   * is not the same as "medium": null means *untouched*, and the two have to be
+   * distinguishable because untouched is what lets the hero keep cycling and
+   * what keeps `options` free of a length the user never chose. The slider still
+   * shows a position while it is null — `defaultLength()` supplies the anchor —
+   * so there is no unset state on screen, only in the data.
    */
-  const [length, setLength] = useState<HairLengthId | null>(null);
+  const [length, setLength] = useState<HairLengthId | null>(parseLengthParam(askedLength));
+  /**
+   * The length above, but only once this cut is actually offered at it.
+   *
+   * The state starts from a route param now — the result screen's tag carries
+   * the length its preview was generated at, so reopening a look lands on the
+   * cut as that look wears it rather than back at the anchor — and a param is
+   * the one source that can name a stop this cut has no slider position for: a
+   * deep link, or a look whose gender differs from the one being browsed, since
+   * the length row is per gender. Validating here rather than in the initializer
+   * is the same shape `shownAs` uses for `preview` one control up, and for the
+   * same reason: the catalog may still be loading on first render, so there is
+   * nothing to check the param against yet.
+   */
+  const chosenLength =
+    length && hairstyle && lengthsFor(hairstyle, gender).includes(length) ? length : null;
   /**
    * What the drawing is adjusted by, and nothing until the slider is touched.
    *
@@ -195,8 +217,8 @@ export default function StyleDetailScreen() {
    * is both cheaper and more honest.
    */
   const lengthOptions = useMemo<TryOnOptions | undefined>(
-    () => (length ? { length } : undefined),
-    [length],
+    () => (chosenLength ? { length: chosenLength } : undefined),
+    [chosenLength],
   );
   const pager = useRef<ScrollView>(null);
   /** The pager starts on `HERO_ANGLE`, which is not page 0 — set once, on first layout. */
@@ -223,7 +245,7 @@ export default function StyleDetailScreen() {
    * would let a swipe change how many renders the cut appears to have.
    */
   const cycle = useVariantCycle(
-    hairstyle && preview == null && length == null
+    hairstyle && preview == null && chosenLength == null
       ? renderedVariants(hairstyle.id, gender, HERO_ANGLE, variantCandidates(hairstyle, null))
       : [],
   );
@@ -305,7 +327,7 @@ export default function StyleDetailScreen() {
    * readings of one cut do not travel the same distance.
    */
   const lengthEntries = hairLengthsFor(hairLengths, lengthsFor(hairstyle, gender));
-  const shownLength = length ?? defaultLength(hairstyle, gender);
+  const shownLength = chosenLength ?? defaultLength(hairstyle, gender);
   /**
    * The one thing that is true of this cut's length row and cannot be seen in
    * it — the same job `typeNote` does for the row above, and raised for the same
