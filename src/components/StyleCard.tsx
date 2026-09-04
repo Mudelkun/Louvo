@@ -96,107 +96,117 @@ export function StyleCard({
       .filter(Boolean)
       .join(' · ');
 
+  /**
+   * The heart is a sibling of the card, not a child of it.
+   *
+   * Both are controls, so both are `accessibilityRole="button"` — which on web
+   * is a real `<button>` element, and a button inside a button is invalid HTML
+   * that React refuses to render. They are two separate answers to a tap
+   * anyway: the card opens the style, the heart saves it. So the wrapper owns
+   * the card's box and the heart is laid over its top-right corner, which is
+   * where it sat when it was inside the image.
+   */
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={hairstyle.name}
-      accessibilityHint={cycle.cycling ? 'Shown in more than one hair type' : undefined}
-      accessibilityState={{ selected: !!selected }}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        { width },
-        selected && styles.cardSelected,
-        pressed && { transform: [{ scale: 0.98 }] },
-        style,
-      ]}
-    >
-      <View style={[styles.imageWrap, { height: imageHeight }]}>
-        {hairstyle.imageUrl ? (
-          // Real AI-generated mannequin renders slot in here once the backend serves them.
-          <Image source={{ uri: hairstyle.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
-        ) : cycle.cycling ? (
-          <>
-            <VariantCrossfade cycle={cycle} fallback={candidates}>
-              {(variants) => mannequinFor(variants)}
-            </VariantCrossfade>
+    <View style={[{ width }, style]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={hairstyle.name}
+        accessibilityHint={cycle.cycling ? 'Shown in more than one hair type' : undefined}
+        accessibilityState={{ selected: !!selected }}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.card,
+          selected && styles.cardSelected,
+          pressed && { transform: [{ scale: 0.98 }] },
+        ]}
+      >
+        <View style={[styles.imageWrap, { height: imageHeight }]}>
+          {hairstyle.imageUrl ? (
+            // Real AI-generated mannequin renders slot in here once the backend serves them.
+            <Image source={{ uri: hairstyle.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+          ) : cycle.cycling ? (
+            <>
+              <VariantCrossfade cycle={cycle} fallback={candidates}>
+                {(variants) => mannequinFor(variants)}
+              </VariantCrossfade>
 
-            {/* The images alone say there is more than one version of the cut;
-                the caption says which one is on screen. Unlike the renders,
-                these two must not overlap — two words dissolving through each
-                other is unreadable — so they hand over in sequence inside the
-                same fade. */}
-            {cycle.previous ? (
-              <Animated.View
-                style={[
-                  styles.variantTag,
-                  {
-                    opacity: cycle.fade.interpolate({
-                      inputRange: [0, 0.45],
-                      outputRange: [1, 0],
-                      extrapolate: 'clamp',
-                    }),
-                  },
-                ]}
-              >
-                <Text style={[type.caption, styles.variantTagText]} numberOfLines={1}>
-                  {labelFor(cycle.previous)}
-                </Text>
-              </Animated.View>
-            ) : null}
-            {cycle.current ? (
-              <Animated.View
-                style={[
-                  styles.variantTag,
-                  {
-                    opacity: cycle.previous
-                      ? cycle.fade.interpolate({
-                          inputRange: [0.55, 1],
-                          outputRange: [0, 1],
-                          extrapolate: 'clamp',
-                        })
-                      : 1,
-                  },
-                ]}
-              >
-                <Text style={[type.caption, styles.variantTagText]} numberOfLines={1}>
-                  {labelFor(cycle.current)}
-                </Text>
-              </Animated.View>
-            ) : null}
-          </>
-        ) : (
-          mannequinFor(candidates)
-        )}
+              {/* The images alone say there is more than one version of the cut;
+                  the caption says which one is on screen. Unlike the renders,
+                  these two must not overlap — two words dissolving through each
+                  other is unreadable — so they hand over in sequence inside the
+                  same fade. */}
+              {cycle.previous ? (
+                <Animated.View
+                  style={[
+                    styles.variantTag,
+                    {
+                      opacity: cycle.fade.interpolate({
+                        inputRange: [0, 0.45],
+                        outputRange: [1, 0],
+                        extrapolate: 'clamp',
+                      }),
+                    },
+                  ]}
+                >
+                  <Text style={[type.caption, styles.variantTagText]} numberOfLines={1}>
+                    {labelFor(cycle.previous)}
+                  </Text>
+                </Animated.View>
+              ) : null}
+              {cycle.current ? (
+                <Animated.View
+                  style={[
+                    styles.variantTag,
+                    {
+                      opacity: cycle.previous
+                        ? cycle.fade.interpolate({
+                            inputRange: [0.55, 1],
+                            outputRange: [0, 1],
+                            extrapolate: 'clamp',
+                          })
+                        : 1,
+                    },
+                  ]}
+                >
+                  <Text style={[type.caption, styles.variantTagText]} numberOfLines={1}>
+                    {labelFor(cycle.current)}
+                  </Text>
+                </Animated.View>
+              ) : null}
+            </>
+          ) : (
+            mannequinFor(candidates)
+          )}
 
-        {onToggleFavourite ? (
-          <FavouriteHeart
-            accessibilityLabel={favourite ? `Remove ${hairstyle.name} from favourites` : `Save ${hairstyle.name}`}
-            favourite={favourite}
-            onToggle={onToggleFavourite}
-            tone="chip"
-            style={styles.heart}
-          />
-        ) : null}
+          {selected ? (
+            <View style={styles.selectedBadge}>
+              <Ionicons name="checkmark" size={13} color={colors.onDark} />
+            </View>
+          ) : null}
+        </View>
 
-        {selected ? (
-          <View style={styles.selectedBadge}>
-            <Ionicons name="checkmark" size={13} color={colors.onDark} />
-          </View>
-        ) : null}
-      </View>
-
-      <View style={styles.meta}>
-        <Text style={[type.bodyStrong, { color: colors.ink, fontSize: 14 }]} numberOfLines={1}>
-          {hairstyle.name}
-        </Text>
-        {compact ? null : (
-          <Text style={[type.caption, { color: colors.muted }]} numberOfLines={1}>
-            {hairstyle.maintenance} upkeep · {hairstyle.popularity}% liked
+        <View style={styles.meta}>
+          <Text style={[type.bodyStrong, { color: colors.ink, fontSize: 14 }]} numberOfLines={1}>
+            {hairstyle.name}
           </Text>
-        )}
-      </View>
-    </Pressable>
+          {compact ? null : (
+            <Text style={[type.caption, { color: colors.muted }]} numberOfLines={1}>
+              {hairstyle.maintenance} upkeep · {hairstyle.popularity}% liked
+            </Text>
+          )}
+        </View>
+      </Pressable>
+
+      {onToggleFavourite ? (
+        <FavouriteHeart
+          accessibilityLabel={favourite ? `Remove ${hairstyle.name} from favourites` : `Save ${hairstyle.name}`}
+          favourite={favourite}
+          onToggle={onToggleFavourite}
+          tone="chip"
+          style={styles.heart}
+        />
+      ) : null}
+    </View>
   );
 }
 
@@ -216,6 +226,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     overflow: 'hidden',
   },
+  // Over the card rather than inside it — see the note on the return. The
+  // offsets are the same, measured from the wrapper instead of the image.
   heart: { position: 'absolute', top: spacing.sm, right: spacing.sm },
   selectedBadge: {
     position: 'absolute',

@@ -247,8 +247,8 @@ function outlineTint(tone: Tone): string {
 
 const styles = StyleSheet.create({
   button: { alignItems: 'center', justifyContent: 'center' },
-  overlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  overlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   ring: { position: 'absolute', borderWidth: 2, borderColor: colors.accent },
   spark: { position: 'absolute', width: 4, height: 4, borderRadius: 2, backgroundColor: colors.accent },
-  fillLayer: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  fillLayer: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
 });
