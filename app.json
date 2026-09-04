@@ -64,7 +64,8 @@
           "backgroundColor": "#FAF8F5",
           "enableFullScreenImage_legacy": true
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": false

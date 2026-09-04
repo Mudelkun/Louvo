@@ -14,14 +14,19 @@
  * caption on the reference, not the specification. See `src/lib/tryOnPrompt.ts`
  * for the instruction and `REFERENCE_VIEWS` below for why it is one image.
  *
- * SECURITY / TODO(backend): the fal key is read from `EXPO_PUBLIC_FAL_KEY`,
- * which means it is compiled into the app bundle and anyone with the app has it.
- * That is acceptable for a prototype on a key you can rotate and cap, and
- * nothing else. In phase 2 this module becomes a POST to the Railway API:
- * the app uploads the photo, the server holds the key, and the reference sheet
- * never moves at all because it already lives in the catalog's storage. The
- * signature below is written to survive that — `generateTryOn` takes a request
- * and reports stages, exactly as an API call with a poll loop would.
+ * SECURITY: the fal key here is read from `EXPO_PUBLIC_FAL_KEY`, which means it
+ * is compiled into the app bundle and anyone with the app has it. That is the
+ * reason this is no longer the path a shipped build takes. With
+ * `EXPO_PUBLIC_API_URL` set, generation is a job on the backend
+ * (`src/api/previews.ts` and `server/src/worker.ts`): the server holds the key,
+ * the photo goes to a private bucket rather than into a request body, the
+ * reference never moves because it is already a url in the catalog, and the work
+ * survives the app being closed. This module is what a checkout with no server
+ * runs on, and `EXPO_PUBLIC_FAL_KEY` should not be set in a build that has one.
+ *
+ * The assembly below is still the reference implementation of *what to send* —
+ * `server/src/tryOn.ts` is its mirror, and the prompt itself is literally the
+ * same file (see `server/scripts/sync-shared.mjs`).
  */
 
 import { firstImageUrl, runModel, type ImageResponse, type QueueStatus } from '@/api/fal';

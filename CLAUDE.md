@@ -6,8 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Phase 1 is built: a complete, navigable **frontend**. Two things behind it are now real.
 
-**Preview generation.** With `EXPO_PUBLIC_FAL_KEY` set the app calls Fal.ai directly; without
-it, it falls back to the old simulation.
+**Preview generation.** With `EXPO_PUBLIC_API_URL` set it is a **backend job**: the app submits,
+the photograph goes straight to a private bucket, a worker runs the model and the finished
+preview is handed to the phone and deleted from the server. The generator key is not in the app
+bundle and the work survives the app being closed — a push notification says when it is done.
+With no API url but an `EXPO_PUBLIC_FAL_KEY`, the app still calls Fal.ai directly, which is the
+prototype path and what a checkout with no server runs on; with neither it falls back to the old
+simulation. `generationSource()` reports which of the three, and Settings prints it. The design,
+the measurements and what "we do not store your photo" is precise about are in
+`docs/preview-generation.md`.
 
 **The catalog.** `server/` is a Node/Fastify API backed by Postgres on Railway, and the
 mannequin renders are WebP objects in Cloudflare R2 behind its CDN. With
@@ -36,14 +43,19 @@ npm run try-on -- --photo me.jpg --style buzz-cut --dry-run   # one preview — 
 
 # The catalog backend. See server/README.md.
 npm run api                   # the API in watch mode
+npm run worker                # the preview generation worker in watch mode
 npm run catalog:migrate       # apply server/migrations/*.sql
+npm run catalog:check         # sync check + catalog round trip + preview lifecycle — free
 npm run catalog:publish:dry   # transcode + report; uploads nothing, writes nothing — free
 npm run catalog:publish       # metadata into Postgres, imagery into R2
 ```
 
 There is no linter configured. `npm run typecheck` is the check to run after changes to the
-app; the server has its own (`npm --prefix server run typecheck`) plus one real test,
-`npm --prefix server run check` — the catalog round trip, described below.
+app; the server has its own (`npm --prefix server run typecheck`) plus its real tests,
+`npm --prefix server run check` — the catalog round trip and the preview job lifecycle, both
+described below. The root `tsconfig.json` excludes `server/`: the two programs have different
+`lib`s (React Native versus Node) and typechecking one under the other's globals produces
+failures that are not bugs.
 
 Reference material: `project.md` (product spec) and `App-reference.png` (the original flow
 mockup — treated as inspiration, not a spec; the implemented design departs from it).
@@ -364,6 +376,65 @@ a 25-30 degree turn, with the overshoot spelled out as explicitly as the target.
 changes the base heads means re-shooting every style built on them.
 
 **Two distinct image-generation paths.** Mannequin catalog images are generated ahead of time and stored as assets; user previews are generated on demand from the user's uploaded photo. Keep these separate — they have different latency, cost, and caching characteristics.
+
+**The preview is a job on the backend, and the photograph is in flight rather than at rest.**
+This is the phase-2 slice that closed the security note below. `docs/preview-generation.md` has
+the whole argument; the decisions that shape any change to it are these.
+
+*The constraint, stated honestly.* A job that survives the app being closed cannot hold the
+photograph in the app, so for the forty-odd seconds the model is working the image has to be
+somewhere the server can reach. There is no design that avoids it. What is achievable — and what
+the code commits to — is that the photograph goes from the phone straight into a **private
+bucket with no public domain and no CDN**, under a 32-byte random key, is read once through a url
+that expires in minutes, and is **deleted the moment the job settles**, success or failure or
+cancellation alike. Never in Postgres, never public, never in a log line.
+
+*The scrub is a state transition, not a cleanup job.* Every path out of `running` nulls
+`photo_key` in the same statement that sets the status, so there is no ordering in which a worker
+crashes and leaves a settled job with a photograph attached. `check-previews.mjs` walks every
+branch and asserts `unscrubbed()` is empty. The sweeper catches objects whose *row* was lost; it
+is not the mechanism. **If you add a status or a path out of `running`, that assertion is the
+thing to keep passing.**
+
+*The result belongs to the phone.* A finished preview is **collected**, not merely downloaded:
+the app writes it into its own documents directory first, then tells the server, and the server
+deletes its copy. Download first so nothing is lost, acknowledge second so nothing is kept. After
+that the only copy in existence is on the phone and it stays there until its owner deletes it —
+which is also why `saveLookImage` writes to `Paths.document` and not `Paths.cache`, where the OS
+is free to delete a saved look whenever it wants space. `PREVIEW_RETENTION_DAYS` is a hand-off
+window for a phone that never came back, not a retention policy.
+
+*No image bytes pass through the API process.* The phone uploads to a presigned url and downloads
+from one; the API handles small JSON. That is the entire scaling story — 1,500 simultaneous
+submissions are 1,500 rows and 1,500 HMACs, and the ~450 MB of photographs goes to Cloudflare.
+The one exception is the worker copying a finished image from fal into the bucket, once per job.
+
+*The queue is Postgres, claimed by compare-and-set.* `update ... where id = $1 and status =
+'queued'` — two workers produce one winner and one zero-row result at any isolation level. It was
+`for update skip locked` first; the guard is simpler, strictly stronger for this shape, and runs
+on the in-memory Postgres the check uses, which matters because a queue whose claim path cannot be
+tested is a queue with no test.
+
+*Polling, not webhooks, and the number is the reason.* fal sets the account's concurrency limit
+from credits purchased in the last four weeks: **10 on this plan**, 40 at the top of the published
+table. Ten in-flight jobs polled every two seconds is five requests a second. A webhook would add
+a public endpoint, a signature to verify, a replay window and a delivery-failure mode needing a
+polling reaper behind it anyway. Revisit above ~100 concurrent. `FAL_MAX_INFLIGHT` is that real
+limit and not a safety margin — submitting past it buys rejections, not throughput.
+
+*A device secret, not accounts.* The phone mints 32 random bytes into the platform keystore and
+sends them as a bearer token; the server stores only the SHA-256. It identifies a device, not a
+person, and it proves nothing about the caller being a real copy of the app — which is what costs
+money now that our endpoint spends it rather than a key in the bundle. **There is no quota yet**,
+and a per-device daily limit plus a global spend ceiling is the minimum before this is public.
+`devices.user_id` exists and is unread, so real accounts are a backfill rather than a migration.
+
+*The prompt is copied, not mirrored.* Everything else crossing the app/server boundary is a
+hand-written mirror kept honest by a check. `src/lib/tryOnPrompt.ts` cannot be: it is authored
+English prose, and two copies that have drifted apart are two different haircuts with no test able
+to say which was meant. `server/scripts/sync-shared.mjs` cuts it (and the import-free
+`imageSize.ts`) into `server/src/generated/`, rewriting only the type-import header, and
+`npm run check` fails if the copy is stale. **Edit the app's file; never the generated one.**
 
 **The wait is a screen, and it never invents progress.** Pressing *Generate my preview* used to
 queue the job and drop the user on Profile, where a thirty-second round trip was a two-inch tile
@@ -705,13 +776,24 @@ database and no credentials.
 programs and neither may import across the boundary. Both sides must agree, and the round-trip
 check is what makes them.
 
-`generateLook` is the one call that is no longer mocked, and it is two paths behind one
-signature: `generateTryOn` when there is a key and a real photo, the original stepped simulation
-otherwise (the sample photo has no pixels behind it, only a sentinel that draws the procedural
-mannequin). Which one ran is recorded on the look as `simulated`, so the result screen and the
-settings notice describe what actually happened rather than what the build usually does — a
-failed generation is reported as a failure with a reason on the job tile, never quietly replaced
-by a simulation.
+**Generation has three outcomes, in the same shape as the catalog's three.** `generationSource()`
+returns `server` (a job on the API — the one that ships), `direct` (no API url but a fal key in
+the bundle: real previews generated from the phone, lost if the app is closed) or `simulated`
+(neither, or the sample photo, which has no pixels behind it). `GenerationProvider` submits to
+the backend on the first and calls `generateLook` on the other two; `generateLook` itself is now
+the fallback pair rather than the whole story. Which one ran is recorded on the look as
+`simulated`, so the result screen and the settings notice describe what actually happened rather
+than what the build usually does — a failed generation is reported as a failure with a reason on
+the job tile, never quietly replaced by a simulation.
+
+`GenerationProvider` is a *watcher* on the server path, not an owner. Jobs with a `remoteId` are
+persisted to AsyncStorage, reconciled against `GET /v1/previews` on launch and on every return to
+the foreground, and polled while the app is in front of somebody. Its public surface — `jobs`,
+`start`, `cancel`, `retry`, `notification` — did not change, which is why no screen did. The
+waiting screen's honesty rule survives intact: the server reports which of three stages a job is
+in and nothing about how far through it is, the client eases between reports exactly as it did,
+and while a job is *queued* the countdown is suppressed in favour of its real position in the
+queue — an estimate there would be the one thing that screen is written never to do.
 
 `<Mannequin>` shows, in order: `hairstyle.imageUrl` (the backend, once it serves one), the
 generated render for that style/gender/angle, then the procedural drawing from the `shape`

@@ -22,6 +22,7 @@ import Fastify, { type FastifyError } from 'fastify';
 import { assertConnectable, pool } from './db.js';
 import { env } from './env.js';
 import { routes } from './routes.js';
+import { storage } from './storage.js';
 
 const app = Fastify({
   logger: { level: env.logLevel },
@@ -71,6 +72,14 @@ try {
   // Fail the deploy rather than the first request — see `assertConnectable`.
   await assertConnectable();
   await app.listen({ port: env.port, host: env.host });
+  // Said out loud at boot, because the alternative is finding out from a phone.
+  // A deployment whose `PREVIEW_BUCKET` disagrees with the worker's mints upload
+  // urls into a bucket nothing reads, and every symptom of that appears three
+  // hops away — as a job that never leaves `awaiting_upload`.
+  app.log.info(
+    { previews: !!(storage && env.previews.falKey), bucket: env.previews.storage?.bucket ?? null },
+    'ready',
+  );
 } catch (error) {
   app.log.error({ err: error }, 'failed to start');
   process.exit(1);

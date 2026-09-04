@@ -142,6 +142,18 @@ export default function GeneratingScreen() {
   const stepIndex = finished ? GENERATION_STEPS.length : job?.stepIndex ?? 0;
   const failed = job?.status === 'failed';
 
+  /**
+   * Waiting for a slot rather than being worked on.
+   *
+   * The generator's account has a small concurrency limit, so a busy minute is a
+   * real queue and the backend reports the position in it. While that is true
+   * the countdown is suppressed: `useEta` estimates from progress, and progress
+   * genuinely is not moving, so an estimate here would be the one thing this
+   * screen is written never to do — invent one. A place in a line is a fact, and
+   * it is a better answer than a number that would have to be made up.
+   */
+  const ahead = !finished && job?.stepIndex === 0 ? (job.queuePosition ?? 0) : 0;
+
   const hairTypeName = hairTypes.find((entry) => entry.id === source?.hairType)?.name ?? null;
 
   /**
@@ -299,7 +311,11 @@ export default function GeneratingScreen() {
             <WordTicker words={STAGE_WORDS[Math.min(stepIndex, STAGE_WORDS.length - 1)]} />
           )}
           <Text style={[type.caption, { color: colors.muted }]}>
-            {finished ? 'Opening it now' : eta}
+            {finished
+              ? 'Opening it now'
+              : ahead > 0
+                ? `${ahead} ${ahead === 1 ? 'preview' : 'previews'} ahead of yours`
+                : eta}
           </Text>
         </View>
       </View>

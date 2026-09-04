@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Hairify catalog API — hairstyle metadata from Postgres, imagery from R2.",
+  "description": "Hairify API \u2014 the hairstyle catalog, and the preview generation queue behind it.",
   "engines": {
     "node": ">=20"
   },
@@ -16,7 +16,11 @@
     "publish": "node scripts/publish-catalog.mjs",
     "publish:dry": "node scripts/publish-catalog.mjs --dry-run",
     "publish:metadata": "node scripts/publish-catalog.mjs --metadata-only",
-    "check": "node scripts/check-roundtrip.mjs"
+    "check": "node scripts/sync-shared.mjs --check && node scripts/check-roundtrip.mjs && node scripts/check-previews.mjs && node scripts/check-signing.mjs",
+    "dev:worker": "tsx watch --env-file-if-exists=.env --env-file-if-exists=../.env.local src/worker.ts",
+    "start:worker": "node dist/worker.js",
+    "sync:shared": "node scripts/sync-shared.mjs",
+    "prebuild": "node scripts/sync-shared.mjs"
   },
   "dependencies": {
     "@fastify/compress": "^8.1.0",
