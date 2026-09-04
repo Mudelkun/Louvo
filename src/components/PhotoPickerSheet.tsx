@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as MediaLibrary from 'expo-media-library';
+import * as MediaLibrary from 'expo-media-library/legacy';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -684,7 +684,7 @@ async function resolveUri(asset: MediaLibrary.Asset): Promise<string> {
 }
 
 const styles = StyleSheet.create({
-  root: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end' },
+  root: { ...StyleSheet.absoluteFill, justifyContent: 'flex-end' },
   scrim: { backgroundColor: colors.scrim },
   sheet: {
     backgroundColor: colors.surface,
