@@ -14,11 +14,12 @@ import type { PixelSize } from '@/lib/imageSize';
  * the app bundle, and the photo is a file on the user's device that has — by
  * design — never left it. So both are read into base64 and inlined.
  *
- * TODO(backend): this disappears when generation moves server-side. The photo is
- * uploaded once to the API, the reference sheet is already sitting in the
- * catalog's object storage, and fal is handed two URLs instead of two megabytes
- * of base64. Until then `dataUriCache` keeps the encode cost to once per asset
- * per session.
+ * This is now the *fallback* path only. With a backend configured the photo is
+ * uploaded straight to a private bucket (`src/api/previews.ts`), the reference
+ * is already a url in the catalog's own storage, and fal is handed two urls
+ * rather than two megabytes of base64. What is left here is what a checkout with
+ * no server does, and `dataUriCache` keeps the encode cost to once per asset per
+ * session while it does it.
  */
 
 /** Bundled assets never change under us, so their encoding is cached forever. */
@@ -149,20 +150,30 @@ function mimeFor(uri: string): string | null {
 /**
  * Pulls a generated image down to the device and hands back a local uri.
  *
- * A finished look comes back as a url on the generator's own storage, which is
- * the wrong thing to keep: those urls expire, and the two places a look is used
- * afterwards both want a file. "Save to camera roll" is one — `saveToLibraryAsync`
- * takes a file, not a link — and the library is the other, since a saved look
- * outliving its url would quietly turn into a broken image.
+ * A finished look arrives as a url on somebody else's storage — fal's, or a
+ * signed url against our own transient bucket — and neither is a thing to keep.
+ * Both expire, and the second one is *meant* to: the whole arrangement is that
+ * the preview lives on this phone and nowhere else, which is only true once it
+ * has actually been written here.
+ *
+ * **`Paths.document`, not `Paths.cache`.** This used to write into the cache
+ * directory, which iOS and Android are free to empty whenever they want space —
+ * so a look the user had saved could quietly become a broken image weeks later,
+ * with nothing to re-download it from. A saved look is user data: it stays until
+ * its owner deletes it, and that is what the documents directory means.
+ *
+ * The cost is that these files are the app's own to clean up, which is exactly
+ * right — `removeLook` is where a look stops existing, and nothing else should
+ * be able to remove one.
  *
  * Best effort by design. Web has no file system to download into and returns the
  * url untouched, and any failure does the same rather than losing the look: a
- * remote image still displays, it just cannot be saved.
+ * remote image still displays for as long as its url lasts.
  */
-export async function cacheRemoteImage(url: string, name: string): Promise<string> {
+export async function saveLookImage(url: string, name: string): Promise<string> {
   if (Platform.OS === 'web' || !url.startsWith('http')) return url;
   try {
-    const directory = new Directory(Paths.cache, 'looks');
+    const directory = new Directory(Paths.document, 'looks');
     if (!directory.exists) directory.create({ intermediates: true });
     const file = await File.downloadFileAsync(url, new File(directory, name));
     return file.uri;

@@ -16,6 +16,9 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 
 import { currentRevision, getCatalog, invalidateCatalog } from './catalog.js';
+import { env } from './env.js';
+import { previewRoutes } from './previews.js';
+import { storage } from './storage.js';
 import { filterHairstyles, recommendationsFor, SORT_IDS, type HairstyleQuery, type SortId } from './hairstyles.js';
 import { HAIR_TYPE_IDS, type Gender, type HairTypeId } from './types.js';
 
@@ -74,6 +77,17 @@ function catalogCaching(reply: FastifyReply, revision: number): void {
 
 export async function routes(app: FastifyInstance): Promise<void> {
   /**
+   * The preview pipeline, which is emphatically not read-only.
+   *
+   * Registered alongside the catalog rather than as its own service because it
+   * is the same small amount of JSON handling: the photograph and the finished
+   * preview both travel directly between the phone and the bucket on presigned
+   * urls, so nothing here is heavier than a row. The *worker* is the separate
+   * service — see `src/worker.ts`.
+   */
+  await app.register(previewRoutes);
+
+  /**
    * Liveness and readiness in one, because Railway asks for one URL.
    *
    * It touches the database on purpose: a process that is up but cannot reach
@@ -83,7 +97,10 @@ export async function routes(app: FastifyInstance): Promise<void> {
   app.get('/health', async (_request, reply) => {
     try {
       const revision = await currentRevision();
-      return { status: 'ok', revision };
+      // Reported rather than asserted: a deployment with no bucket and no
+      // generator key is a perfectly healthy catalog API, and the app already
+      // knows how to fall back from `previews_unconfigured`.
+      return { status: 'ok', revision, previews: !!(storage && env.previews.falKey) };
     } catch (error) {
       reply.code(503);
       return { status: 'unavailable', error: error instanceof Error ? error.message : 'database unreachable' };

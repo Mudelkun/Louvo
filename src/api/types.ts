@@ -282,6 +282,25 @@ export interface LookJob {
   options: TryOnOptions;
   createdAt: number;
   status: 'processing' | 'failed';
+  /**
+   * The backend's id for this job, when the backend is running it.
+   *
+   * Present exactly when generation is a server job (`generationSource()` is
+   * `server`). It is what lets a job survive the app being closed: everything
+   * else on this record is a local copy of state the server owns, and this is
+   * the handle to go and re-read it. Absent on the direct and simulated paths,
+   * where the job is a promise in memory and dies with the process.
+   */
+  remoteId?: string;
+  /**
+   * How many generations are ahead of this one, when it is waiting.
+   *
+   * The account's concurrency limit is small, so a busy minute is a real wait,
+   * and this is the only honest thing the app can say about it. Absent once the
+   * job is actually generating — a position in a queue it has left would be a
+   * number that means nothing.
+   */
+  queuePosition?: number;
   /** 0..1 */
   progress: number;
   /**

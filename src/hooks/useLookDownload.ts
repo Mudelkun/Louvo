@@ -16,7 +16,7 @@ export type DownloadStatus = 'idle' | 'busy' | 'done';
  *
  * A generated look is already a local file by the time it gets here: the result
  * is pulled off the generator's storage and cached on device as soon as it
- * lands (`cacheRemoteImage`), because those urls expire and `saveToLibraryAsync`
+ * lands (`saveLookImage`), because those urls expire and `saveToLibraryAsync`
  * wants a file rather than a link. A *simulated* look's `resultUri` is the
  * user's own photo, so what lands in the camera roll is an unedited copy of it,
  * and the sample photo has no file at all (the mannequin is drawn as SVG at
