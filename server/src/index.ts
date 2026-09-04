@@ -32,7 +32,20 @@ const app = Fastify({
   trustProxy: true,
 });
 
-await app.register(cors, { origin: env.corsOrigin === '*' ? true : env.corsOrigin.split(',') });
+/**
+ * CORS, including the methods the preview flow actually uses.
+ *
+ * `@fastify/cors` defaults `methods` to `GET,HEAD,POST`, which is the whole
+ * catalog API and only two thirds of the preview API: cancelling a job is a
+ * `DELETE`, so from a browser it failed its preflight and never reached a
+ * route. Native has no preflight, so this was invisible on a phone and broken
+ * on `npm run web` — the shape that hides a bug the longest.
+ */
+await app.register(cors, {
+  origin: env.corsOrigin === '*' ? true : env.corsOrigin.split(','),
+  methods: ['GET', 'HEAD', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['authorization', 'content-type', 'accept'],
+});
 
 /**
  * ETag before compress.
