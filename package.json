@@ -19,7 +19,11 @@
     "mannequins:masks": "node scripts/generate-hair-masks.mjs",
     "try-on": "node scripts/try-on.mjs",
     "hair-types": "node scripts/generate-hair-type-examples.mjs",
-    "hair-types:sync": "node scripts/generate-hair-type-examples.mjs --sync"
+    "hair-types:sync": "node scripts/generate-hair-type-examples.mjs --sync",
+    "api": "npm --prefix server run dev",
+    "catalog:publish": "npm --prefix server run publish",
+    "catalog:publish:dry": "npm --prefix server run publish:dry",
+    "catalog:migrate": "npm --prefix server run migrate"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

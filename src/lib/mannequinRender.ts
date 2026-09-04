@@ -1,9 +1,11 @@
 import {
-  mannequinMasks,
-  mannequinRenders,
-  type MannequinVariantMap,
+  maskIndex,
+  renderIndex,
+  sameSource,
+  type RenderIndex,
   type RenderSource,
-} from '@/api/mannequinRenders.generated';
+  type RenderVariantMap,
+} from '@/api/renderIndex';
 import type { Gender, HairLengthId, VariantId } from '@/api/types';
 import { ANCHOR_LENGTH } from '@/lib/hairLengths';
 import { VIEW_ANGLES, type ViewAngle } from '@/lib/hairShape';
@@ -11,11 +13,13 @@ import { VIEW_ANGLES, type ViewAngle } from '@/lib/hairShape';
 /**
  * The AI-generated mannequin render for a style, if one has been generated.
  *
- * `scripts/generate-mannequins.mjs` writes the PNGs and rewrites the generated
- * module every run, so a style picked up here appears in the app as soon as its
- * images land — nothing else has to be edited. Styles with no render yet fall
- * back to the procedural drawing in `<Mannequin>`, which is why every lookup
- * returns `null` rather than a placeholder.
+ * The renders themselves come from whichever index is active — the catalog's,
+ * installed from the API, or the bundled one as a fallback (see
+ * `src/api/renderIndex.ts`). Nothing here knows which: a bundled asset handle
+ * and a CDN url are both `RenderSource`, and every consumer of one already
+ * accepts the other. Styles with no render fall back to the procedural drawing
+ * in `<Mannequin>`, which is why every lookup returns `null` rather than a
+ * placeholder — and that is now also what an unreachable CDN looks like.
  *
  * Only an exact angle match is used: a fade shot from the side is not an honest
  * stand-in for the same fade from behind. Gender is matched exactly too when the
@@ -49,7 +53,7 @@ const lengthOrder = (length: HairLengthId, exact: boolean): HairLengthId[] =>
   exact || length === ANCHOR_LENGTH ? [length] : [length, ANCHOR_LENGTH];
 
 function lookup(
-  map: Record<string, MannequinVariantMap>,
+  map: RenderIndex,
   styleId: string | null | undefined,
   gender: Gender | null | undefined,
   angle: ViewAngle,
@@ -90,7 +94,7 @@ export function renderVariant(
   variants?: VariantId[] | null,
   length?: HairLengthId,
 ): VariantId | null {
-  return lookup(mannequinRenders, styleId, gender, angle, variants, length)?.variant ?? null;
+  return lookup(renderIndex(), styleId, gender, angle, variants, length)?.variant ?? null;
 }
 
 /**
@@ -110,7 +114,7 @@ export function renderLength(
   variants?: VariantId[] | null,
   length?: HairLengthId,
 ): HairLengthId | null {
-  return lookup(mannequinRenders, styleId, gender, angle, variants, length)?.length ?? null;
+  return lookup(renderIndex(), styleId, gender, angle, variants, length)?.length ?? null;
 }
 
 export function mannequinRender(
@@ -120,7 +124,7 @@ export function mannequinRender(
   variants?: VariantId[] | null,
   length?: HairLengthId,
 ): RenderSource | null {
-  return lookup(mannequinRenders, styleId, gender, angle, variants, length)?.source ?? null;
+  return lookup(renderIndex(), styleId, gender, angle, variants, length)?.source ?? null;
 }
 
 /**
@@ -146,12 +150,12 @@ export function mannequinMask(
   variants?: VariantId[] | null,
   length?: HairLengthId,
 ): RenderSource | null {
-  return lookup(mannequinMasks, styleId, gender, angle, variants, length, true)?.source ?? null;
+  return lookup(maskIndex(), styleId, gender, angle, variants, length, true)?.source ?? null;
 }
 
 /** Whether any render at all exists for a style — used to pick a hero angle. */
 export function hasMannequinRender(styleId: string | null | undefined): boolean {
-  return !!(styleId && mannequinRenders[styleId]);
+  return !!(styleId && renderIndex()[styleId]);
 }
 
 /**
@@ -174,7 +178,7 @@ export function mannequinViews(
   variants?: VariantId[] | null,
   length: HairLengthId = ANCHOR_LENGTH,
 ): { variant: VariantId; length: HairLengthId; views: { angle: ViewAngle; source: RenderSource }[] } | null {
-  const byVariant = styleId ? mannequinRenders[styleId] : undefined;
+  const byVariant: RenderVariantMap | undefined = styleId ? renderIndex()[styleId] : undefined;
   if (!byVariant) return null;
 
   const wanted = variants ?? (Object.keys(byVariant) as VariantId[]);
@@ -221,15 +225,15 @@ export function renderedVariants(
   variants?: VariantId[] | null,
   length?: HairLengthId,
 ): VariantId[] {
-  const byVariant = styleId ? mannequinRenders[styleId] : undefined;
+  const byVariant: RenderVariantMap | undefined = styleId ? renderIndex()[styleId] : undefined;
   if (!byVariant) return [];
 
   const wanted = variants ?? (Object.keys(byVariant) as VariantId[]);
   const found: VariantId[] = [];
   const seen: RenderSource[] = [];
   for (const variant of wanted) {
-    const hit = lookup(mannequinRenders, styleId, gender, angle, [variant], length);
-    if (!hit || seen.includes(hit.source)) continue;
+    const hit = lookup(renderIndex(), styleId, gender, angle, [variant], length);
+    if (!hit || seen.some((source) => sameSource(source, hit.source))) continue;
     seen.push(hit.source);
     found.push(variant);
   }
