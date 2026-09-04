@@ -18,12 +18,12 @@
 
 import { setHairTypeExamples } from '@/lib/hairTypeExample';
 import { supportsHairType } from '@/lib/hairTypes';
-import { cacheRemoteImage } from '@/lib/imageData';
+import { saveLookImage } from '@/lib/imageData';
 
 import { readCachedCatalog, writeCachedCatalog } from './catalogCache';
 import { mockCatalog } from './mockCatalog';
 import { setRenderIndex } from './renderIndex';
-import { canGenerateFor, generateTryOn, type TryOnStage } from './tryOn';
+import { canGenerateFor, generateTryOn, generationConfigured, type TryOnStage } from './tryOn';
 import type {
   Catalog,
   Category,
@@ -53,6 +53,26 @@ export const hasApi = (): boolean => API_BASE_URL.length > 0;
 
 /** How the catalog on screen was actually obtained. Reported, never guessed. */
 export type CatalogSource = 'api' | 'cache' | 'bundled';
+
+/**
+ * Where previews are generated, in the same spirit as `CatalogSource`.
+ *
+ * - **`server`** — a job on the Railway API. The key is not in this build, the
+ *   work survives the app being closed, and a notification arrives when it is
+ *   done. The one that ships.
+ * - **`direct`** — no API url, but a fal key in the bundle. The prototype path:
+ *   real previews, generated from the phone, lost if the app is closed.
+ * - **`simulated`** — neither. The flow is walked through and the "preview" is
+ *   the user's own photo, labelled as such everywhere it appears.
+ *
+ * Settings prints this. A user looking at a simulation is told it is one.
+ */
+export type GenerationSource = 'server' | 'direct' | 'simulated';
+
+export const generationSource = (): GenerationSource => {
+  if (hasApi()) return 'server';
+  return generationConfigured() ? 'direct' : 'simulated';
+};
 
 let lastCatalogSource: CatalogSource = 'bundled';
 
@@ -332,28 +352,39 @@ export interface GenerateProgress {
   stepIndex: number;
 }
 
-/** Where a stage starts, and how far it may creep before the next one begins. */
-const STAGE_RANGE: Record<TryOnStage, [number, number]> = {
+/**
+ * Where a stage starts, and how far it may creep before the next one begins.
+ *
+ * Exported because the backend path needs the same numbers: the server reports
+ * which of three stages a job is in and nothing about how far through it is, so
+ * the easing between reports is the client's job either way. Two copies of these
+ * ranges would be two different-looking waits for the same generation.
+ */
+export const STAGE_RANGE: Record<TryOnStage, [number, number]> = {
   prepare: [0.02, 0.16],
   apply: [0.2, 0.9],
   finalize: [0.92, 0.99],
 };
 
-const STAGE_INDEX: Record<TryOnStage, number> = { prepare: 0, apply: 1, finalize: 2 };
+export const STAGE_INDEX: Record<TryOnStage, number> = { prepare: 0, apply: 1, finalize: 2 };
 
 /**
- * Generates one preview.
+ * Generates one preview, here in the app.
  *
- * Two paths behind one signature. With a fal key configured and a real photo to
- * work from it runs `generateTryOn` — the user's photo plus the catalog's own
- * renders of the chosen cut, edited by the model. Without either it runs the
- * original simulation, which is what keeps the sample-photo walkthrough and a
- * key-less checkout working end to end. `GeneratedLook.simulated` says which of
- * the two happened, so no screen has to guess.
+ * Two paths behind one signature, and they are now the *fallback* pair rather
+ * than the whole story. With `EXPO_PUBLIC_API_URL` set, generation is a job on
+ * the backend and `GenerationProvider` never calls this — see
+ * `src/api/previews.ts`. What is left here is what a checkout with no server
+ * does:
  *
- * TODO(backend): both paths collapse into POST /looks { hairstyleId, hairType,
- * photo } plus a poll loop. The progress callback contract does not change; the
- * key stops living in the app.
+ * - **A fal key in the bundle** runs `generateTryOn` directly, exactly as the
+ *   prototype always did. It dies when the app is closed and the key is readable
+ *   by anyone with the binary, which is the whole reason the backend exists.
+ * - **Neither** runs the original stepped simulation, which keeps the
+ *   sample-photo walkthrough and a bare checkout working end to end.
+ *
+ * `GeneratedLook.simulated` says which happened, so no screen has to guess, and
+ * `generationSource()` says which of the three the build is actually on.
  */
 export function generateLook(
   request: GenerateRequest,
@@ -364,7 +395,14 @@ export function generateLook(
     : runSimulatedGeneration(request, onProgress);
 }
 
-function lookFrom(request: GenerateRequest, resultUri: string | null, simulated: boolean): GeneratedLook {
+/**
+ * The saved record of a generation, however it was produced.
+ *
+ * Exported for the backend path, which builds the same look out of a job it did
+ * not run itself — one shape for a look means the library, the result screen and
+ * the share sheet never have to ask where it came from.
+ */
+export function lookFrom(request: GenerateRequest, resultUri: string | null, simulated: boolean): GeneratedLook {
   return {
     id: `look_${Date.now().toString(36)}`,
     hairstyleId: request.hairstyle.id,
@@ -430,9 +468,9 @@ function runRealGeneration(
         },
       );
 
-      // Pulled onto the device before the look is handed over: a look outlives
+      // Written to the device before the look is handed over: a look outlives
       // the url it arrived on, and "save to camera roll" needs a file.
-      const resultUri = await cacheRemoteImage(outcome.imageUrl, `${request.hairstyle.id}-${Date.now()}.png`);
+      const resultUri = await saveLookImage(outcome.imageUrl, `${request.hairstyle.id}-${Date.now()}.png`);
       progress = 1;
       report();
       return lookFrom(request, resultUri, false);

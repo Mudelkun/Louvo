@@ -8,9 +8,13 @@
  * reports progress while it waits, because a user is watching, and it can be
  * cancelled, because the user can leave.
  *
- * TODO(backend): this whole module moves server-side. See the security note on
- * `FAL_KEY` in src/api/tryOn.ts — a key in a shipped app binary is a key
- * anybody can read out of it, so this is a prototype path with an expiry date.
+ * It has moved server-side: `server/src/fal.ts` is where a shipped build's
+ * generations are submitted from, and it has no wait in it at all — the worker
+ * polls every in-flight job on one tick rather than holding a promise per job.
+ * This copy is what a checkout with no server runs on, and it is reached only
+ * when `EXPO_PUBLIC_API_URL` is unset. The key it uses is compiled into the
+ * bundle and readable by anyone with the app, which is exactly why the other one
+ * exists; do not make this the default path again.
  */
 
 const QUEUE = 'https://queue.fal.run';
