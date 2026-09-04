@@ -76,14 +76,14 @@ const panelSpecs = () =>
 /**
  * One sheet: four hair types on one head, in one image, for one gender.
  *
- * `missing` names quadrants a previous attempt returned with no hair on them,
- * and `alike` names pairs it drew as the same texture twice — the two ways this
- * image fails. Naming them beats a plain re-roll, which tends to reproduce the
- * same mistake.
+ * The two ways this image fails — a quadrant with no hair on it, and two
+ * quadrants drawn as the same texture — are measured after the fact and
+ * reported. Neither of them re-rolls the sheet: a second generation is a second
+ * charge, so it takes a deliberate --force re-run.
  *
- * @param {{ gender: string, missing?: string[], alike?: [string, string][] }} opts
+ * @param {{ gender: string }} opts
  */
-export function hairTypeSheetPrompt({ gender, missing = [], alike = [] }) {
+export function hairTypeSheetPrompt({ gender }) {
   const lines = [
     `Studio reference chart of ${TYPE_SHEET.cells.length} faceless white display mannequin heads, arranged as a ${TYPE_SHEET.cols}x${TYPE_SHEET.rows} grid of ${TYPE_SHEET.cells.length} equal square quadrants — ${PANELS} — meeting edge to edge with no border, no gutter, no divider lines, no frames and no drop shadows.`,
     '',
@@ -122,32 +122,5 @@ export function hairTypeSheetPrompt({ gender, missing = [], alike = [] }) {
   // picture with the wrong sculpt.
   if (LENGTH_REMINDER[gender]) lines.push('', LENGTH_REMINDER[gender]);
 
-  if (missing.length) {
-    lines.push(
-      '',
-      `Attention: a previous attempt returned the ${listOf(missing.map(typePanelLabel))} ${plural(missing, 'quadrant')} with no hair on the head. Fix that: every quadrant must show the head wearing hair in its own pattern.`,
-    );
-  }
-
-  if (alike.length) {
-    const pairs = alike.map(([a, b]) => `${typePanelLabel(a)} and ${typePanelLabel(b)}`);
-    lines.push(
-      '',
-      `Attention: a previous attempt drew ${listOf(pairs)} as the same texture. Draw them clearly differently this time — ${alike
-        .flat()
-        .filter((type, index, all) => all.indexOf(type) === index)
-        .map((type) => `${typePanelLabel(type)} is ${HAIR_TYPES[type]}`)
-        .join('; ')}.`,
-    );
-  }
-
   return lines.join('\n');
 }
-
-/** `Top-left`, `Top-left and Top-right`, `A, B and C`. */
-function listOf(items) {
-  if (items.length <= 1) return items[0] ?? '';
-  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
-}
-
-const plural = (items, word) => (items.length === 1 ? word : `${word}s`);

@@ -237,15 +237,16 @@ it never drew, and nothing in the response says so. `lengthContrast()` takes the
 coverage `inspectLengthSheet` already computed, means it per row, and trips on either a step
 that did not move (`MIN_LENGTH_CONTRAST`) or a short→long spread that is too small overall
 (`MIN_LENGTH_SPREAD`). Both are needed: the second catches the case every step clears the
-floor and the range is still invisible. A sheet that trips either is re-rolled with the rows
-named, exactly as a bald quadrant is, and the best attempt across retries is ranked on both
-faults together so a re-roll cannot "fix" a bald panel by flattening the range.
+floor and the range is still invisible. A sheet that trips either is **reported, not re-rolled**:
+the generators shoot each sheet exactly once, name what came back wrong, and leave the decision to
+pay for another one to whoever is running them. Automatic re-rolls were up to 3x the cost of a
+batch and the money was spent before anyone had looked at the image.
 
 Both thresholds are **measured from real sheets, not guessed** — the numbers and the sheets
 they came from are in `lib/sheet.mjs`. The one that set the floor is `afro/coily`, which came
 back at x1.09 per step and a x1.20 spread: it cleared an earlier, more lenient floor
 comfortably and still looked like one haircut three times. `--check` re-measures anything
-already on disk for free and prints the re-roll commands.
+already on disk for free and prints the re-shoot commands to run by hand.
 
 **The anchor row is re-shot and replaces what is there.** Three lengths only mean anything
 as a set if they came out of one image, so the medium row has to replace the separately-shot
@@ -576,9 +577,11 @@ material, lighting, crop and framing are carried over from an image that was app
 the same image for both models. Only the hair rendering is left to differ. That is one variable
 rather than six, and it was judged small enough to accept against re-shooting 46 renders.
 
-What the extra four cents buys is prompt adherence, which is the concrete defect: `--sheet-retries`
-exists because nano-banana returns sheets with a bald quadrant, and the sheet prompt carries a
-whole paragraph shouting that all four heads must be wearing the hairstyle. If a batch ever does
+What the extra four cents buys is prompt adherence, which is the concrete defect: nano-banana
+returns sheets with a bald quadrant, and the sheet prompt carries a whole paragraph shouting that
+all four heads must be wearing the hairstyle. Paying it up front is now the only defence, since
+nothing re-rolls a bad sheet on its own — `--check` names them and a `--force` re-run is a
+deliberate spend. If a batch ever does
 come back visibly unlike its neighbours, the fix is to re-shoot *that batch*, not to revert the
 constant and leave the catalog split three ways.
 

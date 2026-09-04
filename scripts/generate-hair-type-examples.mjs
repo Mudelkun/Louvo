@@ -64,7 +64,6 @@ function parseArgs(argv) {
     model: process.env.FAL_MODEL ?? 'fal-ai/nano-banana',
     seed: null,
     inset: 0,
-    retries: 2,
     sync: false,
     slice: false,
     dryRun: false,
@@ -94,7 +93,6 @@ function parseArgs(argv) {
       case '--model': options.model = next(); break;
       case '--seed': options.seed = Number(next()); break;
       case '--inset': options.inset = Number(next()); break;
-      case '--retries': options.retries = Number(next()); break;
       case '--sync': options.sync = true; break;
       case '--slice': options.slice = true; break;
       case '--dry-run': options.dryRun = true; break;
@@ -111,7 +109,6 @@ function parseArgs(argv) {
   const badType = options.types.find((type) => !HAIR_TYPE_CELLS.includes(type));
   if (badType) fail(`unknown hair type "${badType}" — expected ${HAIR_TYPE_CELLS.join(', ')}`);
   if (!Number.isFinite(options.inset) || options.inset < 0) fail('--inset must be zero or more pixels');
-  if (!Number.isFinite(options.retries) || options.retries < 0) fail('--retries must be zero or more');
 
   return options;
 }
@@ -128,7 +125,6 @@ function usage() {
       '  --sync           rebuild the app map from disk and stop — free, no key',
       '  --slice          re-cut the sheets already on disk and stop — free, no key',
       '  --inset <n>      trim n pixels off every panel edge when cutting',
-      '  --retries <n>    re-rolls allowed when a panel comes back bald (default: 2)',
       '  --seed <n>       fal seed, for reproducible re-runs',
       '  --model <id>     text-to-image model       (default: fal-ai/nano-banana)',
       '  --out <dir>      output directory          (default: assets/hair-types)',
@@ -212,32 +208,26 @@ async function slicePanels(options, gender) {
 // Generation
 // ---------------------------------------------------------------------------
 
-/**
- * `attempt` offsets the seed so a re-roll is actually a different roll: with
- * --seed pinned, the same seed and a near-identical prompt would hand back the
- * same sheet, bald panel and all.
- */
-function imageInput(options, prompt, attempt = 0) {
+function imageInput(options, prompt) {
   return {
     prompt,
     num_images: 1,
     aspect_ratio: '1:1',
     output_format: 'png',
-    ...(options.seed === null ? null : { seed: options.seed + attempt }),
+    ...(options.seed === null ? null : { seed: options.seed }),
   };
 }
 
 /**
- * One gender's sheet, measured and re-rolled if a panel came back with no hair.
+ * One gender's sheet, measured but never re-rolled.
  *
- * Two things can be wrong with this image, and they are not treated the same:
- *
- *   - A panel with no hair on it is a hard failure and is re-rolled by name, on
- *     the catalog's measured 3% coverage line.
- *   - Two panels drawn as the same texture is reported, recorded in the manifest
- *     and left to be looked at. The line between "close" and "the same picture"
- *     has not been measured yet (see SILHOUETTE_FLOOR), and burning re-rolls on
- *     an uncalibrated number is worse than printing it.
+ * Two things can be wrong with this image, and neither of them buys a second
+ * generation: a panel with no hair on it is a hard failure on the catalog's
+ * measured 3% coverage line, and two panels drawn as the same texture is a soft
+ * one the line between "close" and "the same picture" has not been calibrated
+ * for (see SILHOUETTE_FLOOR). Both are measured, reported and recorded in the
+ * manifest; whether the sheet is worth paying to shoot again is the caller's
+ * judgement, made with --force.
  */
 async function generateSheet(options, key, gender) {
   const file = sheetFile(options, gender);
@@ -247,44 +237,35 @@ async function generateSheet(options, key, gender) {
     return null;
   }
 
-  let best = null;
-  let missing = [];
-
-  for (let attempt = 0; attempt <= options.retries; attempt += 1) {
-    const prompt = hairTypeSheetPrompt({ gender, missing, alike: best?.alike ?? [] });
-    const image = await withRetry(`${gender} sheet`, 3, async () => {
-      const result = await runModel(options.model, imageInput(options, prompt, attempt), {
-        key,
-        onStatus: (status) => console.log(`  · ${gender}: ${status}`),
-      });
-      return firstImage(result);
+  const prompt = hairTypeSheetPrompt({ gender });
+  const image = await withRetry(`${gender} sheet`, 3, async () => {
+    const result = await runModel(options.model, imageInput(options, prompt), {
+      key,
+      onStatus: (status) => console.log(`  · ${gender}: ${status}`),
     });
+    return firstImage(result);
+  });
 
-    const bytes = await fetchImageBytes(image.url);
+  const bytes = await fetchImageBytes(image.url);
 
-    // An image that cannot be measured has already been paid for: keep it,
-    // treat it as unverified, and let slicing report the real decode problem.
-    let report = { coverage: {}, bald: [], distance: {}, alike: [] };
-    try {
-      report = inspectTypeSheet(bytes, { types: options.types });
-    } catch (error) {
-      console.warn(`  ! ${gender}: could not measure the sheet (${error.message})`);
-    }
+  // An image that cannot be measured has already been paid for: keep it,
+  // treat it as unverified, and let slicing report the real decode problem.
+  let report = { coverage: {}, bald: [], distance: {}, alike: [] };
+  try {
+    report = inspectTypeSheet(bytes, { types: options.types });
+  } catch (error) {
+    console.warn(`  ! ${gender}: could not measure the sheet (${error.message})`);
+  }
 
-    // Keep the best sheet seen, not the last one: a re-roll can come back worse.
-    if (!best || report.bald.length < best.bald.length) best = { prompt, url: image.url, bytes, ...report };
-    if (!report.bald.length) break;
-
-    missing = report.bald;
-    const left = attempt < options.retries ? ' — re-rolling' : ' — out of retries';
+  if (report.bald.length) {
     console.warn(
       `  ! ${gender}: ${report.bald.join(', ')} came back with no hair ` +
-        `(${formatCoverage(report.coverage, options.types)})${left}`,
+        `(${formatCoverage(report.coverage, options.types)})`,
     );
   }
 
-  await saveBytes(file, best.bytes);
-  return best;
+  await saveBytes(file, bytes);
+  return { prompt, url: image.url, bytes, ...report };
 }
 
 async function confirm(question) {
