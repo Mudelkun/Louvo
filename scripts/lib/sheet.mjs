@@ -330,7 +330,7 @@ export function lengthContrast(coverage, lengths, { angles = SHEET_ANGLES } = {}
 
   // A range whose every step cleared the floor can still be too small overall.
   // When that happens the whole sheet is the problem rather than one row, so
-  // every row after the first is named — the re-roll has to widen all of it.
+  // every row after the first is named — a re-shoot has to widen all of it.
   const spread = rows[0] > 0 ? rows[rows.length - 1] / rows[0] : Infinity;
   if (spread < MIN_LENGTH_SPREAD) {
     for (const length of lengths.slice(1)) if (!flat.includes(length)) flat.push(length);
@@ -351,17 +351,39 @@ export function formatContrast(lengths, { rows, ratios, spread }) {
 export const lengthPanelLabel = (lengths, cell) => gridLabel(lengthSheet(lengths), cell);
 
 /**
+ * The aspect ratios `aspect_ratio` accepts. It is a literal enum, not a number,
+ * and this is the model's own list — read back off a 422 rather than typed from
+ * the docs.
+ */
+const MODEL_ASPECTS = [
+  'auto', '21:9', '16:9', '3:2', '4:3', '5:4', '1:1',
+  '4:5', '3:4', '2:3', '9:16', '4:1', '1:4', '8:1', '1:8',
+];
+
+/**
  * The aspect ratio to ask the model for, as `w:h` in lowest terms.
  *
  * Sent rather than left at the `1:1` the four-view sheet uses, because the edit
  * model keeps the input's shape and the composed base is 4 wide by however many
  * lengths tall. Getting this wrong does not fail — it squashes twelve heads into
  * a square and every panel comes back the wrong shape.
+ *
+ * A ratio the enum does not carry becomes `auto`, which takes the shape from the
+ * input image — and the input image is the composed base, already at exactly the
+ * shape wanted. Snapping to the nearest supported literal instead would be the
+ * squashing this function exists to prevent: a two-length sheet is 4 wide by 2
+ * tall, and the nearest thing to `2:1` on offer is `16:9`.
+ *
+ * Two-length sheets were the case that found this. `2:1` is not in the list, and
+ * the failure is late and unhelpful — the queue accepts the submission and the
+ * validation error only surfaces on the *result* fetch, as a 422 naming
+ * `body.aspect_ratio` after the job appears to have been running.
  */
 export function gridAspect(layout) {
   const divisor = (a, b) => (b ? divisor(b, a % b) : a);
   const d = divisor(layout.cols, layout.rows);
-  return `${layout.cols / d}:${layout.rows / d}`;
+  const exact = `${layout.cols / d}:${layout.rows / d}`;
+  return MODEL_ASPECTS.includes(exact) ? exact : 'auto';
 }
 
 export { ANCHOR_LENGTH };

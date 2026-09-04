@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-04T01:12:16.836Z",
+  "generatedAt": "2026-09-04T01:54:32.229Z",
   "models": {
     "base": "fal-ai/nano-banana",
     "edit": "fal-ai/nano-banana-2/edit"
@@ -2259,6 +2259,161 @@
               "height": 597
             }
           }
+        },
+        "female": {
+          "lengths": {
+            "file": "wolf-cut/curly/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa903a9/yaGH7KhwX-xKsa2LvwkYe_jqFApP1x.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 3 grid containing 12 views of the same mannequin: 3 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Wolf Cut to every mannequin.\n\nAll 12 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 12 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Wolf Cut\nHair color: Natural black — #131110\nHair type: Type 3A–3B curly\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 3 rows are the same haircut worn at 3 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Short: roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim\nRow 2 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 3 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 3 lengths, not 3 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Wolf Cut while maintaining the same mannequin and presentation across all 12 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "short:front": 0.1687213847012842,
+              "short:half": 0.18092964824120603,
+              "short:side": 0.2291289782244556,
+              "short:back": 0.29779731993299835,
+              "medium:front": 0.257571189279732,
+              "medium:half": 0.2558179787828029,
+              "medium:side": 0.29550251256281407,
+              "medium:back": 0.4077247347850363,
+              "long:front": 0.3596538246789503,
+              "long:half": 0.3522333891680625,
+              "long:side": 0.36878838637632605,
+              "long:back": 0.48896984924623116
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.21914433277498607,
+                0.30415410385259634,
+                0.3924113623673925
+              ],
+              "ratios": [
+                1.3879168126373451,
+                1.2901728347468515
+              ],
+              "spread": 1.7906525685531383,
+              "flat": []
+            }
+          },
+          "short:front": {
+            "file": "wolf-cut/curly/short/female-front.png",
+            "from": "wolf-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:half": {
+            "file": "wolf-cut/curly/short/female-half.png",
+            "from": "wolf-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:side": {
+            "file": "wolf-cut/curly/short/female-side.png",
+            "from": "wolf-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:back": {
+            "file": "wolf-cut/curly/short/female-back.png",
+            "from": "wolf-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:front": {
+            "file": "wolf-cut/curly/female-front.png",
+            "from": "wolf-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:half": {
+            "file": "wolf-cut/curly/female-half.png",
+            "from": "wolf-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:side": {
+            "file": "wolf-cut/curly/female-side.png",
+            "from": "wolf-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:back": {
+            "file": "wolf-cut/curly/female-back.png",
+            "from": "wolf-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:front": {
+            "file": "wolf-cut/curly/long/female-front.png",
+            "from": "wolf-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:half": {
+            "file": "wolf-cut/curly/long/female-half.png",
+            "from": "wolf-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:side": {
+            "file": "wolf-cut/curly/long/female-side.png",
+            "from": "wolf-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:back": {
+            "file": "wolf-cut/curly/long/female-back.png",
+            "from": "wolf-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          }
         }
       },
       "coily": {
@@ -2521,6 +2676,159 @@
               "width": 512,
               "height": 512
             }
+          },
+          "lengths": {
+            "file": "wolf-cut/coily/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa903c3/HBYl2A8qIRgqxUMWZrU1h_ZS8xx6Yz.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 3 grid containing 12 views of the same mannequin: 3 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Wolf Cut to every mannequin.\n\nAll 12 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 12 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Wolf Cut\nHair color: Natural black — #131110\nHair type: Type 4A–4C coily\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 3 rows are the same haircut worn at 3 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Short: roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim\nRow 2 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 3 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 3 lengths, not 3 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Wolf Cut while maintaining the same mannequin and presentation across all 12 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "short:front": 0.12945281965382469,
+              "short:half": 0.1366108319374651,
+              "short:side": 0.18331937465103293,
+              "short:back": 0.24450586264656615,
+              "medium:front": 0.20218034617532105,
+              "medium:half": 0.2007816862088219,
+              "medium:side": 0.25437744276940255,
+              "medium:back": 0.34286711334450026,
+              "long:front": 0.3006672250139587,
+              "long:half": 0.2850670016750419,
+              "long:side": 0.32587939698492463,
+              "long:back": 0.44224455611390284
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.1734722222222222,
+                0.25005164712451144,
+                0.33846454494695705
+              ],
+              "ratios": [
+                1.4414506479555507,
+                1.353578546029017
+              ],
+              "spread": 1.9511166722322588,
+              "flat": []
+            }
+          },
+          "short:front": {
+            "file": "wolf-cut/coily/short/female-front.png",
+            "from": "wolf-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:half": {
+            "file": "wolf-cut/coily/short/female-half.png",
+            "from": "wolf-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:side": {
+            "file": "wolf-cut/coily/short/female-side.png",
+            "from": "wolf-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:back": {
+            "file": "wolf-cut/coily/short/female-back.png",
+            "from": "wolf-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:front": {
+            "file": "wolf-cut/coily/female-front.png",
+            "from": "wolf-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:half": {
+            "file": "wolf-cut/coily/female-half.png",
+            "from": "wolf-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:side": {
+            "file": "wolf-cut/coily/female-side.png",
+            "from": "wolf-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:back": {
+            "file": "wolf-cut/coily/female-back.png",
+            "from": "wolf-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:front": {
+            "file": "wolf-cut/coily/long/female-front.png",
+            "from": "wolf-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:half": {
+            "file": "wolf-cut/coily/long/female-half.png",
+            "from": "wolf-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:side": {
+            "file": "wolf-cut/coily/long/female-side.png",
+            "from": "wolf-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:back": {
+            "file": "wolf-cut/coily/long/female-back.png",
+            "from": "wolf-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
           }
         }
       },
@@ -2731,6 +3039,161 @@
               "height": 597
             }
           }
+        },
+        "female": {
+          "lengths": {
+            "file": "wolf-cut/wavy/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa903a9/M0rLYcMBxPffIpaG6VoO0_LSF9wHT2.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 3 grid containing 12 views of the same mannequin: 3 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Wolf Cut to every mannequin.\n\nAll 12 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 12 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Wolf Cut\nHair color: Espresso brown — #33231B\nHair type: Type 2A–2C wavy\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 3 rows are the same haircut worn at 3 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Short: roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim\nRow 2 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 3 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 3 lengths, not 3 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Wolf Cut while maintaining the same mannequin and presentation across all 12 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "short:front": 0.1441457286432161,
+              "short:half": 0.15568118369625908,
+              "short:side": 0.20983807928531548,
+              "short:back": 0.28421552205471806,
+              "medium:front": 0.214321608040201,
+              "medium:half": 0.21699888330541597,
+              "medium:side": 0.2660636515912898,
+              "medium:back": 0.34935231714126186,
+              "long:front": 0.2877833612506979,
+              "long:half": 0.28510887772194304,
+              "long:side": 0.3187269681742044,
+              "long:back": 0.4233305415968733
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.19847012841987716,
+                0.26168411501954214,
+                0.3287374371859297
+              ],
+              "ratios": [
+                1.31850630169358,
+                1.2562376480566277
+              ],
+              "spread": 1.6563572553873855,
+              "flat": []
+            }
+          },
+          "short:front": {
+            "file": "wolf-cut/wavy/short/female-front.png",
+            "from": "wolf-cut/wavy/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:half": {
+            "file": "wolf-cut/wavy/short/female-half.png",
+            "from": "wolf-cut/wavy/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:side": {
+            "file": "wolf-cut/wavy/short/female-side.png",
+            "from": "wolf-cut/wavy/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:back": {
+            "file": "wolf-cut/wavy/short/female-back.png",
+            "from": "wolf-cut/wavy/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:front": {
+            "file": "wolf-cut/wavy/female-front.png",
+            "from": "wolf-cut/wavy/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:half": {
+            "file": "wolf-cut/wavy/female-half.png",
+            "from": "wolf-cut/wavy/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:side": {
+            "file": "wolf-cut/wavy/female-side.png",
+            "from": "wolf-cut/wavy/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:back": {
+            "file": "wolf-cut/wavy/female-back.png",
+            "from": "wolf-cut/wavy/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:front": {
+            "file": "wolf-cut/wavy/long/female-front.png",
+            "from": "wolf-cut/wavy/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:half": {
+            "file": "wolf-cut/wavy/long/female-half.png",
+            "from": "wolf-cut/wavy/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:side": {
+            "file": "wolf-cut/wavy/long/female-side.png",
+            "from": "wolf-cut/wavy/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:back": {
+            "file": "wolf-cut/wavy/long/female-back.png",
+            "from": "wolf-cut/wavy/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          }
         }
       },
       "straight": {
@@ -2881,6 +3344,161 @@
           "long:back": {
             "file": "wolf-cut/straight/long/male-back.png",
             "from": "wolf-cut/straight/male-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          }
+        },
+        "female": {
+          "lengths": {
+            "file": "wolf-cut/straight/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa903bf/-QmFioYqKJTHREaTSHGLj_ChGrs0Tc.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 3 grid containing 12 views of the same mannequin: 3 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Wolf Cut to every mannequin.\n\nAll 12 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 12 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Wolf Cut\nHair color: Espresso brown — #33231B\nHair type: Type 1 straight\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 3 rows are the same haircut worn at 3 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Short: roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim\nRow 2 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 3 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 3 lengths, not 3 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Wolf Cut while maintaining the same mannequin and presentation across all 12 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "short:front": 0.1576996091568956,
+              "short:half": 0.16652987158012283,
+              "short:side": 0.21783640424343942,
+              "short:back": 0.29220547180346174,
+              "medium:front": 0.25631490787269684,
+              "medium:half": 0.24731155778894473,
+              "medium:side": 0.2930820770519263,
+              "medium:back": 0.3982635399218314,
+              "long:front": 0.29486599664991625,
+              "long:half": 0.2899776661083194,
+              "long:side": 0.3283277498604132,
+              "long:back": 0.4315968732551647
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.20856783919597988,
+                0.29874302065884983,
+                0.33619207146845337
+              ],
+              "ratios": [
+                1.4323542009664167,
+                1.125355399858424
+              ],
+              "spread": 1.6119075345674552,
+              "flat": []
+            }
+          },
+          "short:front": {
+            "file": "wolf-cut/straight/short/female-front.png",
+            "from": "wolf-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:half": {
+            "file": "wolf-cut/straight/short/female-half.png",
+            "from": "wolf-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:side": {
+            "file": "wolf-cut/straight/short/female-side.png",
+            "from": "wolf-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:back": {
+            "file": "wolf-cut/straight/short/female-back.png",
+            "from": "wolf-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:front": {
+            "file": "wolf-cut/straight/female-front.png",
+            "from": "wolf-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:half": {
+            "file": "wolf-cut/straight/female-half.png",
+            "from": "wolf-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:side": {
+            "file": "wolf-cut/straight/female-side.png",
+            "from": "wolf-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:back": {
+            "file": "wolf-cut/straight/female-back.png",
+            "from": "wolf-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:front": {
+            "file": "wolf-cut/straight/long/female-front.png",
+            "from": "wolf-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:half": {
+            "file": "wolf-cut/straight/long/female-half.png",
+            "from": "wolf-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:side": {
+            "file": "wolf-cut/straight/long/female-side.png",
+            "from": "wolf-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:back": {
+            "file": "wolf-cut/straight/long/female-back.png",
+            "from": "wolf-cut/straight/female-lengths.png",
             "crop": {
               "x": 1800,
               "y": 1195,
@@ -8274,6 +8892,161 @@
               "height": 597
             }
           }
+        },
+        "female": {
+          "lengths": {
+            "file": "modern-mullet/curly/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa90360/hLrhwOPRfL39Zl9am2idt_B5OahnnL.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 3 grid containing 12 views of the same mannequin: 3 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Modern Mullet to every mannequin.\n\nAll 12 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 12 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Modern Mullet\nHair color: Natural black — #131110\nHair type: Type 3A–3B curly\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 3 rows are the same haircut worn at 3 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Short: roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim\nRow 2 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 3 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 3 lengths, not 3 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Modern Mullet while maintaining the same mannequin and presentation across all 12 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "short:front": 0.12197096594081519,
+              "short:half": 0.13247068676716917,
+              "short:side": 0.19944165270798436,
+              "short:back": 0.27068397543271916,
+              "medium:front": 0.1759463986599665,
+              "medium:half": 0.18529592406476827,
+              "medium:side": 0.24731714126186488,
+              "medium:back": 0.3659771077610274,
+              "long:front": 0.2995142378559464,
+              "long:half": 0.2804466778336125,
+              "long:side": 0.34751256281407034,
+              "long:back": 0.4575600223338917
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.18114182021217196,
+                0.24363414293690677,
+                0.3462583752093802
+              ],
+              "ratios": [
+                1.3449911381675275,
+                1.4212227031703422
+              ],
+              "spread": 1.9115319411266085,
+              "flat": []
+            }
+          },
+          "short:front": {
+            "file": "modern-mullet/curly/short/female-front.png",
+            "from": "modern-mullet/curly/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:half": {
+            "file": "modern-mullet/curly/short/female-half.png",
+            "from": "modern-mullet/curly/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:side": {
+            "file": "modern-mullet/curly/short/female-side.png",
+            "from": "modern-mullet/curly/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:back": {
+            "file": "modern-mullet/curly/short/female-back.png",
+            "from": "modern-mullet/curly/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:front": {
+            "file": "modern-mullet/curly/female-front.png",
+            "from": "modern-mullet/curly/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:half": {
+            "file": "modern-mullet/curly/female-half.png",
+            "from": "modern-mullet/curly/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:side": {
+            "file": "modern-mullet/curly/female-side.png",
+            "from": "modern-mullet/curly/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:back": {
+            "file": "modern-mullet/curly/female-back.png",
+            "from": "modern-mullet/curly/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:front": {
+            "file": "modern-mullet/curly/long/female-front.png",
+            "from": "modern-mullet/curly/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:half": {
+            "file": "modern-mullet/curly/long/female-half.png",
+            "from": "modern-mullet/curly/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:side": {
+            "file": "modern-mullet/curly/long/female-side.png",
+            "from": "modern-mullet/curly/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:back": {
+            "file": "modern-mullet/curly/long/female-back.png",
+            "from": "modern-mullet/curly/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          }
         }
       },
       "coily": {
@@ -8536,6 +9309,159 @@
               "width": 512,
               "height": 512
             }
+          },
+          "lengths": {
+            "file": "modern-mullet/coily/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa90382/ARu1G_fN9CI6m84dqfHKD_EHArT69o.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 3 grid containing 12 views of the same mannequin: 3 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Modern Mullet to every mannequin.\n\nAll 12 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 12 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Modern Mullet\nHair color: Natural black — #131110\nHair type: Type 4A–4C coily\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 3 rows are the same haircut worn at 3 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Short: roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim\nRow 2 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 3 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 3 lengths, not 3 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Modern Mullet while maintaining the same mannequin and presentation across all 12 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "short:front": 0.08476549413735343,
+              "short:half": 0.08837800111669458,
+              "short:side": 0.15385817978782804,
+              "short:back": 0.23152707984366275,
+              "medium:front": 0.10435790061418203,
+              "medium:half": 0.11331658291457286,
+              "medium:side": 0.19917643774427693,
+              "medium:back": 0.30130932439977665,
+              "long:front": 0.17132607481853712,
+              "long:half": 0.18665829145728643,
+              "long:side": 0.26215242881072026,
+              "long:back": 0.4084310441094361
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.1396321887213847,
+                0.1795400614182021,
+                0.25714195979899496
+              ],
+              "ratios": [
+                1.2858071126883763,
+                1.4322260879706117
+              ],
+              "spread": 1.8415664908904605,
+              "flat": []
+            }
+          },
+          "short:front": {
+            "file": "modern-mullet/coily/short/female-front.png",
+            "from": "modern-mullet/coily/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:half": {
+            "file": "modern-mullet/coily/short/female-half.png",
+            "from": "modern-mullet/coily/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:side": {
+            "file": "modern-mullet/coily/short/female-side.png",
+            "from": "modern-mullet/coily/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:back": {
+            "file": "modern-mullet/coily/short/female-back.png",
+            "from": "modern-mullet/coily/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:front": {
+            "file": "modern-mullet/coily/female-front.png",
+            "from": "modern-mullet/coily/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:half": {
+            "file": "modern-mullet/coily/female-half.png",
+            "from": "modern-mullet/coily/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:side": {
+            "file": "modern-mullet/coily/female-side.png",
+            "from": "modern-mullet/coily/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:back": {
+            "file": "modern-mullet/coily/female-back.png",
+            "from": "modern-mullet/coily/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:front": {
+            "file": "modern-mullet/coily/long/female-front.png",
+            "from": "modern-mullet/coily/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:half": {
+            "file": "modern-mullet/coily/long/female-half.png",
+            "from": "modern-mullet/coily/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:side": {
+            "file": "modern-mullet/coily/long/female-side.png",
+            "from": "modern-mullet/coily/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:back": {
+            "file": "modern-mullet/coily/long/female-back.png",
+            "from": "modern-mullet/coily/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
           }
         }
       },
@@ -8746,6 +9672,161 @@
               "height": 597
             }
           }
+        },
+        "female": {
+          "lengths": {
+            "file": "modern-mullet/wavy/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa90360/tjsHmKMWFZ_v0fuHyP6dx_0HudlfFX.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 3 grid containing 12 views of the same mannequin: 3 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Modern Mullet to every mannequin.\n\nAll 12 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 12 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Modern Mullet\nHair color: Espresso brown — #33231B\nHair type: Type 2A–2C wavy\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 3 rows are the same haircut worn at 3 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Short: roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim\nRow 2 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 3 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 3 lengths, not 3 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Modern Mullet while maintaining the same mannequin and presentation across all 12 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "short:front": 0.12863484087102178,
+              "short:half": 0.1420044667783361,
+              "short:side": 0.20049134561697377,
+              "short:back": 0.2538553880513679,
+              "medium:front": 0.15190954773869347,
+              "medium:half": 0.1634003350083752,
+              "medium:side": 0.2284031267448353,
+              "medium:back": 0.32017029592406476,
+              "long:front": 0.253964265773311,
+              "long:half": 0.23750139586823005,
+              "long:side": 0.2992825237297599,
+              "long:back": 0.4333137911781128
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.1812465103294249,
+                0.21597082635399217,
+                0.30601549413735346
+              ],
+              "ratios": [
+                1.1915861219145905,
+                1.416929773819411
+              ],
+              "spread": 1.68839385421079,
+              "flat": []
+            }
+          },
+          "short:front": {
+            "file": "modern-mullet/wavy/short/female-front.png",
+            "from": "modern-mullet/wavy/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:half": {
+            "file": "modern-mullet/wavy/short/female-half.png",
+            "from": "modern-mullet/wavy/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:side": {
+            "file": "modern-mullet/wavy/short/female-side.png",
+            "from": "modern-mullet/wavy/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:back": {
+            "file": "modern-mullet/wavy/short/female-back.png",
+            "from": "modern-mullet/wavy/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:front": {
+            "file": "modern-mullet/wavy/female-front.png",
+            "from": "modern-mullet/wavy/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:half": {
+            "file": "modern-mullet/wavy/female-half.png",
+            "from": "modern-mullet/wavy/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:side": {
+            "file": "modern-mullet/wavy/female-side.png",
+            "from": "modern-mullet/wavy/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:back": {
+            "file": "modern-mullet/wavy/female-back.png",
+            "from": "modern-mullet/wavy/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:front": {
+            "file": "modern-mullet/wavy/long/female-front.png",
+            "from": "modern-mullet/wavy/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:half": {
+            "file": "modern-mullet/wavy/long/female-half.png",
+            "from": "modern-mullet/wavy/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:side": {
+            "file": "modern-mullet/wavy/long/female-side.png",
+            "from": "modern-mullet/wavy/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:back": {
+            "file": "modern-mullet/wavy/long/female-back.png",
+            "from": "modern-mullet/wavy/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          }
         }
       },
       "straight": {
@@ -8896,6 +9977,163 @@
           "long:back": {
             "file": "modern-mullet/straight/long/male-back.png",
             "from": "modern-mullet/straight/male-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          }
+        },
+        "female": {
+          "lengths": {
+            "file": "modern-mullet/straight/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa90360/_dLvV6WSyLDM-n88HU01O_t5ri9M1m.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 3 grid containing 12 views of the same mannequin: 3 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Modern Mullet to every mannequin.\n\nAll 12 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 12 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Modern Mullet\nHair color: Espresso brown — #33231B\nHair type: Type 1 straight\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 3 rows are the same haircut worn at 3 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Short: roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim\nRow 2 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 3 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 3 lengths, not 3 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Modern Mullet while maintaining the same mannequin and presentation across all 12 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "short:front": 0.12568397543271914,
+              "short:half": 0.13463707426018984,
+              "short:side": 0.1902819653824679,
+              "short:back": 0.2611948632049135,
+              "medium:front": 0.1822752652149637,
+              "medium:half": 0.18367950865438304,
+              "medium:side": 0.2575879396984925,
+              "medium:back": 0.37290898939140144,
+              "long:front": 0.2044611948632049,
+              "long:half": 0.19558068118369626,
+              "long:side": 0.26164433277498605,
+              "long:back": 0.38091568955890565
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.17794946957007257,
+                0.24911292573981014,
+                0.2606504745951982
+              ],
+              "ratios": [
+                1.399908223057192,
+                1.0463145331424457
+              ],
+              "spread": 1.4647443188503564,
+              "flat": [
+                "long"
+              ]
+            }
+          },
+          "short:front": {
+            "file": "modern-mullet/straight/short/female-front.png",
+            "from": "modern-mullet/straight/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:half": {
+            "file": "modern-mullet/straight/short/female-half.png",
+            "from": "modern-mullet/straight/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:side": {
+            "file": "modern-mullet/straight/short/female-side.png",
+            "from": "modern-mullet/straight/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:back": {
+            "file": "modern-mullet/straight/short/female-back.png",
+            "from": "modern-mullet/straight/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:front": {
+            "file": "modern-mullet/straight/female-front.png",
+            "from": "modern-mullet/straight/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:half": {
+            "file": "modern-mullet/straight/female-half.png",
+            "from": "modern-mullet/straight/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:side": {
+            "file": "modern-mullet/straight/female-side.png",
+            "from": "modern-mullet/straight/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:back": {
+            "file": "modern-mullet/straight/female-back.png",
+            "from": "modern-mullet/straight/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:front": {
+            "file": "modern-mullet/straight/long/female-front.png",
+            "from": "modern-mullet/straight/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:half": {
+            "file": "modern-mullet/straight/long/female-half.png",
+            "from": "modern-mullet/straight/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:side": {
+            "file": "modern-mullet/straight/long/female-side.png",
+            "from": "modern-mullet/straight/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:back": {
+            "file": "modern-mullet/straight/long/female-back.png",
+            "from": "modern-mullet/straight/female-lengths.png",
             "crop": {
               "x": 1800,
               "y": 1195,
@@ -10609,6 +11847,454 @@
               "width": 512,
               "height": 512
             }
+          },
+          "lengths": {
+            "file": "long-layers/coily/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa9030b/nVLL-ZJSO4oBwRUa0b60M_6BVibALa.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 2 grid containing 8 views of the same mannequin: 2 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Long Layers to every mannequin.\n\nAll 8 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 8 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Long Layers\nHair color: Natural black — #131110\nHair type: Type 4A–4C coily\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 2 rows are the same haircut worn at 2 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 2 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 2 lengths, not 2 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Long Layers while maintaining the same mannequin and presentation across all 8 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "medium:front": 0.3009895833333333,
+              "medium:half": 0.27649305555555553,
+              "medium:side": 0.30429591049382715,
+              "medium:back": 0.4484297839506173,
+              "long:front": 0.3661323302469136,
+              "long:half": 0.35226851851851854,
+              "long:side": 0.35963734567901234,
+              "long:back": 0.5164834104938272
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.3325520833333333,
+                0.3986304012345679
+              ],
+              "ratios": [
+                1.1987006583717625
+              ],
+              "spread": 1.1987006583717625,
+              "flat": [
+                "long"
+              ]
+            }
+          },
+          "medium:front": {
+            "file": "long-layers/coily/female-front.png",
+            "from": "long-layers/coily/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:half": {
+            "file": "long-layers/coily/female-half.png",
+            "from": "long-layers/coily/female-lengths.png",
+            "crop": {
+              "x": 720,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:side": {
+            "file": "long-layers/coily/female-side.png",
+            "from": "long-layers/coily/female-lengths.png",
+            "crop": {
+              "x": 1440,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:back": {
+            "file": "long-layers/coily/female-back.png",
+            "from": "long-layers/coily/female-lengths.png",
+            "crop": {
+              "x": 2160,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "long:front": {
+            "file": "long-layers/coily/long/female-front.png",
+            "from": "long-layers/coily/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "long:half": {
+            "file": "long-layers/coily/long/female-half.png",
+            "from": "long-layers/coily/female-lengths.png",
+            "crop": {
+              "x": 720,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "long:side": {
+            "file": "long-layers/coily/long/female-side.png",
+            "from": "long-layers/coily/female-lengths.png",
+            "crop": {
+              "x": 1440,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "long:back": {
+            "file": "long-layers/coily/long/female-back.png",
+            "from": "long-layers/coily/female-lengths.png",
+            "crop": {
+              "x": 2160,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          }
+        }
+      },
+      "curly": {
+        "female": {
+          "lengths": {
+            "file": "long-layers/curly/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa90302/AUnSSEUwmCvOyi9mWdpjK_fHgQ2qov.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 2 grid containing 8 views of the same mannequin: 2 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Long Layers to every mannequin.\n\nAll 8 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 8 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Long Layers\nHair color: Natural black — #131110\nHair type: Type 3A–3B curly\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 2 rows are the same haircut worn at 2 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 2 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 2 lengths, not 2 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Long Layers while maintaining the same mannequin and presentation across all 8 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "medium:front": 0.2783526234567901,
+              "medium:half": 0.2789641203703704,
+              "medium:side": 0.3205189043209877,
+              "medium:back": 0.41671875,
+              "long:front": 0.34432291666666665,
+              "long:half": 0.36007523148148146,
+              "long:side": 0.391923225308642,
+              "long:back": 0.47985532407407405
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.32363859953703705,
+                0.394044174382716
+              ],
+              "ratios": [
+                1.2175438125934102
+              ],
+              "spread": 1.2175438125934102,
+              "flat": [
+                "long"
+              ]
+            }
+          },
+          "medium:front": {
+            "file": "long-layers/curly/female-front.png",
+            "from": "long-layers/curly/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:half": {
+            "file": "long-layers/curly/female-half.png",
+            "from": "long-layers/curly/female-lengths.png",
+            "crop": {
+              "x": 720,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:side": {
+            "file": "long-layers/curly/female-side.png",
+            "from": "long-layers/curly/female-lengths.png",
+            "crop": {
+              "x": 1440,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:back": {
+            "file": "long-layers/curly/female-back.png",
+            "from": "long-layers/curly/female-lengths.png",
+            "crop": {
+              "x": 2160,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "long:front": {
+            "file": "long-layers/curly/long/female-front.png",
+            "from": "long-layers/curly/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "long:half": {
+            "file": "long-layers/curly/long/female-half.png",
+            "from": "long-layers/curly/female-lengths.png",
+            "crop": {
+              "x": 720,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "long:side": {
+            "file": "long-layers/curly/long/female-side.png",
+            "from": "long-layers/curly/female-lengths.png",
+            "crop": {
+              "x": 1440,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "long:back": {
+            "file": "long-layers/curly/long/female-back.png",
+            "from": "long-layers/curly/female-lengths.png",
+            "crop": {
+              "x": 2160,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          }
+        }
+      },
+      "wavy": {
+        "female": {
+          "lengths": {
+            "file": "long-layers/wavy/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa90302/02AxLebwDdClhpqQXLDQK_bbBPURbE.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 2 grid containing 8 views of the same mannequin: 2 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Long Layers to every mannequin.\n\nAll 8 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 8 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Long Layers\nHair color: Espresso brown — #33231B\nHair type: Type 2A–2C wavy\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 2 rows are the same haircut worn at 2 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 2 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 2 lengths, not 2 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Long Layers while maintaining the same mannequin and presentation across all 8 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "medium:front": 0.2614969135802469,
+              "medium:half": 0.26927854938271606,
+              "medium:side": 0.32317515432098765,
+              "medium:back": 0.42407407407407405,
+              "long:front": 0.27121141975308644,
+              "long:half": 0.3049151234567901,
+              "long:side": 0.3489158950617284,
+              "long:back": 0.42554783950617286
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.31950617283950616,
+                0.33764756944444446
+              ],
+              "ratios": [
+                1.0567794870556415
+              ],
+              "spread": 1.0567794870556415,
+              "flat": [
+                "long"
+              ]
+            }
+          },
+          "medium:front": {
+            "file": "long-layers/wavy/female-front.png",
+            "from": "long-layers/wavy/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:half": {
+            "file": "long-layers/wavy/female-half.png",
+            "from": "long-layers/wavy/female-lengths.png",
+            "crop": {
+              "x": 720,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:side": {
+            "file": "long-layers/wavy/female-side.png",
+            "from": "long-layers/wavy/female-lengths.png",
+            "crop": {
+              "x": 1440,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:back": {
+            "file": "long-layers/wavy/female-back.png",
+            "from": "long-layers/wavy/female-lengths.png",
+            "crop": {
+              "x": 2160,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "long:front": {
+            "file": "long-layers/wavy/long/female-front.png",
+            "from": "long-layers/wavy/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "long:half": {
+            "file": "long-layers/wavy/long/female-half.png",
+            "from": "long-layers/wavy/female-lengths.png",
+            "crop": {
+              "x": 720,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "long:side": {
+            "file": "long-layers/wavy/long/female-side.png",
+            "from": "long-layers/wavy/female-lengths.png",
+            "crop": {
+              "x": 1440,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "long:back": {
+            "file": "long-layers/wavy/long/female-back.png",
+            "from": "long-layers/wavy/female-lengths.png",
+            "crop": {
+              "x": 2160,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          }
+        }
+      },
+      "straight": {
+        "female": {
+          "lengths": {
+            "file": "long-layers/straight/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa90302/g_JUx6ULJxde9__Z_1ufN_lCjBtlaW.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 2 grid containing 8 views of the same mannequin: 2 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Long Layers to every mannequin.\n\nAll 8 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 8 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Long Layers\nHair color: Espresso brown — #33231B\nHair type: Type 1 straight\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 2 rows are the same haircut worn at 2 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 2 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 2 lengths, not 2 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Long Layers while maintaining the same mannequin and presentation across all 8 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "medium:front": 0.28956970687984496,
+              "medium:half": 0.3092428991036822,
+              "medium:side": 0.37835362160852715,
+              "medium:back": 0.44427537548449614,
+              "long:front": 0.28606089510658916,
+              "long:half": 0.3158725472383721,
+              "long:side": 0.35886590055717055,
+              "long:back": 0.4272479863129845
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.3553604007691376,
+                0.3470118323037791
+              ],
+              "ratios": [
+                0.9765067563879121
+              ],
+              "spread": 0.9765067563879121,
+              "flat": [
+                "long"
+              ]
+            }
+          },
+          "medium:front": {
+            "file": "long-layers/straight/female-front.png",
+            "from": "long-layers/straight/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "medium:half": {
+            "file": "long-layers/straight/female-half.png",
+            "from": "long-layers/straight/female-lengths.png",
+            "crop": {
+              "x": 688,
+              "y": 0,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "medium:side": {
+            "file": "long-layers/straight/female-side.png",
+            "from": "long-layers/straight/female-lengths.png",
+            "crop": {
+              "x": 1376,
+              "y": 0,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "medium:back": {
+            "file": "long-layers/straight/female-back.png",
+            "from": "long-layers/straight/female-lengths.png",
+            "crop": {
+              "x": 2064,
+              "y": 0,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "long:front": {
+            "file": "long-layers/straight/long/female-front.png",
+            "from": "long-layers/straight/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 768,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "long:half": {
+            "file": "long-layers/straight/long/female-half.png",
+            "from": "long-layers/straight/female-lengths.png",
+            "crop": {
+              "x": 688,
+              "y": 768,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "long:side": {
+            "file": "long-layers/straight/long/female-side.png",
+            "from": "long-layers/straight/female-lengths.png",
+            "crop": {
+              "x": 1376,
+              "y": 768,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "long:back": {
+            "file": "long-layers/straight/long/female-back.png",
+            "from": "long-layers/straight/female-lengths.png",
+            "crop": {
+              "x": 2064,
+              "y": 768,
+              "width": 688,
+              "height": 768
+            }
           }
         }
       }
@@ -10666,6 +12352,159 @@
               "y": 512,
               "width": 512,
               "height": 512
+            }
+          },
+          "lengths": {
+            "file": "loose-curls/any/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa90353/mAp48OvvSdDyG2Y2kMhBM_RtfboAct.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 3 grid containing 12 views of the same mannequin: 3 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Loose Curls to every mannequin.\n\nAll 12 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 12 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Loose Curls\nHair color: Espresso brown — #33231B\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 3 rows are the same haircut worn at 3 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Short: roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim\nRow 2 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 3 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 3 lengths, not 3 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Loose Curls while maintaining the same mannequin and presentation across all 12 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "short:front": 0.11183696259073143,
+              "short:half": 0.11575097710776103,
+              "short:side": 0.17609436069235065,
+              "short:back": 0.2610636515912898,
+              "medium:front": 0.2320072585147962,
+              "medium:half": 0.21898101619207147,
+              "medium:side": 0.24638749302065885,
+              "medium:back": 0.43618369625907316,
+              "long:front": 0.3709352317141262,
+              "long:half": 0.33540480178671134,
+              "long:side": 0.3142350642099386,
+              "long:back": 0.5701591289782244
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.1661864879955332,
+                0.28338986599664995,
+                0.39768355667225014
+              ],
+              "ratios": [
+                1.7052521502486229,
+                1.4033090254432432
+              ],
+              "spread": 2.39299573310039,
+              "flat": []
+            }
+          },
+          "short:front": {
+            "file": "loose-curls/any/short/female-front.png",
+            "from": "loose-curls/any/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:half": {
+            "file": "loose-curls/any/short/female-half.png",
+            "from": "loose-curls/any/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:side": {
+            "file": "loose-curls/any/short/female-side.png",
+            "from": "loose-curls/any/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:back": {
+            "file": "loose-curls/any/short/female-back.png",
+            "from": "loose-curls/any/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:front": {
+            "file": "loose-curls/any/female-front.png",
+            "from": "loose-curls/any/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:half": {
+            "file": "loose-curls/any/female-half.png",
+            "from": "loose-curls/any/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:side": {
+            "file": "loose-curls/any/female-side.png",
+            "from": "loose-curls/any/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:back": {
+            "file": "loose-curls/any/female-back.png",
+            "from": "loose-curls/any/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:front": {
+            "file": "loose-curls/any/long/female-front.png",
+            "from": "loose-curls/any/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:half": {
+            "file": "loose-curls/any/long/female-half.png",
+            "from": "loose-curls/any/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:side": {
+            "file": "loose-curls/any/long/female-side.png",
+            "from": "loose-curls/any/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:back": {
+            "file": "loose-curls/any/long/female-back.png",
+            "from": "loose-curls/any/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 1195,
+              "width": 600,
+              "height": 597
             }
           }
         }
@@ -11308,6 +13147,159 @@
               "width": 512,
               "height": 512
             }
+          },
+          "lengths": {
+            "file": "sleek-straight/any/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa9039d/iACW9xWKTFwMOQ9-AFJS4_Lp71uzel.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 3 grid containing 12 views of the same mannequin: 3 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Sleek & Straight to every mannequin.\n\nAll 12 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 12 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Sleek & Straight\nHair color: Espresso brown — #33231B\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 3 rows are the same haircut worn at 3 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Short: roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim\nRow 2 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\nRow 3 (top to bottom) — Long: roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension\n\nThis is one haircut at 3 lengths, not 3 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Sleek & Straight while maintaining the same mannequin and presentation across all 12 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "short:front": 0.09809882747068677,
+              "short:half": 0.10092685650474595,
+              "short:side": 0.16103294249022893,
+              "short:back": 0.23440256839754328,
+              "medium:front": 0.22013679508654382,
+              "medium:half": 0.19898380792853154,
+              "medium:side": 0.24724176437744277,
+              "medium:back": 0.3790926856504746,
+              "long:front": 0.2632356225572306,
+              "long:half": 0.21264656616415412,
+              "long:side": 0.28849525404801785,
+              "long:back": 0.4360887772194305
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.14861529871580123,
+                0.26136376326074817,
+                0.30011655499720824
+              ],
+              "ratios": [
+                1.7586598790246835,
+                1.1482714790029962
+              ],
+              "spread": 2.0194189803509035,
+              "flat": []
+            }
+          },
+          "short:front": {
+            "file": "sleek-straight/any/short/female-front.png",
+            "from": "sleek-straight/any/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:half": {
+            "file": "sleek-straight/any/short/female-half.png",
+            "from": "sleek-straight/any/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:side": {
+            "file": "sleek-straight/any/short/female-side.png",
+            "from": "sleek-straight/any/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "short:back": {
+            "file": "sleek-straight/any/short/female-back.png",
+            "from": "sleek-straight/any/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 0,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:front": {
+            "file": "sleek-straight/any/female-front.png",
+            "from": "sleek-straight/any/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:half": {
+            "file": "sleek-straight/any/female-half.png",
+            "from": "sleek-straight/any/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:side": {
+            "file": "sleek-straight/any/female-side.png",
+            "from": "sleek-straight/any/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "medium:back": {
+            "file": "sleek-straight/any/female-back.png",
+            "from": "sleek-straight/any/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 597,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:front": {
+            "file": "sleek-straight/any/long/female-front.png",
+            "from": "sleek-straight/any/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:half": {
+            "file": "sleek-straight/any/long/female-half.png",
+            "from": "sleek-straight/any/female-lengths.png",
+            "crop": {
+              "x": 600,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:side": {
+            "file": "sleek-straight/any/long/female-side.png",
+            "from": "sleek-straight/any/female-lengths.png",
+            "crop": {
+              "x": 1200,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
+          },
+          "long:back": {
+            "file": "sleek-straight/any/long/female-back.png",
+            "from": "sleek-straight/any/female-lengths.png",
+            "crop": {
+              "x": 1800,
+              "y": 1195,
+              "width": 600,
+              "height": 597
+            }
           }
         }
       }
@@ -11365,6 +13357,341 @@
               "y": 512,
               "width": 512,
               "height": 512
+            }
+          },
+          "lengths": {
+            "file": "pixie-cut/coily/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa9038d/nuBAbGFM_1n43txE-QbL8_GG9pg60C.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 2 grid containing 8 views of the same mannequin: 2 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Pixie Cut to every mannequin.\n\nAll 8 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 8 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Pixie Cut\nHair color: Natural black — #131110\nHair type: Type 4A–4C coily\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 2 rows are the same haircut worn at 2 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Short: roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim\nRow 2 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\n\nThis is one haircut at 2 lengths, not 2 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Pixie Cut while maintaining the same mannequin and presentation across all 8 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "short:front": 0.07409143518518518,
+              "short:half": 0.07783179012345678,
+              "short:side": 0.14494212962962963,
+              "short:back": 0.19722800925925926,
+              "medium:front": 0.10209297839506173,
+              "medium:half": 0.1092457561728395,
+              "medium:side": 0.17349729938271605,
+              "medium:back": 0.23180555555555554
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.12352334104938271,
+                0.1541603973765432
+              ],
+              "ratios": [
+                1.2480264544893767
+              ],
+              "spread": 1.2480264544893767,
+              "flat": [
+                "medium"
+              ]
+            }
+          },
+          "short:front": {
+            "file": "pixie-cut/coily/short/female-front.png",
+            "from": "pixie-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "short:half": {
+            "file": "pixie-cut/coily/short/female-half.png",
+            "from": "pixie-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 720,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "short:side": {
+            "file": "pixie-cut/coily/short/female-side.png",
+            "from": "pixie-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 1440,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "short:back": {
+            "file": "pixie-cut/coily/short/female-back.png",
+            "from": "pixie-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 2160,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:front": {
+            "file": "pixie-cut/coily/female-front.png",
+            "from": "pixie-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:half": {
+            "file": "pixie-cut/coily/female-half.png",
+            "from": "pixie-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 720,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:side": {
+            "file": "pixie-cut/coily/female-side.png",
+            "from": "pixie-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 1440,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:back": {
+            "file": "pixie-cut/coily/female-back.png",
+            "from": "pixie-cut/coily/female-lengths.png",
+            "crop": {
+              "x": 2160,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          }
+        }
+      },
+      "curly": {
+        "female": {
+          "lengths": {
+            "file": "pixie-cut/curly/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa9038d/aOyeN-z2r84eBd4G4sav-_ugORnX1w.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 2 grid containing 8 views of the same mannequin: 2 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Pixie Cut to every mannequin.\n\nAll 8 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 8 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Pixie Cut\nHair color: Natural black — #131110\nHair type: Type 3A–3B curly\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 2 rows are the same haircut worn at 2 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Short: roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim\nRow 2 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\n\nThis is one haircut at 2 lengths, not 2 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Pixie Cut while maintaining the same mannequin and presentation across all 8 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "short:front": 0.1103004632994186,
+              "short:half": 0.1195759144864341,
+              "short:side": 0.1856963874757752,
+              "short:back": 0.23670853015988372,
+              "medium:front": 0.1622058957122093,
+              "medium:half": 0.1699597262596899,
+              "medium:side": 0.22468318495639536,
+              "medium:back": 0.306407839752907
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.1630703238553779,
+                0.2158141616703004
+              ],
+              "ratios": [
+                1.323442282862573
+              ],
+              "spread": 1.323442282862573,
+              "flat": [
+                "medium"
+              ]
+            }
+          },
+          "short:front": {
+            "file": "pixie-cut/curly/short/female-front.png",
+            "from": "pixie-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "short:half": {
+            "file": "pixie-cut/curly/short/female-half.png",
+            "from": "pixie-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 688,
+              "y": 0,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "short:side": {
+            "file": "pixie-cut/curly/short/female-side.png",
+            "from": "pixie-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 1376,
+              "y": 0,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "short:back": {
+            "file": "pixie-cut/curly/short/female-back.png",
+            "from": "pixie-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 2064,
+              "y": 0,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "medium:front": {
+            "file": "pixie-cut/curly/female-front.png",
+            "from": "pixie-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 768,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "medium:half": {
+            "file": "pixie-cut/curly/female-half.png",
+            "from": "pixie-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 688,
+              "y": 768,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "medium:side": {
+            "file": "pixie-cut/curly/female-side.png",
+            "from": "pixie-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 1376,
+              "y": 768,
+              "width": 688,
+              "height": 768
+            }
+          },
+          "medium:back": {
+            "file": "pixie-cut/curly/female-back.png",
+            "from": "pixie-cut/curly/female-lengths.png",
+            "crop": {
+              "x": 2064,
+              "y": 768,
+              "width": 688,
+              "height": 768
+            }
+          }
+        }
+      },
+      "straight": {
+        "female": {
+          "lengths": {
+            "file": "pixie-cut/straight/female-lengths.png",
+            "url": "https://v3b.fal.media/files/b/0aa903a4/FyZX_-ADJ8_v7-4p5G7Ia_rrQOhjZN.png",
+            "prompt": "Use the provided image as the exact visual reference. It is a 4 by 2 grid containing 8 views of the same mannequin: 2 rows of 4 views each, and every row shows the same head from the same 4 camera angles in the same order (front, half, side, back). Recreate the image while applying the requested women's Pixie Cut to every mannequin.\n\nAll 8 heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the 8 may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.\n\nHair specifications:\n\nHairstyle: women's Pixie Cut\nHair color: Espresso brown — #33231B\nHair type: Type 1 straight\nWorn by: a woman — cut, shaped and finished as a women's salon would give this haircut, never the men's version of the same name.\n\nThe 2 rows are the same haircut worn at 2 different lengths, shortest at the top and longest at the bottom:\n\nRow 1 (top to bottom) — Short: roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim\nRow 2 (top to bottom) — Medium: the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against\n\nThis is one haircut at 2 lengths, not 2 different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.\n\nThe difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely. A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable. Keeping \"the same haircut\" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row. If in doubt, exaggerate the difference between the rows rather than understate it.\n\nReading across any row, only the camera angle changes: the 4 views in a row are the same head at the same length, seen from front, half, side, back. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.\n\nReference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.\n\nDo not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.\n\nThe only meaningful change should be the hair: replace the existing hairstyle with women's Pixie Cut while maintaining the same mannequin and presentation across all 8 views.\n\nThe result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.",
+            "coverage": {
+              "short:front": 0.1013503086419753,
+              "short:half": 0.10690007716049382,
+              "short:side": 0.16433256172839505,
+              "short:back": 0.2029128086419753,
+              "medium:front": 0.13211998456790122,
+              "medium:half": 0.14172453703703702,
+              "medium:side": 0.19322145061728396,
+              "medium:back": 0.24421489197530863
+            },
+            "bald": [],
+            "contrast": {
+              "rows": [
+                0.1438739390432099,
+                0.1778202160493827
+              ],
+              "ratios": [
+                1.2359445861559242
+              ],
+              "spread": 1.2359445861559242,
+              "flat": [
+                "medium"
+              ]
+            }
+          },
+          "short:front": {
+            "file": "pixie-cut/straight/short/female-front.png",
+            "from": "pixie-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "short:half": {
+            "file": "pixie-cut/straight/short/female-half.png",
+            "from": "pixie-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 720,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "short:side": {
+            "file": "pixie-cut/straight/short/female-side.png",
+            "from": "pixie-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 1440,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "short:back": {
+            "file": "pixie-cut/straight/short/female-back.png",
+            "from": "pixie-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 2160,
+              "y": 0,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:front": {
+            "file": "pixie-cut/straight/female-front.png",
+            "from": "pixie-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 0,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:half": {
+            "file": "pixie-cut/straight/female-half.png",
+            "from": "pixie-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 720,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:side": {
+            "file": "pixie-cut/straight/female-side.png",
+            "from": "pixie-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 1440,
+              "y": 720,
+              "width": 720,
+              "height": 720
+            }
+          },
+          "medium:back": {
+            "file": "pixie-cut/straight/female-back.png",
+            "from": "pixie-cut/straight/female-lengths.png",
+            "crop": {
+              "x": 2160,
+              "y": 720,
+              "width": 720,
+              "height": 720
             }
           }
         }
