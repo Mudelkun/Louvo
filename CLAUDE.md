@@ -4,11 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-Phase 1 is built: a complete, navigable **frontend prototype**. No backend and no database —
-the catalog and everything else that would hit a server is served from mock data behind a
-simulated delay. **Preview generation is real**: with `EXPO_PUBLIC_FAL_KEY` set the app calls
-Fal.ai directly, and without it falls back to the old simulation. See `README.md` for the
-screen map and what is still simulated.
+Phase 1 is built: a complete, navigable **frontend**. Two things behind it are now real.
+
+**Preview generation.** With `EXPO_PUBLIC_FAL_KEY` set the app calls Fal.ai directly; without
+it, it falls back to the old simulation.
+
+**The catalog.** `server/` is a Node/Fastify API backed by Postgres on Railway, and the
+mannequin renders are WebP objects in Cloudflare R2 behind its CDN. With
+`EXPO_PUBLIC_API_URL` set, the app fetches its catalog and its imagery from there and caches
+both. Without it the app behaves exactly as it did in phase 1 — `mockCatalog` and the bundled
+renders — so a fresh checkout still runs with no backend, no bucket and no key. Settings
+reports which of the three the running app actually got. The reasoning, the measurements and
+the rejected options are in `docs/catalog-architecture.md`; the operational detail is in
+`server/README.md`.
+
+Still simulated: accounts, favourites and saved looks (device-local), and sharing.
 
 Commands (run from the repo root):
 
@@ -23,10 +33,17 @@ npm run mannequins -- --plan     # the length batch, one command per style — f
 npm run mannequins -- --check    # re-measure sheets on disk: bald panels, length range — free
 npm run hair-types -- --dry-run  # the hair-type picker's examples — free, no key
 npm run try-on -- --photo me.jpg --style buzz-cut --dry-run   # one preview — free with --dry-run
+
+# The catalog backend. See server/README.md.
+npm run api                   # the API in watch mode
+npm run catalog:migrate       # apply server/migrations/*.sql
+npm run catalog:publish:dry   # transcode + report; uploads nothing, writes nothing — free
+npm run catalog:publish       # metadata into Postgres, imagery into R2
 ```
 
-There is no test setup and no linter configured yet. `npm run typecheck` is the check to run
-after changes.
+There is no linter configured. `npm run typecheck` is the check to run after changes to the
+app; the server has its own (`npm --prefix server run typecheck`) plus one real test,
+`npm --prefix server run check` — the catalog round trip, described below.
 
 Reference material: `project.md` (product spec) and `App-reference.png` (the original flow
 mockup — treated as inspiration, not a spec; the implemented design departs from it).
@@ -629,9 +646,64 @@ warm tone. `findTile` and `goldBounds` are what break first if that changes.
 
 ## Where the backend plugs in
 
-`src/api/client.ts` is the only module that knows the data is mocked. It holds a `USE_MOCKS`
-flag and a `TODO(backend)` at each call site. The exported signatures are the contract the
-screens depend on — keep them stable and nothing in `app/` needs to change.
+`src/api/client.ts` is the only module that knows where the data comes from. The exported
+signatures are the contract the screens depend on — keep them stable and nothing in `app/`
+needs to change.
+
+**The catalog is real, and it has three outcomes rather than two.** `fetchCatalog()` returns
+`api` (fetched and cached), `cache` (the network failed, the device had a copy) or `bundled`
+(no `EXPO_PUBLIC_API_URL`, or nothing cached to fall back to), and `catalogSource()` reports
+which happened. That is not defensive plumbing; it is the same rule the rest of the app runs
+on — a simulated preview is never labelled a real one — applied to data. Settings prints it,
+and "offline copy" is shown as what it is rather than hidden, because a user looking at a
+stale catalog deserves to know.
+
+**Metadata is in Postgres, pixels are in R2, and nothing puts an image in a database column.**
+The full argument, with the measurements, is `docs/catalog-architecture.md`. The three
+decisions worth carrying in your head:
+
+- **Object keys are content hashes**, served `immutable` for a year. Different pixels are a
+  different URL, so there is no cache to invalidate, re-shooting a style is a new object plus a
+  row update, and republishing an unchanged catalog uploads nothing. This is why the publish
+  script is safe to run repeatedly.
+- **Renders are WebP q80, masks are lossless WebP.** Measured over the whole catalog, 400.3 MB
+  of PNG becomes 19.0 MB — a 21.1x reduction — at 21.4 KB per slot. The mask is lossless
+  because a lossy stencil fringes exactly at the hairline, which is where the colour grade is
+  judged. **Nothing is resized**: the sources are 512–720px against a `CARD_WIDTH` of about 501
+  physical pixels on a 3x phone, so a thumbnail tier would soften every card to save 14 KB.
+- **The render index is data at runtime, not code at build time.**
+  `mannequinRenders.generated.ts` exists only because Metro can bundle an asset a module
+  `require`s by a literal path. A URL has no such constraint, so
+  `src/api/renderIndex.ts` installs the catalog's manifest and `mannequinRender()`,
+  `mannequinMask()`, `mannequinViews()` and `renderedVariants()` read it with unchanged
+  signatures. `RenderSource` is `number | { uri: string }` and every consumer already took
+  both, which is why moving the catalog to a backend touched no screen.
+
+**`assets/mannequins/` is still bundled, and that is transitional.** The generated module is
+the fallback index, which is what keeps a fresh checkout runnable. It is also 400 MB in git and
+in every build. Once the first real publish has happened, dropping the `require()` map — and
+keeping the PNGs as generator sources outside the bundle — is a deletion rather than a design
+decision, and belongs in its own commit.
+
+**Adding or replacing a hairstyle is `npm run catalog:publish`, not a release.** That is the
+sentence `project.md` asks for, and the publish script is the thing that makes it true: it
+reads the authored catalog through the same `loadCatalog()` the mannequin generators use, so
+`src/api/mockCatalog.ts` remains the *authoring* format even though the database is what the
+app reads.
+
+**The round trip is checked, and it is the check that matters here.** The risk in moving a
+catalog behind an API is not that the server falls over — it is that a field quietly does not
+survive the trip, and a hairstyle whose `variants` row comes back empty silently stops being
+offered for any hair type on every phone. `server/scripts/check-roundtrip.mjs` runs the real
+schema, the real publish writers and the real assembly code against an in-memory Postgres and
+asserts that `/v1/catalog` returns field-for-field what `mockCatalog.ts` put in. It needs no
+database and no credentials.
+
+**`server/src/types.ts` and `server/src/hairstyles.ts` are deliberate mirrors** of
+`src/api/types.ts` and the filtering in `src/api/client.ts`, for the same reason
+`scripts/lib/variants.mjs` mirrors `src/lib/hairTypes.ts`: the app and the server are separate
+programs and neither may import across the boundary. Both sides must agree, and the round-trip
+check is what makes them.
 
 `generateLook` is the one call that is no longer mocked, and it is two paths behind one
 signature: `generateTryOn` when there is a key and a real photo, the original stepped simulation
@@ -647,7 +719,9 @@ descriptor (`src/lib/hairShape.ts`) as the fallback. Whichever it lands on, the 
 to the session's shade — the render through a masked `feColorMatrix`, the drawing by being painted
 in it.
 
-The middle step is automatic. `scripts/generate-mannequins.mjs` writes PNGs to
+The middle step comes from the active render index — the catalog's when the app has an API,
+the bundled module otherwise — and the generator keeps the bundled one in step automatically.
+`scripts/generate-mannequins.mjs` writes PNGs to
 `assets/mannequins/<style>/<variant>/<gender>-<angle>.png` — the variant directory is the matrix
 on disk — and then rewrites
 `src/api/mannequinRenders.generated.ts` — one `require()` per file, rebuilt from the whole

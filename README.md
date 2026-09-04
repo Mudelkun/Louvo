@@ -1,14 +1,22 @@
-# Hairify — frontend prototype
+# Hairify
 
-React Native / Expo app for trying hairstyles on your own photo. **This is phase 1: the
-complete, navigable frontend**, plus the one piece of it that is now real — the preview
-itself. The API server and the database are still not connected: the catalog and everything
-else that would hit a backend is served from mock data behind a simulated network delay.
+React Native / Expo app for trying hairstyles on your own photo, plus the API that serves its
+catalog.
 
 **Previews are generated.** With `EXPO_PUBLIC_FAL_KEY` set, pressing *Generate my preview*
-sends the user's photo and the catalog's own mannequin renders of the chosen cut to an image
+sends the user's photo and the catalog's own mannequin render of the chosen cut to an image
 model, which is told to change the hair and nothing else. Without the key the app behaves
 exactly as it did before and simulates the preview instead. See *Try-on generation* below.
+
+**The catalog is served.** `server/` is a Node/Fastify API over Postgres on Railway; the
+mannequin renders are WebP objects in Cloudflare R2 behind its CDN. With
+`EXPO_PUBLIC_API_URL` set, the app fetches hairstyles and imagery from there and caches both
+on the device. Without it, the app runs on `mockCatalog` and the bundled renders exactly as it
+always has — so a fresh checkout needs no backend, no bucket and no key.
+
+Adding or replacing a hairstyle is now `npm run catalog:publish`, not an App Store release.
+Why it is built this way, what was measured, and why R2 rather than S3 or a Railway volume:
+[`docs/catalog-architecture.md`](docs/catalog-architecture.md).
 
 ## Running it
 
@@ -25,6 +33,23 @@ npm run try-on -- --styles           # which hairstyles have renders to referenc
 
 npm run icons      # re-cut the launcher icon set from the artwork — free, no key
 ```
+
+### With the catalog backend
+
+```bash
+cd server && npm install && cp .env.example .env   # fill in DATABASE_URL at least
+npm run catalog:migrate        # apply server/migrations/*.sql
+npm run catalog:publish:dry    # transcode + report; uploads nothing, writes nothing — free
+npm run catalog:publish        # metadata into Postgres, imagery into R2
+npm run api                    # the API at http://localhost:8080
+
+# then, in .env.local, and restart the dev server:
+#   EXPO_PUBLIC_API_URL=http://localhost:8080
+```
+
+`EXPO_PUBLIC_*` is inlined at bundle time, so a variable added to a running dev server is not
+in the running app. Settings says which catalog the app actually got — live, an offline copy,
+or the bundled mock data. Full detail in [`server/README.md`](server/README.md).
 
 ## The flow
 
@@ -76,13 +101,14 @@ Everything is interactive: selections persist, favourites and saved looks surviv
 
 | Area | Now | Later |
 | --- | --- | --- |
-| Catalog | `src/api/mockCatalog.ts` | `GET /catalog` from the Railway database |
-| Mannequin images | The renders in `assets/mannequins/` where a style has one for that hair type, the `shape` descriptor (`src/lib/hairShape.ts`) drawn locally where it does not | The same renders served by the API as `hairstyle.imageUrl` |
-| Hair type examples | The four textures in `assets/hair-types/`, one set per gender (`npm run hair-types`); the type's icon where they have not been generated | The same images served by the API beside the hair type rows |
+| Catalog | **Real** — `GET /v1/catalog` from Postgres on Railway when `EXPO_PUBLIC_API_URL` is set, cached on the device; `src/api/mockCatalog.ts` when it is not | — |
+| Mannequin images | **Real** — WebP in R2 behind the CDN, installed as the render index from the catalog response; the bundled renders in `assets/mannequins/` as the fallback, and the `shape` descriptor (`src/lib/hairShape.ts`) drawn locally where a style has neither | The bundled copy dropped once the first publish has landed |
+| Hair type examples | **Real** — served from R2 as `catalog.hairTypeExamples`, all four types per gender or none; the type's icon where a gender has no set | — |
 | Preview generation | **Real** — Fal.ai called straight from the app (`src/api/tryOn.ts`), queued in the background (`src/state/GenerationContext.tsx`). Falls back to the old ~6s simulation for the sample photo and when no key is set | The same call from the API server, so the key stops shipping in the app |
 | "Look is ready" notification | In-app banner (`src/components/LookNotification.tsx`) | Real push via expo-notifications |
 | Sharing | Logs and shows a "shared" state | System share sheet with the real image |
 | Accounts | Guest only, device-local storage | `/me/favourites`, `/me/looks` |
+| Favourites and saved looks | Device-local (AsyncStorage) | Against an account, through the API |
 
 Every simulated surface says so in the UI — nothing pretends to be real. That cuts both ways:
 a look records whether it was generated (`GeneratedLook.simulated`), and the result screen and

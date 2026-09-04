@@ -32,6 +32,9 @@ yarn-error.*
 
 # local env files
 .env*.local
+# server/.env holds DATABASE_URL and the R2 credentials
+.env
+!.env.example
 
 # typescript
 *.tsbuildinfo

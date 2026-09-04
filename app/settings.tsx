@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { API_BASE_URL } from '@/api/client';
+import { API_BASE_URL, catalogSource, hasApi } from '@/api/client';
 import { TRY_ON_MODEL, generationConfigured } from '@/api/tryOn';
 import { MockNotice, Pill } from '@/components/Feedback';
 import { Header, Screen, SectionLabel } from '@/components/Screen';
@@ -13,6 +13,32 @@ import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { useSession } from '@/state/SessionContext';
 import { colors, radii, spacing, type } from '@/theme/theme';
+
+/**
+ * Where this launch's catalog actually came from, in words.
+ *
+ * Three states rather than two, because "the API answered" and "the API did not
+ * and the device had a copy" are genuinely different things to be looking at,
+ * and only one of them can be out of date. Keyed off `catalogSource()` so the
+ * screen reports what happened instead of what was configured.
+ */
+const CATALOG_SOURCE_COPY: Record<ReturnType<typeof catalogSource>, string> = {
+  api: 'Hairstyles are loaded from the Hairify catalog API and their imagery from the CDN.',
+  cache: 'The catalog API could not be reached, so hairstyles are the copy saved on this device.',
+  bundled: 'Preview build: hairstyles come from bundled mock data.',
+};
+
+const CATALOG_SOURCE_LABEL: Record<ReturnType<typeof catalogSource>, string> = {
+  api: 'Catalog live',
+  cache: 'Catalog — offline copy',
+  bundled: 'Mock data',
+};
+
+const CATALOG_SOURCE_TONE: Record<ReturnType<typeof catalogSource>, 'jade' | 'rust'> = {
+  api: 'jade',
+  cache: 'rust',
+  bundled: 'rust',
+};
 
 /**
  * Settings screen, reached from the gear in the Profile tab's header. There are no
@@ -56,14 +82,20 @@ export default function SettingsScreen() {
           <Stat value={hairstyles.length} label="Styles" />
         </View>
 
-        {/* The second sentence is a privacy claim, so it has to track what the
-            build actually does: with generation configured the photo is sent to
-            the image model, and saying otherwise would be a lie in the one place
-            a user goes to check. */}
+        {/* Two claims, and both have to track what the build actually did
+            rather than what it usually does. Where the catalog came from is a
+            fact about this launch — the API may have been unreachable and the
+            device cache may have answered — so it is read back from the client
+            rather than inferred from whether a URL is configured. The second
+            sentence is a privacy claim: with generation configured the photo is
+            sent to the image model, and saying otherwise would be a lie in the
+            one place a user goes to check. */}
         <MockNotice>
-          {generationConfigured()
-            ? 'Preview build: hairstyles come from bundled mock data. Generating a preview sends your photo to the image provider; nothing else leaves your device and no photo is stored on a server.'
-            : 'Preview build: hairstyles come from bundled mock data and previews are simulated. No photo leaves your device.'}
+          {`${CATALOG_SOURCE_COPY[catalogSource()]} ${
+            generationConfigured()
+              ? 'Generating a preview sends your photo to the image provider; nothing else leaves your device and no photo is stored on a server.'
+              : 'Previews are simulated, so no photo leaves your device.'
+          }`}
         </MockNotice>
 
         <View>
@@ -120,7 +152,12 @@ export default function SettingsScreen() {
           <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
             <Pill label={`v${Constants.expoConfig?.version ?? '0.1.0'}`} />
             <Pill tone="jade" label="Frontend prototype" />
-            <Pill tone="rust" label="Mock data" />
+            {/* The catalog is the one thing here that can differ between two
+                launches of the same build, so this reports the outcome rather
+                than the configuration. "Offline copy" is not a failure state to
+                hide: it is the app working, and a user seeing a stale catalog
+                deserves to know that is what they are looking at. */}
+            <Pill tone={CATALOG_SOURCE_TONE[catalogSource()]} label={CATALOG_SOURCE_LABEL[catalogSource()]} />
             {/* Whether the generator is actually wired up, stated where it can
                 be checked. `EXPO_PUBLIC_*` is inlined at bundle time, so a key
                 added to .env.local after the dev server started is not in the
@@ -138,7 +175,9 @@ export default function SettingsScreen() {
               : 'Set EXPO_PUBLIC_FAL_KEY and restart the dev server to generate real previews.'}
           </Text>
           <Text style={[type.caption, { color: colors.muted }]}>
-            API target once connected: {API_BASE_URL}
+            {hasApi()
+              ? `Catalog API: ${API_BASE_URL}`
+              : 'Set EXPO_PUBLIC_API_URL and restart the dev server to load the catalog from the API.'}
           </Text>
         </View>
       </View>
