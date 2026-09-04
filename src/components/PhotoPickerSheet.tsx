@@ -518,7 +518,7 @@ function Glass({
             StyleSheet.absoluteFill,
             {
               borderRadius: radius,
-              backgroundColor: dark ? 'rgba(18,16,28,0.12)' : 'rgba(255,255,255,0.16)',
+              backgroundColor: dark ? 'rgba(24,21,19,0.12)' : 'rgba(255,255,255,0.16)',
             },
           ]}
         />
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
     overflow: 'hidden',
-    shadowColor: '#0B0718',
+    shadowColor: '#120E09',
     shadowOpacity: 0.3,
     shadowRadius: 34,
     shadowOffset: { width: 0, height: -6 },

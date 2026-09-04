@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import React, { useId, useMemo } from 'react';
 import { View, ViewStyle } from 'react-native';
 import Svg, {
@@ -20,7 +19,8 @@ import type { Gender, HairColor, HairShape, TryOnOptions, VariantId } from '@/ap
 import { hairGrade } from '@/lib/colorGrade';
 import { baseHairColor } from '@/lib/constants';
 import { buildHairPaths, effectiveShape, headFor, HERO_ANGLE, turnFor, type ViewAngle } from '@/lib/hairShape';
-import { mannequinMask, mannequinRender, renderVariant } from '@/lib/mannequinRender';
+import { ANCHOR_LENGTH, parseLength } from '@/lib/hairLengths';
+import { mannequinMask, mannequinRender, renderLength, renderVariant } from '@/lib/mannequinRender';
 import { colors as tokens } from '@/theme/theme';
 
 interface MannequinProps {
@@ -85,19 +85,155 @@ export function Mannequin({
   // SVG gradient ids share one namespace per document on web, so every instance
   // needs its own or later mannequins reference a stale (or missing) gradient.
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
-  const resolved = useMemo(() => effectiveShape(shape, options), [shape, options]);
-  const paths = useMemo(() => buildHairPaths(resolved, angle), [resolved, angle]);
   // Resolved once, then used for both the render and its mask, so the graded
   // copy is always masked by the mask belonging to the image underneath it.
-  const variant = renderVariant(styleId, gender, angle, variants);
-  const render = mannequinRender(styleId, gender, angle, variant ? [variant] : variants);
+  //
+  // The length comes off `options` rather than a prop of its own: it is a live
+  // customisation the user is making to this cut, which is exactly what that
+  // prop already means, and it is already carried there for the procedural
+  // drawing. A stop with no render of its own resolves to the anchor, so the
+  // resolved value is read back rather than assumed — the mask below has to
+  // belong to the image that actually got picked, and on a longer cut the
+  // anchor's mask would hold the grade to the wrong pixels.
+  const wanted = parseLength(options?.length) ?? ANCHOR_LENGTH;
+  const variant = renderVariant(styleId, gender, angle, variants, wanted);
+  const length = renderLength(styleId, gender, angle, variants, wanted) ?? ANCHOR_LENGTH;
+  const render = mannequinRender(styleId, gender, angle, variant ? [variant] : variants, wanted);
   // The grade is anchored to the shade *this* render was shot in, not to one
   // catalog-wide shade: the coily variant is shot in black and everything else
   // in espresso, so grading a coily render from the espresso anchor would
   // overshoot every target. See BASE_HAIR_COLORS.
   const anchor = baseHairColor(variant);
   const grade = useMemo(() => hairGrade(color, anchor.hex), [color, anchor.hex]);
-  const hairOnly = grade && variant ? mannequinMask(styleId, gender, angle, [variant]) : null;
+  const hairOnly = grade && variant ? mannequinMask(styleId, gender, angle, [variant], length) : null;
+
+  // The render is square, but the box it sits in is the drawing's, so a grid of
+  // half-generated styles keeps one row height.
+  const { viewBox } = headFor(angle);
+  const height = (size * viewBox.height) / viewBox.width;
+
+  // The drawing is a separate component rather than a branch of this one so that
+  // building its paths is not work a rendered style pays for. Every caller
+  // rebuilds `shape` inline — the texture depends on the hair type — so the
+  // memo below never held, and a hair-type switch was recomputing four dozen
+  // bezier segments for eight mannequins that were all about to draw a PNG.
+  if (!render) {
+    return (
+      <MannequinDrawing
+        shape={shape}
+        options={options}
+        color={color}
+        gender={gender}
+        angle={angle}
+        size={size}
+        backdrop={backdrop}
+        style={style}
+      />
+    );
+  }
+
+  // The render is a square portrait of the same head, so it is laid into the top
+  // of the same box the drawing occupies: every caller keeps its layout, and a
+  // grid of half-generated styles still lines up.
+  return (
+    <View style={[{ width: size, height }, backdrop ? { backgroundColor: backdrop } : null, style]}>
+      {/* Recolouring goes through SVG rather than expo-image because a filter is
+          the only thing in this stack that can rewrite pixels: the render is one
+          shade and the shade the user picked is a grade of it.
+
+          The graded render is drawn twice. Underneath, untouched; on top, graded
+          and held inside the hair mask, so the mannequin and the backdrop below
+          are the original pixels and only the haircut is recoloured. Without a
+          mask the graded copy covers the frame, which is close but not exact:
+          the grade is anchored at white, so it barely moves white plastic, but
+          "barely" is still a tint on the head and it lands hardest on the one
+          dark thing that is not hair — the shadow under the jaw.
+
+          An ungraded render used to take a separate `<Image>` path, on the
+          grounds that the default shade costs nothing and no filter need exist.
+          It cost something else. Whether a render is graded depends on the shade
+          *it* was shot in — `curly` and `coily` are black, everything else
+          espresso — so two chips a hair type apart could land on different
+          branches of that ternary, and switching between them unmounted one
+          component and mounted the other: the picture went blank and faded back
+          in. That is the flash a hair-type switch is least able to afford. One
+          tree, and the filter is the only thing that comes and goes. */}
+      <Svg width={size} height={size}>
+        <Defs>
+          {grade ? (
+            <Filter id={`grade${uid}`} x="0" y="0" width="100%" height="100%">
+              <FeColorMatrix type="matrix" values={grade} />
+            </Filter>
+          ) : null}
+          {hairOnly ? (
+            <Mask id={`hair${uid}`} x="0" y="0" width="100%" height="100%">
+              <SvgImage
+                href={hairOnly}
+                x={0}
+                y={0}
+                width={size}
+                height={size}
+                preserveAspectRatio="xMidYMid meet"
+              />
+            </Mask>
+          ) : null}
+        </Defs>
+
+        {hairOnly ? (
+          <SvgImage href={render} x={0} y={0} width={size} height={size} preserveAspectRatio="xMidYMid meet" />
+        ) : null}
+        <G mask={hairOnly ? `url(#hair${uid})` : undefined}>
+          <SvgImage
+            href={render}
+            x={0}
+            y={0}
+            width={size}
+            height={size}
+            preserveAspectRatio="xMidYMid meet"
+            filter={grade ? `url(#grade${uid})` : undefined}
+          />
+        </G>
+      </Svg>
+    </View>
+  );
+}
+
+interface MannequinDrawingProps {
+  shape: HairShape;
+  options?: TryOnOptions;
+  color?: HairColor | null;
+  gender?: Gender | null;
+  angle?: ViewAngle;
+  size?: number;
+  backdrop?: string | null;
+  style?: ViewStyle;
+}
+
+/**
+ * The procedural mannequin — the fallback for a style with no render yet, drawn
+ * from its `shape` descriptor.
+ *
+ * Its own component rather than the other half of an `if` in `<Mannequin>`, so
+ * that a style *with* a render never builds a path it is not going to draw.
+ * That mattered once the hair-type chips arrived: `shape` is rebuilt inline by
+ * every caller (the texture depends on the type being shown), so the memos below
+ * miss on every render, and switching type made eight mannequins solve a few
+ * hundred bezier points each on the way to swapping two PNGs.
+ */
+function MannequinDrawing({
+  shape,
+  options,
+  color,
+  gender,
+  angle = 'front',
+  size = 160,
+  backdrop = '#EFE9E1',
+  style,
+}: MannequinDrawingProps) {
+  // As in `<Mannequin>`: gradient ids share one namespace per document on web.
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const resolved = useMemo(() => effectiveShape(shape, options), [shape, options]);
+  const paths = useMemo(() => buildHairPaths(resolved, angle), [resolved, angle]);
 
   const hair = color?.hex ?? '#3B2A21';
   const hairShade = color?.shade ?? '#241811';
@@ -115,65 +251,6 @@ export function Mannequin({
   const turn = turnFor(angle);
   const neckCx = cx - 7 * turn;
   const shoulderScale = 1 - 0.22 * turn;
-
-  // The render is a square portrait of the same head, so it is laid into the top
-  // of the same box the drawing occupies: every caller keeps its layout, and a
-  // grid of half-generated styles still lines up.
-  if (render) {
-    return (
-      <View style={[{ width: size, height }, backdrop ? { backgroundColor: backdrop } : null, style]}>
-        {grade ? (
-          // Recolouring goes through SVG rather than expo-image because a filter
-          // is the only thing in this stack that can rewrite pixels: the render
-          // is one shade and the shade the user picked is a grade of it.
-          //
-          // The render is drawn twice. Underneath, untouched; on top, graded and
-          // held inside the hair mask, so the mannequin and the backdrop below
-          // are the original pixels and only the haircut is recoloured. Without a
-          // mask the graded copy covers the frame, which is close but not exact:
-          // the grade is anchored at white, so it barely moves white plastic, but
-          // "barely" is still a tint on the head and it lands hardest on the one
-          // dark thing that is not hair — the shadow under the jaw.
-          <Svg width={size} height={size}>
-            <Defs>
-              <Filter id={`grade${uid}`} x="0" y="0" width="100%" height="100%">
-                <FeColorMatrix type="matrix" values={grade} />
-              </Filter>
-              {hairOnly ? (
-                <Mask id={`hair${uid}`} x="0" y="0" width="100%" height="100%">
-                  <SvgImage
-                    href={hairOnly}
-                    x={0}
-                    y={0}
-                    width={size}
-                    height={size}
-                    preserveAspectRatio="xMidYMid meet"
-                  />
-                </Mask>
-              ) : null}
-            </Defs>
-
-            {hairOnly ? (
-              <SvgImage href={render} x={0} y={0} width={size} height={size} preserveAspectRatio="xMidYMid meet" />
-            ) : null}
-            <G mask={hairOnly ? `url(#hair${uid})` : undefined}>
-              <SvgImage
-                href={render}
-                x={0}
-                y={0}
-                width={size}
-                height={size}
-                preserveAspectRatio="xMidYMid meet"
-                filter={`url(#grade${uid})`}
-              />
-            </G>
-          </Svg>
-        ) : (
-          <Image source={render} style={{ width: size, height: size }} contentFit="contain" transition={140} />
-        )}
-      </View>
-    );
-  }
 
   return (
     <View style={[{ width: size, height }, style]}>

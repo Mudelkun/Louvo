@@ -45,6 +45,63 @@ export type VariantId = 'any' | HairTypeId;
 export type HairTypeVariants = Record<HairTypeId, VariantId | null>;
 
 /**
+ * How long the cut is worn, where that is a choice the user gets to make.
+ *
+ * Not a second hair type. Hair type is something the user *has* and declares
+ * once before browsing; length is something they *do* to a cut they have
+ * already picked, on the style screen, and it applies to one style at a time.
+ * That is why it is a list of offered positions rather than a
+ * `Record<HairLengthId, ...>` mapping the way `HairTypeVariants` is: there is
+ * nothing to look the user's answer up against, because the answer does not
+ * exist until they move the slider.
+ *
+ * `medium` is not the middle of a scale — it is the anchor. Every render in the
+ * catalog was shot before length existed, from a prompt that says nothing about
+ * it, so what is on disk is the cut *as the catalog authored it*, and that is
+ * what `medium` names. `short` and `long` are departures from it in either
+ * direction. See `HairLengthOffer` for why every offered range has to contain
+ * it.
+ */
+export type HairLengthId = 'short' | 'medium' | 'long';
+
+/**
+ * A length as catalog data, so the slider is server-driven like the hair-type
+ * control beside it. Ordered short to long — the order is the slider.
+ */
+export interface HairLength {
+  id: HairLengthId;
+  /** "Short". */
+  name: string;
+  /** One line describing what this position does to a cut. */
+  description: string;
+  order: number;
+}
+
+/**
+ * Which lengths a hairstyle is offered at, per gender.
+ *
+ * Per gender because the judgement differs by gender for the same record: a
+ * men's Wolf Cut and a women's Wolf Cut do not travel the same distance, and a
+ * cut offered to both with one shared row would give one of them a slider
+ * position nobody would shoot. Absent, or fewer than two entries, means this
+ * cut has no length choice and no slider appears — which is most of the
+ * catalog, and deliberately so. A fade's variable is its fade height, not its
+ * length; a Caesar cut that got longer would stop being one.
+ *
+ * **Every range must contain `medium`.** That is a real constraint, not a
+ * convention: `medium` is what the render already on disk depicts, so a range
+ * without it would open the screen on a length the catalog has never shot and
+ * make the untouched slider a claim the imagery cannot back. `short`/`medium`
+ * and `medium`/`long` are the two-step ranges for cuts that only travel one way
+ * — a Pixie Cut grown out is a bob, so it goes short and stops.
+ *
+ * Like `HairTypeVariants`, this is data rather than a rule in the app: whether
+ * a cut survives being lengthened is a judgement about that haircut, and the
+ * only place it belongs is beside the haircut.
+ */
+export type HairLengthOffer = Partial<Record<Gender, HairLengthId[]>>;
+
+/**
  * A hair type as catalog data, so the picker is server-driven like everything
  * else. Ordered `straight, wavy, curly, coily` — types 1 to 4.
  */
@@ -150,6 +207,11 @@ export interface Hairstyle {
    * about that haircut, and the only place it belongs is beside the haircut.
    */
   variants: HairTypeVariants;
+  /**
+   * Which lengths this cut is offered at, per gender — the slider on the style
+   * screen. Absent on most styles: see `HairLengthOffer`.
+   */
+  lengths?: HairLengthOffer;
   shape: HairShape;
   /** Populated later by the backend with the AI-generated mannequin render. */
   imageUrl?: string | null;
@@ -243,6 +305,8 @@ export interface LookJob {
 export interface Catalog {
   categories: Category[];
   hairTypes: HairType[];
+  /** The length positions the slider can offer, short to long. */
+  hairLengths: HairLength[];
   hairstyles: Hairstyle[];
   colors: HairColor[];
   /** Server-driven copy for the "why you'll love it" panel on the welcome screen. */

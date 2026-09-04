@@ -10,6 +10,9 @@ import type {
   Catalog,
   Category,
   HairColor,
+  HairLength,
+  HairLengthId,
+  HairLengthOffer,
   HairType,
   HairTypeVariants,
   Hairstyle,
@@ -44,6 +47,44 @@ const hairTypes: HairType[] = [
   { id: 'curly', tier: 'Type 3', name: 'Curly', description: 'Forms defined curls or loops', icon: 'sync-outline', order: 3 },
   { id: 'coily', tier: 'Type 4', name: 'Coily', description: 'Forms tight coils, kinks or zig-zag patterns', icon: 'ellipse-outline', order: 4 },
 ];
+
+/**
+ * The length positions the slider can offer, short to long.
+ *
+ * Catalog data for the same reason the hair types above are: no screen and no
+ * component may contain the word "Short". The descriptions are what the control
+ * shows under the selected stop, so they are written as what the *cut* does, not
+ * as what the slider does — "cropped closer than the cut usually sits" rather
+ * than "the short option".
+ *
+ * `medium` is the anchor: it is the cut exactly as the catalog shot it, which is
+ * why its description says so. Every render in `assets/mannequins/` predates
+ * length and depicts this position, so a slider sitting untouched at `medium` is
+ * making a claim the imagery already backs. See `HairLengthOffer`.
+ */
+const hairLengths: HairLength[] = [
+  { id: 'short', name: 'Short', description: 'Cropped closer than this cut usually sits', order: 1 },
+  { id: 'medium', name: 'Medium', description: 'The cut at its usual length', order: 2 },
+  { id: 'long', name: 'Long', description: 'Grown out, with more weight and drop', order: 3 },
+];
+
+/**
+ * The ranges a cut can be offered at, so the table below reads as a table.
+ *
+ * All three contain `medium`, which is the constraint rather than a coincidence
+ * — see `HairLengthOffer`. `SM` and `ML` are for cuts that only travel one way
+ * from where they sit: a Pixie Cut grown out is a bob, and Long Layers cropped
+ * short are not Long Layers.
+ */
+const SML: HairLengthId[] = ['short', 'medium', 'long'];
+const SM: HairLengthId[] = ['short', 'medium'];
+const ML: HairLengthId[] = ['medium', 'long'];
+
+/** One row of the length table: which lengths each gender's version is offered at. */
+const len = (male: HairLengthId[] | null, female: HairLengthId[] | null): HairLengthOffer => ({
+  ...(male ? { male } : null),
+  ...(female ? { female } : null),
+});
 
 /**
  * The shades any style can be put in. Every one of them is reached by grading
@@ -119,6 +160,8 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // One clipper length all over — no texture survives it.
     variants: anyType(),
+    // A grade is a length: 1 to 5 is the whole range of this cut.
+    lengths: len(SML, SML),
     shape: shape(0.06, 0.1, 0, 0.08, 'straight'),
   },
   {
@@ -134,6 +177,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'fade', 'color'],
     // At this length type 1 and 2 sit identically.
     variants: v('straight', 'straight', 'curly', 'coily'),
+    lengths: len(SML, null),
     shape: shape(0.2, 0.16, 0, 0.15, 'straight'),
   },
   {
@@ -149,6 +193,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'fade', 'color'],
     // The cut is texture; all four read apart.
     variants: perType(),
+    lengths: len(SML, null),
     shape: shape(0.33, 0.14, 0, 0.45, 'spiky'),
   },
   {
@@ -269,6 +314,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'fade', 'color'],
     // A quiff is built out of whatever the texture is.
     variants: perType(),
+    lengths: len(SML, null),
     shape: shape(0.68, 0.22, 0, 0.06, 'wavy'),
   },
   {
@@ -284,6 +330,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'fade', 'color'],
     // Combed and set, so type 1 and 2 converge.
     variants: v('straight', 'straight', 'curly', 'coily'),
+    lengths: len(SML, null),
     shape: shape(0.85, 0.2, 0, 0.02, 'straight'),
   },
   {
@@ -299,6 +346,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'fade', 'color'],
     // The part needs hair that lies down; on type 4 it is cut in.
     variants: v('straight', 'straight', 'curly', 'coily'),
+    lengths: len(SML, null),
     shape: shape(0.4, 0.24, 0, 0.22, 'straight', { part: 'side' }),
   },
   {
@@ -314,6 +362,9 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // Messy is the texture doing the work.
     variants: perType(),
+    // Men's only: the women's reading of this cut is Curtain Bangs, which carries
+    // the row instead. One cut with a slider beats two that overlap.
+    lengths: len(SML, null),
     shape: shape(0.42, 0.32, 0.04, 0.78, 'wavy'),
   },
   {
@@ -329,6 +380,8 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // How the curtain falls is entirely the texture.
     variants: perType(),
+    // Women's only: the men's reading of this cut is Messy Fringe. See that row.
+    lengths: len(null, SML),
     shape: shape(0.3, 0.6, 0.55, 0.55, 'wavy', { part: 'middle' }),
   },
   {
@@ -374,6 +427,8 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // Cut to the texture, but type 1 and 2 pixies read alike.
     variants: v('straight', 'straight', 'curly', 'coily'),
+    // No long stop: a pixie grown out is a bob, which the catalog already carries.
+    lengths: len(null, SM),
     shape: shape(0.38, 0.24, 0.02, 0.5, 'spiky', { part: 'side' }),
   },
   {
@@ -389,6 +444,8 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // Layers hang differently in every type.
     variants: perType(),
+    // No short stop: cropped short these stop being long layers.
+    lengths: len(null, ML),
     shape: shape(0.26, 0.95, 0.92, 0.25, 'straight', { part: 'middle' }),
   },
   {
@@ -404,6 +461,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // A set look — the same waves whatever the base.
     variants: anyType(),
+    lengths: len(null, SML),
     shape: shape(0.34, 0.95, 0.88, 0.22, 'wavy', { part: 'middle' }),
   },
   {
@@ -419,6 +477,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // Flat-ironed; every base ends up in the same place.
     variants: anyType(),
+    lengths: len(null, SML),
     shape: shape(0.14, 1, 0.95, 0.2, 'straight', { part: 'middle' }),
   },
   {
@@ -434,6 +493,8 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // Worn loose, so the silhouette is the texture.
     variants: perType(),
+    // No short stop: a shoulder flow cropped short is simply a different cut.
+    lengths: len(ML, null),
     shape: shape(0.4, 0.8, 0.6, 0.1, 'wavy', { part: 'middle' }),
   },
   {
@@ -449,6 +510,8 @@ const hairstyles: Row[] = [
     adjustments: ['fade', 'color'],
     // Gathered — only the bulk of the knot changes.
     variants: v('straight', 'straight', 'curly', 'curly'),
+    // No short stop: below medium there is not enough length to gather.
+    lengths: len(ML, null),
     shape: shape(0.3, 0.3, 0.12, 0.08, 'straight', { knot: true }),
   },
   {
@@ -479,6 +542,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'fade', 'color'],
     // Not a type 1 cut; type 2 reads as a loose version of the curly one.
     variants: v(null, 'curly', 'curly', 'coily'),
+    lengths: len(SML, null),
     shape: shape(0.62, 0.16, 0, 0.3, 'curly'),
   },
   {
@@ -494,6 +558,9 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // Needs the texture to exist at all.
     variants: v(null, null, 'curly', 'coily'),
+    // Length here reads as height. Still length — it is the same variable a barber
+    // sets with a guard, and 'Length' is the word the user is looking for.
+    lengths: len(SML, SML),
     shape: shape(0.95, 0.55, 0.1, 0.2, 'coily'),
   },
   {
@@ -524,6 +591,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // Not a type 1 cut; the other three shags each differ.
     variants: v(null, 'wavy', 'curly', 'coily'),
+    lengths: len(null, SML),
     shape: shape(0.58, 0.8, 0.55, 0.7, 'curly'),
   },
   {
@@ -539,6 +607,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // A set look — curled to the same result from any base.
     variants: anyType(),
+    lengths: len(null, SML),
     shape: shape(0.44, 0.95, 0.85, 0.25, 'curly', { part: 'side' }),
   },
   {
@@ -554,6 +623,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // Shag layers exaggerate whatever the texture is.
     variants: perType(),
+    lengths: len(SML, SML),
     shape: shape(0.55, 0.7, 0.62, 0.68, 'wavy'),
   },
   {
@@ -569,6 +639,8 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // A blowout, so type 1 and 2 land in the same place.
     variants: v('straight', 'straight', 'curly', 'coily'),
+    // No short stop: the long underlayer is what makes it a butterfly cut.
+    lengths: len(null, ML),
     shape: shape(0.5, 0.92, 0.8, 0.42, 'wavy', { part: 'middle' }),
   },
   {
@@ -584,6 +656,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'fade', 'color'],
     // The back reads completely differently per type.
     variants: perType(),
+    lengths: len(SML, SML),
     shape: shape(0.4, 0.18, 0.55, 0.35, 'wavy'),
   },
   {
@@ -614,6 +687,8 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // Installed — the braid is the braid.
     variants: anyType(),
+    // Braid length is the choice people actually make with this style.
+    lengths: len(SML, SML),
     shape: shape(0.3, 0.95, 0.9, 0.2, 'coily', { part: 'middle' }),
   },
   {
@@ -629,6 +704,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'color'],
     // Gathered; type 3 and 4 both read as a puff.
     variants: v('straight', 'straight', 'curly', 'curly'),
+    lengths: len(null, SML),
     shape: shape(0.2, 0.12, 0.6, 0.1, 'straight', { tail: true }),
   },
   {
@@ -644,6 +720,7 @@ const hairstyles: Row[] = [
     adjustments: ['length', 'fade', 'color'],
     // Product does the work up to type 3.
     variants: v('straight', 'straight', 'curly', 'coily'),
+    lengths: len(SML, null),
     shape: shape(0.45, 0.26, 0.12, 0.0, 'straight'),
   },
 ];
@@ -659,6 +736,7 @@ const highlights = [
 export const mockCatalog: Catalog = {
   categories,
   hairTypes,
+  hairLengths,
   colors,
   highlights,
   hairstyles: hairstyles.map((row) => ({ ...row, imageUrl: null })),

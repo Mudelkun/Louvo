@@ -141,6 +141,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
     borderRadius: radii.pill,
-    backgroundColor: 'rgba(23,21,26,0.6)',
+    backgroundColor: 'rgba(24,21,19,0.6)',
   },
 });

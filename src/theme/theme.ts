@@ -1,40 +1,55 @@
 /**
  * Hairify design tokens.
  *
- * Violet-on-white palette matching `App-reference.png`: a near-white canvas,
- * white cards, and a single vivid violet accent used for the primary action and
- * for anything currently selected.
+ * Bone-and-brass on white. The catalog is dark hair on flat white ground, so
+ * every neutral here is warm — a violet-tinted grey ramp reads as a tint laid
+ * over the renders, and the accent was competing with the content for the eye.
+ * Brass is the one saturated colour: far enough from any hair hue that a
+ * button is never mistaken for a swatch, warm enough to belong beside the
+ * mannequins' plastic and the procedural drawing's skin tones.
+ *
+ * `accent` is deliberately a step deeper than a display brass (4.7:1 on white)
+ * so a solid primary button can carry white body text without failing contrast.
  */
 
 export const colors = {
   // Surfaces
-  canvas: '#F8F7FC',
+  canvas: '#FAF8F5',
   surface: '#FFFFFF',
-  surfaceAlt: '#F1EEFB',
-  surfaceSunken: '#E9E5F7',
-  ink: '#191627',
-  inkSoft: '#403C52',
-  muted: '#8B87A0',
-  hairline: '#EAE7F5',
-  hairlineStrong: '#D6D0EE',
+  surfaceAlt: '#F2EEE8',
+  surfaceSunken: '#E9E3DA',
+  ink: '#181513',
+  inkSoft: '#443E38',
+  inkPressed: '#2A2521',
+  muted: '#8C857C',
+  hairline: '#EBE5DD',
+  hairlineStrong: '#DCD3C7',
 
   // Brand
-  accent: '#6D3AF2',
-  accentPressed: '#5A2ADB',
-  accentSoft: '#EFE9FE',
-  accentInk: '#3F1E96',
+  accent: '#9A6B24',
+  accentPressed: '#7F571C',
+  accentSoft: '#F6EEE0',
+  accentSoftPressed: '#EEE1CA',
+  accentInk: '#6B4715',
+  /** The bright end of the brass gradients (progress ring, generating frame). */
+  accentGlow: '#E3A24E',
 
   // Support
   jade: '#1F8A6B',
   jadeSoft: '#E1F3EC',
-  gold: '#C8963E',
-  goldSoft: '#F7EEDC',
+  /**
+   * The "this is not the real thing" tone — mock data, ungenerated previews, no
+   * API key. It was gold, which is now the accent's own family; caution has to
+   * read hotter than the brand or every warning looks like a brand highlight.
+   */
+  rust: '#9E4A22',
+  rustSoft: '#F8E7DD',
   danger: '#D2453F',
 
   // On-dark
   onDark: '#FFFFFF',
   onDarkMuted: 'rgba(255,255,255,0.68)',
-  scrim: 'rgba(25,22,39,0.55)',
+  scrim: 'rgba(24,21,19,0.55)',
 } as const;
 
 export const spacing = {
@@ -68,14 +83,14 @@ export const type = {
 
 export const shadow = {
   card: {
-    shadowColor: '#1E1738',
+    shadowColor: '#2A2018',
     shadowOpacity: 0.07,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 3,
   },
   raised: {
-    shadowColor: '#1E1738',
+    shadowColor: '#2A2018',
     shadowOpacity: 0.14,
     shadowRadius: 26,
     shadowOffset: { width: 0, height: 14 },

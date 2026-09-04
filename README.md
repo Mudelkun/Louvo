@@ -22,6 +22,8 @@ npm run typecheck  # tsc --noEmit
 npm run try-on -- --photo me.jpg --style low-taper-fade --hair-type coily
 npm run try-on -- --photo me.jpg --style buzz-cut --dry-run
 npm run try-on -- --styles           # which hairstyles have renders to reference
+
+npm run icons      # re-cut the launcher icon set from the artwork — free, no key
 ```
 
 ## The flow
@@ -40,7 +42,7 @@ share, save and recommendations hanging off the result.
 | `app/try/gender.tsx` | Step 2 — who are we styling |
 | `app/try/hair-type.tsx` | Step 3 — straight / wavy / curly / coily, or All Types, each shown with a generated example of the pattern |
 | `app/try/catalog.tsx` | Step 4 — browse the whole catalog; category is a chip row, not a step |
-| `app/try/style/[id].tsx` | Step 5 — style detail: four views, a hair-type switcher, add the photo, then generate |
+| `app/try/style/[id].tsx` | Step 5 — style detail: four views, a hair-type chooser, add the photo, then generate |
 | `app/try/generating.tsx` | The wait — scissors working across the photo, the stage in words, the countdown; opens the result itself |
 | `app/try/result.tsx` | The look, with save / share / compare |
 | `app/try/compare.tsx` | Before / after — draggable wipe or side by side |
@@ -226,6 +228,10 @@ Four rules the code already respects, from the spec:
   of the four types share a render — 103 renders across the 36 styles instead of 144. Run
   `npm run mannequins -- --matrix` for the whole table, the cost, and what is still missing.
   `Straight`, `Wavy` and `Curly` are no longer categories: that asked the same question twice.
+  Under **All Types** a card shows every render the cut has, cross-fading between them with a
+  caption naming the types each stands for — the matrix, visible from the grid without opening
+  anything. Only renders that exist and differ are cycled, so a style shot in one texture (and,
+  today, the whole women's catalog) simply stands still.
 - **The cut is the product.** The only thing a style exposes is the haircut: no length, no fade
   level and — for now — no colour. Renders are shot in a fixed shade per variant (espresso, and
   black for `curly` and `coily`, whose texture reads muddy in brown) and the app grades from whichever anchor the
@@ -248,10 +254,44 @@ Four rules the code already respects, from the spec:
   fallback drawing is drawn in the user's own texture instead. `hairstyle.imageUrl` still wins
   over both once the backend serves it.
 
+## The app icon
+
+`assets/Hairify - icon.png` is the artwork — the two half-heads in brass on a black tile — and
+it is the *only* icon file anyone edits. Everything the platforms actually load is cut from it
+by `npm run icons`:
+
+| File | What it is |
+| --- | --- |
+| `assets/icon.png` | 1024² RGB, full-bleed. iOS and the stores round the corners themselves. |
+| `assets/splash-icon.png` | 1024² RGBA, the rounded tile on transparency, over `#FAF8F5`. |
+| `assets/favicon.png` | 48² RGBA, the same silhouette. |
+| `assets/android-icon-foreground.png` | 512² RGBA, opaque, subject inside the adaptive safe zone. |
+| `assets/android-icon-monochrome.png` | 432² RGBA, white silhouette for Android's themed icons. |
+
+The artwork arrives as an icon *mockup* — the tile is photographed with a drop shadow on a cream
+ground — so the script's real job is to throw the mockup away and keep the tile: find it, crop it
+square, and either fill outside its rounded silhouette with the tile's own black or make it
+transparent, depending on which of the five is being cut. Shipped unprocessed, the mockup would
+give every platform a shrunken tile inside a pale border with a shadow baked in, under a second
+corner mask.
+
+Two details in there are load-bearing, and both are commented at the code:
+
+- **The ground is bled, not filled.** The tile is lit rather than painted — a couple of levels
+  brighter at the top-left than at the bottom-right — so a flat black outside its corners reads
+  as a patch at any corner radius other than the tile's own, and the platforms each pick their
+  own radius.
+- **The Android foreground is full-bleed and opaque.** Fitting the subject into the safe zone
+  leaves the tile covering about four fifths of the canvas; padding the rest with transparency
+  over a flat `backgroundColor` drew a faint rounded square *inside* the icon, for the same
+  reason. It samples with clamped coordinates instead, so the tile's edge carries out to the
+  canvas and `backgroundColor` never shows.
+
 ## Layout
 
 ```
 app/                 expo-router routes (see table above)
+assets/              the icon artwork, generated mannequin renders, hair-type examples
 src/api/             types, mock catalog, client — the backend seam
 src/components/      UI kit: Mannequin, StyleCard, Controls, BeforeAfter, Screen, …
 src/state/           CatalogContext (catalog), SessionContext (try-on), LibraryContext (saved)
