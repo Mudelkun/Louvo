@@ -157,8 +157,8 @@ function parseArgs(argv) {
      * family, and every style is an edit of the composed base sheet rather than
      * a fresh roll, so the head, material, light, crop and framing are inherited
      * from an image either way and only the hair rendering differs between the
-     * two. What the extra $0.04 buys is prompt adherence — the bald-quadrant
-     * re-roll `--sheet-retries` exists for is the failure it fixes.
+     * two. What the extra $0.04 buys is prompt adherence — the bald quadrant
+     * `--check` reports is the failure it fixes.
      *
      * `--model` is deliberately left on nano-banana: it is text-to-image, so it
      * only runs for `--no-edit` and for a base head generated with no reference
@@ -176,7 +176,6 @@ function parseArgs(argv) {
     composeBase: false,
     sheet: false,
     inset: 0,
-    sheetRetries: 2,
     check: false,
     matrix: false,
     noEdit: false,
@@ -225,7 +224,6 @@ function parseArgs(argv) {
       case '--resolution': options.resolution = next(); break;
       case '--plan': options.plan = true; break;
       case '--sheet-inset': options.inset = Number(next()); break;
-      case '--sheet-retries': options.sheetRetries = Number(next()); break;
       case '--check': options.check = true; break;
       case '--no-edit': options.noEdit = true; break;
       case '--dry-run': options.dryRun = true; break;
@@ -245,7 +243,6 @@ function parseArgs(argv) {
   if (badVariant) fail(`unknown hair type "${badVariant}" — expected ${VARIANT_IDS.join(', ')} or all`);
   if (!Number.isFinite(options.concurrency) || options.concurrency < 1) fail('--concurrency must be a positive number');
   if (!Number.isFinite(options.inset) || options.inset < 0) fail('--sheet-inset must be zero or more pixels');
-  if (!Number.isFinite(options.sheetRetries) || options.sheetRetries < 0) fail('--sheet-retries must be zero or more');
   if (options.sheet && options.noEdit) fail('--sheet edits the composed base sheet, so it cannot be combined with --no-edit');
   // A length sheet is a sheet by construction, so --lengths implies --sheet and
   // the two can never disagree; this only catches an explicit --no-edit.
@@ -283,7 +280,6 @@ function usage() {
       '  --resolution <tier>  1K, 2K or 4K (default: the model\'s own, or 2K with --lengths)',
       '  --plan               print the per-style length commands and generate nothing',
       '  --sheet-inset <n>    trim n pixels off every panel edge when cutting a sheet',
-      '  --sheet-retries <n>  re-rolls allowed when a sheet comes back with a bald head (default: 2)',
       '  --check              inspect the sheets already on disk for bald panels and stop',
       '  --no-edit            one-shot text-to-image per style instead of editing a base',
       '  --reference <file>   look reference to seed the base heads (default: scripts/reference-head.png)',
@@ -493,12 +489,7 @@ async function dataUri(file) {
   return `data:${mime};base64,${(await readFile(file)).toString('base64')}`;
 }
 
-/**
- * `attempt` offsets the seed so a re-roll is actually a different roll: with
- * --seed pinned, the same seed and a near-identical prompt would hand back the
- * same sheet, bald panel and all.
- */
-function imageInput(options, prompt, extra = null, attempt = 0) {
+function imageInput(options, prompt, extra = null) {
   return {
     prompt,
     num_images: 1,
@@ -507,7 +498,7 @@ function imageInput(options, prompt, extra = null, attempt = 0) {
     // Only sent when a tier was asked for, so a normal catalog batch is byte
     // for byte the request it has always been. A length sheet sets it to 2K.
     ...(options.resolution ? { resolution: options.resolution } : null),
-    ...(options.seed === null ? null : { seed: options.seed + attempt }),
+    ...(options.seed === null ? null : { seed: options.seed }),
     ...extra,
   };
 }
@@ -596,9 +587,9 @@ Base heads: generating ${missing.length} of ${needed.length}`);
  * One style x variant x gender at every length it is offered at, in a single
  * generation.
  *
- * Structurally the same loop as the four-view branch below — compose a base,
- * edit it, measure every panel, re-roll the bald ones by name, keep the best
- * attempt — against a taller grid. The base is composed here rather than read
+ * Structurally the same path as the four-view branch below — compose a base,
+ * edit it, measure every panel, report what came back wrong — against a taller
+ * grid. The base is composed here rather than read
  * from `_base/`: a length base is the same four approved heads repeated once per
  * row, which is free to tile and would only be a second thing to keep in sync if
  * it were cached on disk.
@@ -626,71 +617,46 @@ async function generateLengthSheet(job, options, key) {
   const composed = composeGrid(layout, lengthBaseCells(heads, lengths));
   const baseUri = `data:image/png;base64,${composed.png.toString('base64')}`;
 
-  let best = null;
-  let missing = [];
-  let flat = [];
+  const prompt = styleLengthSheetPrompt({ style, gender, lengths, variant, extra: job.extra });
+  const image = await withRetry(job.label, 3, async () => {
+    const result = await runModel(
+      options.editModel,
+      imageInput(options, prompt, { image_urls: [baseUri], aspect_ratio: gridAspect(layout) }),
+      { key },
+    );
+    return firstImage(result);
+  });
 
-  for (let attempt = 0; attempt <= options.sheetRetries; attempt += 1) {
-    const prompt = styleLengthSheetPrompt({ style, gender, lengths, variant, extra: job.extra, missing, flat });
-    const image = await withRetry(job.label, 3, async () => {
-      const result = await runModel(
-        options.editModel,
-        imageInput(options, prompt, { image_urls: [baseUri], aspect_ratio: gridAspect(layout) }, attempt),
-        { key },
-      );
-      return firstImage(result);
-    });
+  const bytes = await fetchImageBytes(image.url);
 
-    const bytes = await fetchImageBytes(image.url);
-
-    let coverage = {};
-    let bald = [];
-    // A length sheet has two ways to fail, and both are silent in the response.
-    // A bald panel is a head the model skipped; a flat sheet is a range it did
-    // not draw. Neither is visible without measuring, so both are measured, and
-    // a sheet is only finished when it has neither.
-    let contrast = { rows: [], ratios: [], flat: [] };
-    try {
-      ({ coverage, bald } = inspectLengthSheet(bytes, lengths, { angles: options.angles }));
-      contrast = lengthContrast(coverage, lengths, { angles: options.angles });
-    } catch (error) {
-      console.warn(`  ! ${job.label}: could not measure hair coverage (${error.message})`);
-    }
-
-    // Ranked on both faults together, so a re-roll that fixes a bald panel by
-    // flattening the range is not mistaken for an improvement.
-    const faults = bald.length + contrast.flat.length;
-    if (!best || faults < best.faults) {
-      best = { prompt, url: image.url, bytes, coverage, bald, contrast, faults };
-    }
-    if (!faults) {
-      console.log(`  · ${job.label}: ${formatContrast(lengths, contrast)}`);
-      break;
-    }
-
-    missing = bald;
-    flat = contrast.flat;
-    const left = attempt < options.sheetRetries ? ' — re-rolling' : ' — out of retries';
-    if (bald.length) console.warn(`  ! ${job.label}: ${bald.join(', ')} came back bald${left}`);
-    if (contrast.flat.length) {
-      console.warn(
-        `  ! ${job.label}: ${contrast.flat.join(', ')} barely differs from the row above ` +
-          `(${formatContrast(lengths, contrast)})${left}`,
-      );
-    }
+  let coverage = {};
+  let bald = [];
+  // A length sheet has two ways to fail, and both are silent in the response.
+  // A bald panel is a head the model skipped; a flat sheet is a range it did
+  // not draw. Neither is visible without measuring, so both are still measured
+  // — but measuring only reports now. The sheet that came back is the sheet
+  // that is kept, and paying for a second one is a decision the caller makes
+  // with --force after looking at this one.
+  let contrast = { rows: [], ratios: [], flat: [] };
+  try {
+    ({ coverage, bald } = inspectLengthSheet(bytes, lengths, { angles: options.angles }));
+    contrast = lengthContrast(coverage, lengths, { angles: options.angles });
+  } catch (error) {
+    console.warn(`  ! ${job.label}: could not measure hair coverage (${error.message})`);
   }
 
-  await saveBytes(file, best.bytes);
-  if (best.faults) {
-    console.warn(`  ! ${job.label}: kept the best of ${options.sheetRetries + 1} — ${formatContrast(lengths, best.contrast)}`);
+  if (bald.length) console.warn(`  ! ${job.label}: ${bald.join(', ')} came back bald`);
+  if (contrast.flat.length) {
+    console.warn(
+      `  ! ${job.label}: ${contrast.flat.join(', ')} barely differs from the row above ` +
+        `(${formatContrast(lengths, contrast)})`,
+    );
+  } else if (!bald.length) {
+    console.log(`  · ${job.label}: ${formatContrast(lengths, contrast)}`);
   }
-  return {
-    prompt: best.prompt,
-    url: best.url,
-    coverage: best.coverage,
-    bald: best.bald,
-    contrast: best.contrast,
-  };
+
+  await saveBytes(file, bytes);
+  return { prompt, url: image.url, coverage, bald, contrast };
 }
 
 /**
@@ -755,50 +721,38 @@ async function generateStyleImage(job, options, manifest, key) {
 
     // A sheet is only a success if all four heads actually got the haircut. The
     // model skips one often enough (~1 panel in 8, usually `front`) that
-    // accepting the response as-is quietly puts a bald head in the catalog, so
-    // every sheet is measured and a skipped panel is re-rolled by name.
-    let best = null;
-    let missing = [];
-
-    for (let attempt = 0; attempt <= options.sheetRetries; attempt += 1) {
-      const prompt = styleSheetPrompt({ style, gender, variant, extra: job.extra, missing });
-      const image = await withRetry(job.label, 3, async () => {
-        const result = await runModel(
-          options.editModel,
-          imageInput(options, prompt, { image_urls: [baseUri] }, attempt),
-          { key },
-        );
-        return firstImage(result);
-      });
-
-      const bytes = await fetchImageBytes(image.url);
-
-      // An image that cannot be measured is not an image that should be thrown
-      // away — it has already been paid for. Treat it as unverified, keep it,
-      // and let slicing report the real decode problem.
-      let coverage = {};
-      let bald = [];
-      try {
-        ({ coverage, bald } = inspectSheet(bytes, { angles: options.angles }));
-      } catch (error) {
-        console.warn(`  ! ${job.label}: could not measure hair coverage (${error.message})`);
-      }
-
-      // Keep the best sheet seen, not the last one: a re-roll can come back
-      // worse, and there is no sense paying for three attempts and shipping the
-      // weakest.
-      if (!best || bald.length < best.bald.length) best = { prompt, url: image.url, bytes, coverage, bald };
-      if (!bald.length) break;
-
-      missing = bald;
-      const left = attempt < options.sheetRetries ? ' — re-rolling' : ' — out of retries';
-      console.warn(
-        `  ! ${job.label}: ${bald.join(', ')} came back bald (${formatCoverage(coverage, options.angles)})${left}`,
+    // accepting the response unmeasured quietly puts a bald head in the
+    // catalog, so every sheet is measured and a skipped panel is named in the
+    // run's closing report. Redoing it costs a second generation, so that is
+    // the caller's call to make with --force rather than this script's.
+    const prompt = styleSheetPrompt({ style, gender, variant, extra: job.extra });
+    const image = await withRetry(job.label, 3, async () => {
+      const result = await runModel(
+        options.editModel,
+        imageInput(options, prompt, { image_urls: [baseUri] }),
+        { key },
       );
+      return firstImage(result);
+    });
+
+    const bytes = await fetchImageBytes(image.url);
+
+    // An image that cannot be measured is not an image that should be thrown
+    // away — it has already been paid for. Treat it as unverified, keep it,
+    // and let slicing report the real decode problem.
+    let coverage = {};
+    let bald = [];
+    try {
+      ({ coverage, bald } = inspectSheet(bytes, { angles: options.angles }));
+    } catch (error) {
+      console.warn(`  ! ${job.label}: could not measure hair coverage (${error.message})`);
+    }
+    if (bald.length) {
+      console.warn(`  ! ${job.label}: ${bald.join(', ')} came back bald (${formatCoverage(coverage, options.angles)})`);
     }
 
-    await saveBytes(file, best.bytes);
-    return { prompt: best.prompt, url: best.url, coverage: best.coverage, bald: best.bald };
+    await saveBytes(file, bytes);
+    return { prompt, url: image.url, coverage, bald };
   }
 
   if (options.noEdit) {
@@ -1227,7 +1181,8 @@ async function checkSheets(options, manifest, catalog) {
   const weak = rows.filter((row) => row.lengths && row.contrast.flat.length);
   if (weak.length) {
     console.log(
-      `\n${weak.length} length sheet(s) do not show a wide enough range. Re-roll them:\n` +
+      `\n${weak.length} length sheet(s) do not show a wide enough range. ` +
+        'Each of these is another generation, so decide before running them:\n' +
         [...new Set(weak.map((row) => `  node scripts/generate-mannequins.mjs --lengths --force --style ${row.id} --gender ${row.gender}`))].join('\n'),
     );
   }
@@ -1528,8 +1483,8 @@ async function main() {
     // --force, and it is spelled out rather than left to be worked out.
     const ids = dedupeIds(incomplete.map(({ job }) => job.style.id));
     console.error(
-      `\n${incomplete.length} sheet(s) still have a bald view after ${options.sheetRetries} re-roll(s). ` +
-        'The best attempt was kept, so look at them in the contact sheet before redoing:',
+      `\n${incomplete.length} sheet(s) came back with a bald view. ` +
+        'They were kept as they are, so look at them in the contact sheet before paying to redo them:',
     );
     for (const { job, bald } of incomplete) console.error(`  ${job.label}: ${bald.join(', ')}`);
     console.error(`\n  node scripts/generate-mannequins.mjs --sheet --force --style ${ids.join(',')}`);
