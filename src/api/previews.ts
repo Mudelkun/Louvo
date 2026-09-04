@@ -74,10 +74,11 @@ interface SubmitResponse {
 
 export class PreviewError extends Error {
   readonly code: string;
+  /** 0 when the request never got a response at all — see `uploadPhoto`. */
   readonly status: number;
 
-  constructor(message: string, code: string, status: number) {
-    super(message);
+  constructor(message: string, code: string, status: number, options?: { cause?: unknown }) {
+    super(message, options);
     this.name = 'PreviewError';
     this.code = code;
     this.status = status;
@@ -219,18 +220,77 @@ function withDeadline<T>(work: Promise<T>): Promise<T> {
  * mention it.
  */
 export async function uploadPhoto(url: string, uri: string): Promise<void> {
-  if (Platform.OS === 'web') {
-    const blob = await (await fetch(uri)).blob();
-    const response = await withDeadline(fetch(url, { method: 'PUT', body: blob }));
-    if (!response.ok) {
-      throw new PreviewError(uploadFailure(response.status, await response.text()), 'upload_failed', response.status);
+  try {
+    if (Platform.OS === 'web') {
+      const blob = await (await fetch(uri)).blob();
+      const response = await withDeadline(fetch(url, { method: 'PUT', body: blob }));
+      if (!response.ok) {
+        throw new PreviewError(uploadFailure(response.status, await response.text()), 'upload_failed', response.status);
+      }
+      return;
+    }
+
+    await uploadNative(url, uri);
+  } catch (error) {
+    // A transport failure here has no status and no body to explain it, and on
+    // the web it has no *cause* either: a browser reports a blocked preflight to
+    // JavaScript as a bare `TypeError: Failed to fetch`, deliberately, so that a
+    // page cannot probe what it is not allowed to reach. Left raw it reached the
+    // user as "no connection to the generator" — which sent everyone looking at
+    // the API, the one part of the flow this request never touches.
+    //
+    // So it is named for the step it failed at rather than for a cause nobody
+    // has. `upload_failed` is what the tile reads from; `cause` keeps whatever
+    // the platform did say for the console line in `describeFailure`.
+    if (error instanceof PreviewError) throw error;
+    throw new PreviewError('the photo could not be uploaded', 'upload_failed', 0, { cause: error });
+  }
+}
+
+/**
+ * The native PUT, with a second way of making the same request.
+ *
+ * **`sessionType: 'foreground'`, and that is the fix.** `File.upload` defaults to
+ * a *background* `URLSession` on iOS, which is run out of process by
+ * `nsurlsessiond` — a different sandbox, a different TLS stack, and much the
+ * least exercised path under Expo Go, where the session identifier belongs to
+ * Expo Go rather than to this app. It was failing there while the identical
+ * request from the web build succeeded.
+ *
+ * Nothing was being bought with it. A background session's whole point is that
+ * the transfer survives the app being suspended — but the upload is only step
+ * two of three, and step three (`POST /ready`) is a JavaScript call that needs a
+ * live runtime. An upload that completes while the app is asleep leaves the job
+ * in `awaiting_upload` exactly as an interrupted one does. The durability
+ * promise on this flow starts *after* the photograph is up, and it is kept by
+ * the row in Postgres, not by the URLSession.
+ *
+ * The `fetch` fallback is honest belt-and-braces: this failure could not be
+ * reproduced off the affected phone, so if the native task still cannot run, the
+ * request is made the way the web build makes it — `File` implements `Blob`, so
+ * it is the same bytes with the same method to the same url. A `PreviewError`
+ * means the bucket *answered* and refused, or the deadline passed; that is an
+ * answer, and sending it again more slowly would not improve it.
+ */
+async function uploadNative(url: string, uri: string): Promise<void> {
+  const file = new File(uri);
+
+  try {
+    const result = await withDeadline(
+      file.upload(url, { httpMethod: 'PUT', mimeType: 'image/jpeg', sessionType: 'foreground' }),
+    );
+    if (result.status < 200 || result.status >= 300) {
+      throw new PreviewError(uploadFailure(result.status, result.body), 'upload_failed', result.status);
     }
     return;
+  } catch (error) {
+    if (error instanceof PreviewError) throw error;
+    console.warn('[hairify] native upload task failed, retrying as a plain PUT:', error);
   }
 
-  const result = await withDeadline(new File(uri).upload(url, { httpMethod: 'PUT', mimeType: 'image/jpeg' }));
-  if (result.status < 200 || result.status >= 300) {
-    throw new PreviewError(uploadFailure(result.status, result.body), 'upload_failed', result.status);
+  const response = await withDeadline(fetch(url, { method: 'PUT', body: file }));
+  if (!response.ok) {
+    throw new PreviewError(uploadFailure(response.status, await response.text()), 'upload_failed', response.status);
   }
 }
 
