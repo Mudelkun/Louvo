@@ -23,17 +23,4 @@ import type { Gender, HairTypeId } from './types';
 export type ExampleSource = number;
 
 /** Keyed by gender, then hair type — both sides may be missing entries. */
-export const hairTypeExamples: Partial<Record<Gender, Partial<Record<HairTypeId, ExampleSource>>>> = {
-  male: {
-    straight: require('../../assets/hair-types/male-straight.png'),
-    wavy: require('../../assets/hair-types/male-wavy.png'),
-    curly: require('../../assets/hair-types/male-curly.png'),
-    coily: require('../../assets/hair-types/male-coily.png'),
-  },
-  female: {
-    straight: require('../../assets/hair-types/female-straight.png'),
-    wavy: require('../../assets/hair-types/female-wavy.png'),
-    curly: require('../../assets/hair-types/female-curly.png'),
-    coily: require('../../assets/hair-types/female-coily.png'),
-  },
-};
+export const hairTypeExamples: Partial<Record<Gender, Partial<Record<HairTypeId, ExampleSource>>>> = {};
