@@ -8,7 +8,7 @@ import { CatalogBrowser } from '@/components/CatalogBrowser';
 import { ChoiceRow } from '@/components/Controls';
 import { ALL_HAIR_TYPES } from '@/lib/hairTypes';
 import { useSession } from '@/state/SessionContext';
-import { colors, spacing, type } from '@/theme/theme';
+import { makeStyles, spacing, useColors, type } from '@/theme/theme';
 
 // No "Everyone" option: the catalog is shot per gender, so the combined grid
 // was two mannequins' idea of the same cut side by side. One or the other.
@@ -19,6 +19,8 @@ const GENDER_FILTERS = [
 
 /** The full catalog, browsable outside the try-on flow. */
 export default function StylesTab() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { gender, hairTypeId } = useSession();
@@ -71,6 +73,6 @@ export default function StylesTab() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   header: { paddingHorizontal: spacing.xl, gap: spacing.xs },
-});
+}));

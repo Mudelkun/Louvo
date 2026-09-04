@@ -11,7 +11,7 @@ import { textureFor, variantCandidates } from '@/lib/hairTypes';
 import { useCatalog } from '@/state/CatalogContext';
 import { useGeneration } from '@/state/GenerationContext';
 import { useSession } from '@/state/SessionContext';
-import { colors, radii, shadow, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 const VISIBLE_MS = 6000;
 
@@ -23,6 +23,8 @@ const VISIBLE_MS = 6000;
  * is backgrounded; the banner stays for the foreground case.
  */
 export function LookNotification() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { notification, dismissNotification } = useGeneration();
@@ -118,13 +120,13 @@ export function LookNotification() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors, shadow }) => ({
   wrap: { pointerEvents: 'box-none', position: 'absolute', left: spacing.lg, right: spacing.lg, zIndex: 50 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.stage,
     borderRadius: radii.lg,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -139,4 +141,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.accent,
   },
-});
+}));

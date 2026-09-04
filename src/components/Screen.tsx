@@ -4,7 +4,7 @@ import React from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 interface ScreenProps {
   children: React.ReactNode;
@@ -20,17 +20,23 @@ export function Screen({
   children,
   scroll = true,
   padded = true,
-  background = colors.canvas,
+  background,
   contentStyle,
   footer,
 }: ScreenProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const insets = useSafeAreaInsets();
+  // Not a default parameter any more: the canvas is a value the running scheme
+  // decides, and a default is evaluated against whatever the module was
+  // imported with.
+  const ground = background ?? colors.canvas;
   const body = (
     <View style={[padded && { paddingHorizontal: spacing.xl }, contentStyle]}>{children}</View>
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: background }}>
+    <View style={{ flex: 1, backgroundColor: ground }}>
       {scroll ? (
         <ScrollView
           style={{ flex: 1 }}
@@ -47,7 +53,7 @@ export function Screen({
         <View
           style={[
             styles.footer,
-            { paddingBottom: Math.max(spacing.lg, insets.bottom), backgroundColor: background },
+            { paddingBottom: Math.max(spacing.lg, insets.bottom), backgroundColor: ground },
           ]}
         >
           {footer}
@@ -69,6 +75,8 @@ interface HeaderProps {
 }
 
 export function Header({ title, subtitle, step, onBack, hideBack, right, tone = 'light' }: HeaderProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const tint = tone === 'dark' ? colors.onDark : colors.ink;
@@ -133,6 +141,7 @@ export function Header({ title, subtitle, step, onBack, hideBack, right, tone = 
 
 /** Large screen title used under the compact header. */
 export function PageTitle({ title, subtitle }: { title: string; subtitle?: string }) {
+  const colors = useColors();
   return (
     <View style={{ marginBottom: spacing.xl }}>
       <Text style={[type.title, { color: colors.ink }]}>{title}</Text>
@@ -144,6 +153,8 @@ export function PageTitle({ title, subtitle }: { title: string; subtitle?: strin
 }
 
 export function SectionLabel({ children, right }: { children: string; right?: React.ReactNode }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={styles.sectionRow}>
       <Text style={[type.overline, { color: colors.muted, textTransform: 'uppercase' }]}>{children}</Text>
@@ -152,7 +163,7 @@ export function SectionLabel({ children, right }: { children: string; right?: Re
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -200,4 +211,4 @@ const styles = StyleSheet.create({
     borderTopColor: colors.hairline,
     ...Platform.select({ web: { boxShadow: '0 -8px 24px rgba(0,0,0,0.04)' }, default: {} }),
   },
-});
+}));

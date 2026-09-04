@@ -4,7 +4,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { HairType, HairTypeId } from '@/api/types';
 import { ControlHeading } from '@/components/ControlCard';
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 const tap = () => {
   if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => undefined);
@@ -66,6 +66,8 @@ export function HairTypeChoice({
    */
   note?: string | null;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View>
       <ControlHeading title="Hair type" hint="Tap to compare" />
@@ -123,7 +125,7 @@ export function HairTypeChoice({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   row: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   tile: {
     flex: 1,
@@ -157,4 +159,4 @@ const styles = StyleSheet.create({
   },
   name: { ...type.label, fontSize: 12, lineHeight: 16, letterSpacing: 0, color: colors.inkSoft },
   note: { color: colors.muted, marginTop: spacing.sm },
-});
+}));

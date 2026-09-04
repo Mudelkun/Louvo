@@ -12,7 +12,7 @@ import {
 
 import type { HairLength, HairLengthId } from '@/api/types';
 import { ControlHeading } from '@/components/ControlCard';
-import { colors, spacing, type } from '@/theme/theme';
+import { makeStyles, spacing, type } from '@/theme/theme';
 
 const tap = () => {
   if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => undefined);
@@ -67,6 +67,7 @@ export function LengthChoice({
    */
   note?: string | null;
 }) {
+  const styles = useStyles();
   const [width, setWidth] = useState(0);
   const widthRef = useRef(0);
   const stops = lengths.length;
@@ -206,7 +207,7 @@ export function LengthChoice({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   track: {
     height: THUMB + spacing.sm,
     marginTop: spacing.xs,
@@ -250,4 +251,4 @@ const styles = StyleSheet.create({
   labelText: { ...type.label, fontSize: 12, lineHeight: 16, letterSpacing: 0, color: colors.muted },
   labelTextOn: { color: colors.accentInk },
   note: { color: colors.muted, marginTop: spacing.sm },
-});
+}));

@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 const tap = () => {
   if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => undefined);
@@ -40,6 +40,8 @@ export function Chip({
   icon?: keyof typeof Ionicons.glyphMap;
   style?: ViewStyle;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <Pressable
       accessibilityRole="button"
@@ -55,8 +57,8 @@ export function Chip({
         style,
       ]}
     >
-      {icon ? <Ionicons name={icon} size={14} color={selected ? colors.onDark : colors.inkSoft} /> : null}
-      <Text style={[type.label, { color: selected ? colors.onDark : colors.inkSoft }]} numberOfLines={1}>
+      {icon ? <Ionicons name={icon} size={14} color={selected ? colors.onInkFill : colors.inkSoft} /> : null}
+      <Text style={[type.label, { color: selected ? colors.onInkFill : colors.inkSoft }]} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>
@@ -143,6 +145,8 @@ export function FilterSelect({
   variant?: 'pill' | 'plain';
   style?: ViewStyle;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const [open, setOpen] = useState(false);
   const selected = options.find((option) => option.id === value);
   const neutral = !selected || selected.id === options[0]?.id;
@@ -211,6 +215,8 @@ function SelectSheet({
   onClose: () => void;
   onChoose: (id: string) => void;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const illustrated = options.some((option) => option.image);
 
@@ -288,6 +294,8 @@ export function SwatchRow({
   onChange: (id: string) => void;
   contentPaddingHorizontal?: number;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <ScrollView
       horizontal
@@ -336,6 +344,8 @@ export function ChoiceRow({
   value: string | undefined;
   onChange: (id: string) => void;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={styles.segment}>
       {options.map((option) => {
@@ -355,7 +365,7 @@ export function ChoiceRow({
               pressed && !selected && { backgroundColor: colors.surfaceAlt },
             ]}
           >
-            <Text style={[type.label, { color: selected ? colors.onDark : colors.inkSoft }]}>{option.label}</Text>
+            <Text style={[type.label, { color: selected ? colors.onInkFill : colors.inkSoft }]}>{option.label}</Text>
           </Pressable>
         );
       })}
@@ -382,6 +392,8 @@ export function Slider({
   onChange: (value: number) => void;
   label?: string;
 }) {
+  const styles = useStyles();
+  const colors = useColors();
   const [width, setWidth] = useState(0);
   const widthRef = useRef(0);
   const valueRef = useRef(value);
@@ -452,7 +464,7 @@ export function Slider({
 
 // ---------------------------------------------------------------------------
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -464,7 +476,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.hairline,
   },
-  chipSelected: { backgroundColor: colors.ink, borderColor: colors.ink },
+  chipSelected: { backgroundColor: colors.inkFill, borderColor: colors.inkFill },
   select: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -530,7 +542,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  segmentItemSelected: { backgroundColor: colors.ink },
+  segmentItemSelected: { backgroundColor: colors.inkFill },
   swatchOuter: {
     width: 44,
     height: 44,
@@ -547,7 +559,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
+    // A ring around a hair colour, and hair colours are dark: a black wash
+    // vanishes on a dark canvas, so this is the palette's own hairline.
+    borderColor: colors.hairlineStrong,
   },
   sliderHeaderRow: {
     flexDirection: 'row',
@@ -573,4 +587,4 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
     boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.15)',
   },
-});
+}));

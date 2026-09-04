@@ -115,6 +115,39 @@ const previews = {
   expoPushUrl: process.env.EXPO_PUSH_URL ?? 'https://exp.host/--/api/v2/push/send',
 } as const;
 
+/**
+ * Sharing: where a shared link lives, and where it sends someone who follows it.
+ *
+ * All of it is optional and all of it degrades to something honest. With no
+ * `SHARE_BASE_URL` the landing page is served from this deployment's own origin,
+ * which is correct for a Railway URL and merely ugly for a marketing one. With
+ * no store urls the landing page offers the app's deep link and says the store
+ * listings are not live yet, rather than linking somewhere that 404s — a broken
+ * download button is a worse advertisement than an absent one.
+ *
+ * `appScheme` has to agree with `expo.scheme` in app.json. It is the one value
+ * here that is not cosmetic: it is what makes a link open the app somebody
+ * already has rather than a web page telling them to install it.
+ */
+const share = {
+  /** Public origin serving `/s/:code`. Falls back to the request's own origin. */
+  baseUrl: (optional('SHARE_BASE_URL') ?? '').replace(/\/$/, '') || null,
+  appScheme: process.env.APP_SCHEME ?? 'hairify',
+  iosAppStoreUrl: optional('IOS_APP_STORE_URL'),
+  androidPlayUrl: optional('ANDROID_PLAY_URL'),
+  /** Android package id, used to build a Play url and its `referrer` parameter. */
+  androidPackage: process.env.ANDROID_PACKAGE ?? 'com.hairify.app',
+  iosBundleId: process.env.IOS_BUNDLE_ID ?? 'com.hairify.app',
+  /** Numeric App Store id, for the iOS smart app banner. */
+  iosAppId: optional('IOS_APP_ID'),
+  /** Team id and signing fingerprints, for the universal-link association files. */
+  iosTeamId: optional('IOS_TEAM_ID'),
+  androidFingerprints: (optional('ANDROID_SHA256_FINGERPRINTS') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean),
+} as const;
+
 export const env = {
   /** Railway injects this. */
   databaseUrl: required('DATABASE_URL'),
@@ -158,4 +191,11 @@ export const env = {
    * process generate anything".
    */
   previews,
+
+  /**
+   * Sharing and referral. Never null: a deployment with none of it configured
+   * still mints links and still serves a landing page, it just has nowhere to
+   * send an install.
+   */
+  share,
 } as const;

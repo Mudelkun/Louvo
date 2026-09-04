@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 import React from 'react';
 
-import { colors } from '@/theme/theme';
+import { useColors } from '@/theme/theme';
 
 /** The try-on flow: photo → gender → hair type → browse → style → generating →
  *  result. Hair type is asked up front because it decides which styles exist,
@@ -12,6 +12,7 @@ import { colors } from '@/theme/theme';
  *  where the user stands; `generating` is a *view* onto it rather than a gate,
  *  and both of its exits leave the job running. */
 export default function TryLayout() {
+  const colors = useColors();
   return (
     <Stack
       screenOptions={{

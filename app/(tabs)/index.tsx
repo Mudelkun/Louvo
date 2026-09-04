@@ -11,7 +11,7 @@ import { useOnboarding } from '@/hooks/useOnboarding';
 import { usePhotoPicker } from '@/hooks/usePhotoPicker';
 import { BASE_HAIR_COLOR, DEMO_BASE_SHAPE, DEMO_PHOTO } from '@/lib/constants';
 import { useSession } from '@/state/SessionContext';
-import { colors, radii, spacing, type } from '@/theme/theme';
+import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 const { width } = Dimensions.get('window');
 /** The reference lays this screen out as a narrow centred column, not full-bleed. */
@@ -24,6 +24,8 @@ const GUTTER = Math.round(width * 0.1);
  * flow reads the way `App-reference.png` lays it out.
  */
 export default function TryOnHomeScreen() {
+  const styles = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { status } = useOnboarding();
@@ -100,7 +102,7 @@ export default function TryOnHomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   body: { flex: 1, justifyContent: 'center', paddingHorizontal: GUTTER },
   title: { color: colors.ink, textAlign: 'center' },
   subtitle: {
@@ -127,4 +129,4 @@ const styles = StyleSheet.create({
   rule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.hairlineStrong },
   note: { color: colors.muted, textAlign: 'center', marginTop: spacing.lg },
   sampleLink: { color: colors.muted, textAlign: 'center', marginTop: spacing.md, textDecorationLine: 'underline' },
-});
+}));
