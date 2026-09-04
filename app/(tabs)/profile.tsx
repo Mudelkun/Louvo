@@ -170,48 +170,52 @@ function LookTile({
     : undefined;
   const variants = hairstyle ? variantCandidates(hairstyle, look.hairType) : undefined;
 
+  // The trash icon is a sibling of the tile, not a child of it, for the reason
+  // `<StyleCard>`'s heart is: both are controls, both are
+  // `accessibilityRole="button"`, and on web that is a real `<button>` — a
+  // button inside a button is invalid HTML that React refuses to render. The
+  // wrapper owns the tile's box and the icon is laid over its top-right corner,
+  // which is where it sat when it was inside the picture.
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Open ${look.hairstyleName} look`}
-      onPress={onPress}
-      style={({ pressed }) => [styles.tile, pressed && { opacity: 0.9 }]}
-    >
-      <PhotoFrame
-        uri={look.resultUri}
-        rounded={radii.lg}
-        style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}
-        demo={{
-          styleId: look.hairstyleId,
-          shape: shape ?? DEMO_BASE_SHAPE,
-          options: look.options,
-          color,
-          gender: look.gender,
-          variants,
-        }}
-        demoWidth={CARD_HEIGHT * 0.78}
+    <View style={styles.tile}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${look.hairstyleName} look`}
+        onPress={onPress}
+        style={({ pressed }) => (pressed ? { opacity: 0.9 } : null)}
       >
-        <LinearGradient
-          colors={['transparent', 'rgba(24,21,19,0.72)']}
-          style={styles.caption}
-          pointerEvents="none"
+        <PhotoFrame
+          uri={look.resultUri}
+          rounded={radii.lg}
+          style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}
+          demo={{
+            styleId: look.hairstyleId,
+            shape: shape ?? DEMO_BASE_SHAPE,
+            options: look.options,
+            color,
+            gender: look.gender,
+            variants,
+          }}
+          demoWidth={CARD_HEIGHT * 0.78}
         >
-          <Text style={[type.caption, { color: colors.onDark, fontWeight: '700' }]} numberOfLines={1}>
-            {look.hairstyleName}
-          </Text>
-        </LinearGradient>
+          <LinearGradient colors={['transparent', 'rgba(24,21,19,0.72)']} style={styles.caption}>
+            <Text style={[type.caption, { color: colors.onDark, fontWeight: '700' }]} numberOfLines={1}>
+              {look.hairstyleName}
+            </Text>
+          </LinearGradient>
+        </PhotoFrame>
+      </Pressable>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Delete ${look.hairstyleName} look`}
-          hitSlop={8}
-          onPress={onDelete}
-          style={({ pressed }) => [styles.tileButton, pressed && { opacity: 0.7 }]}
-        >
-          <Ionicons name="trash-outline" size={15} color={colors.onDark} />
-        </Pressable>
-      </PhotoFrame>
-    </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Delete ${look.hairstyleName} look`}
+        hitSlop={8}
+        onPress={onDelete}
+        style={({ pressed }) => [styles.tileButton, pressed && { opacity: 0.7 }]}
+      >
+        <Ionicons name="trash-outline" size={15} color={colors.onDark} />
+      </Pressable>
+    </View>
   );
 }
 
@@ -236,56 +240,65 @@ function JobTile({
 }) {
   const failed = job.status === 'failed';
 
+  // Retry and Cancel are siblings of the tile rather than children of it, for
+  // the reason the trash icon above is: a `<button>` inside a `<button>` is
+  // invalid HTML on web. The wrapper is the tile, and the three controls are
+  // three separate answers to a tap anyway — watch it, retry it, drop it.
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Watch the ${job.hairstyleName} preview`}
-      onPress={onOpen}
-      style={({ pressed }) => [styles.tile, styles.jobTile, pressed && { opacity: 0.9 }]}
-    >
+    <View style={[styles.tile, styles.jobTile]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Watch the ${job.hairstyleName} preview`}
+        onPress={onOpen}
+        style={({ pressed }) => [styles.jobBody, pressed && { opacity: 0.9 }]}
+      >
+        {failed ? (
+          <>
+            <Ionicons name="alert-circle-outline" size={30} color={colors.onDark} />
+            <Text style={[type.caption, styles.jobLabel]} numberOfLines={1}>
+              {job.hairstyleName}
+            </Text>
+            {/* Which failure it was, so Retry is a decision rather than a guess —
+                a dropped connection is worth pressing again, a rejected key is not. */}
+            <Text
+              style={[type.caption, { color: colors.onDarkMuted, textAlign: 'center' }]}
+              numberOfLines={2}
+            >
+              {job.error ?? 'Generation failed'}
+            </Text>
+          </>
+        ) : (
+          <>
+            <ProgressRing
+              progress={job.progress}
+              size={CARD_WIDTH * 0.44}
+              strokeWidth={5}
+              trackColor="rgba(255,255,255,0.18)"
+              labelStyle={{ ...type.bodyStrong, color: colors.onDark }}
+            />
+            <Text style={[type.caption, styles.jobLabel]} numberOfLines={1}>
+              {job.hairstyleName}
+            </Text>
+            {/* The stage the generator reported, not the word "Processing" — the
+                job carries `stepIndex` now, and a tile that names the step is the
+                difference between a wait and a hang. */}
+            <Text style={[type.caption, { color: colors.onDarkMuted, textAlign: 'center' }]} numberOfLines={1}>
+              {GENERATION_STEPS[Math.min(job.stepIndex, GENERATION_STEPS.length - 1)].label}
+            </Text>
+          </>
+        )}
+      </Pressable>
+
       {failed ? (
-        <>
-          <Ionicons name="alert-circle-outline" size={30} color={colors.onDark} />
-          <Text style={[type.caption, styles.jobLabel]} numberOfLines={1}>
-            {job.hairstyleName}
-          </Text>
-          {/* Which failure it was, so Retry is a decision rather than a guess —
-              a dropped connection is worth pressing again, a rejected key is not. */}
-          <Text
-            style={[type.caption, { color: colors.onDarkMuted, textAlign: 'center' }]}
-            numberOfLines={2}
-          >
-            {job.error ?? 'Generation failed'}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onRetry}
-            style={({ pressed }) => [styles.jobAction, pressed && { opacity: 0.8 }]}
-          >
-            <Ionicons name="refresh" size={14} color={colors.onDark} />
-            <Text style={[type.caption, { color: colors.onDark, fontWeight: '700' }]}>Try again</Text>
-          </Pressable>
-        </>
-      ) : (
-        <>
-          <ProgressRing
-            progress={job.progress}
-            size={CARD_WIDTH * 0.44}
-            strokeWidth={5}
-            trackColor="rgba(255,255,255,0.18)"
-            labelStyle={{ ...type.bodyStrong, color: colors.onDark }}
-          />
-          <Text style={[type.caption, styles.jobLabel]} numberOfLines={1}>
-            {job.hairstyleName}
-          </Text>
-          {/* The stage the generator reported, not the word "Processing" — the
-              job carries `stepIndex` now, and a tile that names the step is the
-              difference between a wait and a hang. */}
-          <Text style={[type.caption, { color: colors.onDarkMuted, textAlign: 'center' }]} numberOfLines={1}>
-            {GENERATION_STEPS[Math.min(job.stepIndex, GENERATION_STEPS.length - 1)].label}
-          </Text>
-        </>
-      )}
+        <Pressable
+          accessibilityRole="button"
+          onPress={onRetry}
+          style={({ pressed }) => [styles.jobAction, pressed && { opacity: 0.8 }]}
+        >
+          <Ionicons name="refresh" size={14} color={colors.onDark} />
+          <Text style={[type.caption, { color: colors.onDark, fontWeight: '700' }]}>Try again</Text>
+        </Pressable>
+      ) : null}
 
       <Pressable
         accessibilityRole="button"
@@ -296,7 +309,7 @@ function JobTile({
       >
         <Ionicons name="close" size={16} color={colors.onDark} />
       </Pressable>
-    </Pressable>
+    </View>
   );
 }
 
@@ -315,6 +328,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   tile: { width: CARD_WIDTH, height: CARD_HEIGHT, borderRadius: radii.lg, ...shadow.card },
   caption: {
+    pointerEvents: 'none',
     position: 'absolute',
     left: 0,
     right: 0,
@@ -330,6 +344,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.md,
   },
+  jobBody: { alignItems: 'center', gap: spacing.sm },
   jobLabel: { color: colors.onDark, fontWeight: '700', marginTop: spacing.xs },
   jobAction: {
     flexDirection: 'row',

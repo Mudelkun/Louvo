@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MannequinBadge } from '@/components/Mannequin';
 import { useHairColorById } from '@/hooks/useHairColor';
+import { NATIVE_DRIVER } from '@/lib/motion';
 import { textureFor, variantCandidates } from '@/lib/hairTypes';
 import { useCatalog } from '@/state/CatalogContext';
 import { useGeneration } from '@/state/GenerationContext';
@@ -33,9 +34,9 @@ export function LookNotification() {
 
   useEffect(() => {
     if (!notification) return;
-    Animated.spring(slide, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 180 }).start();
+    Animated.spring(slide, { toValue: 1, useNativeDriver: NATIVE_DRIVER, damping: 18, stiffness: 180 }).start();
     const timer = setTimeout(() => {
-      Animated.timing(slide, { toValue: 0, duration: 220, useNativeDriver: true }).start(
+      Animated.timing(slide, { toValue: 0, duration: 220, useNativeDriver: NATIVE_DRIVER }).start(
         dismissNotification,
       );
     }, VISIBLE_MS);
@@ -58,7 +59,6 @@ export function LookNotification() {
 
   return (
     <Animated.View
-      pointerEvents="box-none"
       style={[
         styles.wrap,
         { top: insets.top + spacing.sm },
@@ -68,35 +68,42 @@ export function LookNotification() {
         },
       ]}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${notification.hairstyleName} preview is ready. Open it.`}
-        onPress={open}
-        style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]}
-      >
-        {hairstyle ? (
-          <MannequinBadge
-            styleId={hairstyle.id}
-            shape={{ ...hairstyle.shape, texture: textureFor(hairstyle, notification.hairType) }}
-            color={color}
-            gender={notification.gender}
-            variants={variantCandidates(hairstyle, notification.hairType)}
-            size={38}
-          />
-        ) : (
-          <View style={styles.fallbackBadge}>
-            <Ionicons name="sparkles" size={17} color={colors.onDark} />
-          </View>
-        )}
+      {/* The dismiss button is a sibling of the card's own press target rather
+          than a child of it: both are `accessibilityRole="button"`, which on
+          web is a real `<button>`, and a button inside a button is invalid HTML
+          that React refuses to render. They are two answers to a tap anyway —
+          the card opens the look, the cross throws the banner away. */}
+      <View style={styles.card}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${notification.hairstyleName} preview is ready. Open it.`}
+          onPress={open}
+          style={({ pressed }) => [styles.cardBody, pressed && { opacity: 0.92 }]}
+        >
+          {hairstyle ? (
+            <MannequinBadge
+              styleId={hairstyle.id}
+              shape={{ ...hairstyle.shape, texture: textureFor(hairstyle, notification.hairType) }}
+              color={color}
+              gender={notification.gender}
+              variants={variantCandidates(hairstyle, notification.hairType)}
+              size={38}
+            />
+          ) : (
+            <View style={styles.fallbackBadge}>
+              <Ionicons name="sparkles" size={17} color={colors.onDark} />
+            </View>
+          )}
 
-        <View style={{ flex: 1 }}>
-          <Text style={[type.bodyStrong, { color: colors.onDark }]} numberOfLines={1}>
-            Your new look is ready
-          </Text>
-          <Text style={[type.caption, { color: colors.onDarkMuted }]} numberOfLines={1}>
-            {notification.hairstyleName} · tap to view
-          </Text>
-        </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[type.bodyStrong, { color: colors.onDark }]} numberOfLines={1}>
+              Your new look is ready
+            </Text>
+            <Text style={[type.caption, { color: colors.onDarkMuted }]} numberOfLines={1}>
+              {notification.hairstyleName} · tap to view
+            </Text>
+          </View>
+        </Pressable>
 
         <Pressable
           accessibilityRole="button"
@@ -106,13 +113,13 @@ export function LookNotification() {
         >
           <Ionicons name="close" size={18} color={colors.onDarkMuted} />
         </Pressable>
-      </Pressable>
+      </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { position: 'absolute', left: spacing.lg, right: spacing.lg, zIndex: 50 },
+  wrap: { pointerEvents: 'box-none', position: 'absolute', left: spacing.lg, right: spacing.lg, zIndex: 50 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -123,6 +130,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     ...shadow.raised,
   },
+  cardBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   fallbackBadge: {
     width: 38,
     height: 38,

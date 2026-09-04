@@ -4,6 +4,7 @@ import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, G, LinearGradient as SvgGradient, Path, Rect, Stop } from 'react-native-svg';
 
+import { NATIVE_DRIVER } from '@/lib/motion';
 import { useSmoothProgress } from '@/components/ProgressRing';
 import { colors, radii, spacing, type } from '@/theme/theme';
 
@@ -111,9 +112,9 @@ export function Scissors({ size = 58 }: { size?: number }) {
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(snip, { toValue: 0, duration: 130, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+        Animated.timing(snip, { toValue: 0, duration: 130, easing: Easing.in(Easing.quad), useNativeDriver: NATIVE_DRIVER }),
         Animated.delay(90),
-        Animated.timing(snip, { toValue: 1, duration: 300, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(snip, { toValue: 1, duration: 300, easing: Easing.out(Easing.cubic), useNativeDriver: NATIVE_DRIVER }),
         Animated.delay(150),
       ]),
     );
@@ -140,7 +141,7 @@ export function Scissors({ size = 58 }: { size?: number }) {
     snip.interpolate({ inputRange: [0, 1], outputRange: [`${from}deg`, `${to}deg`] });
 
   return (
-    <View style={{ width: size, height: size }} pointerEvents="none">
+    <View style={{ width: size, height: size, pointerEvents: 'none' }}>
       <Animated.View
         style={[StyleSheet.absoluteFill, { transform: [{ rotate: angle(-BLADE_CLOSED, -BLADE_OPEN) }] }]}
       >
@@ -213,7 +214,7 @@ export function ScanningPhoto({
         toValue: 1,
         duration: 2400,
         easing: Easing.inOut(Easing.sin),
-        useNativeDriver: true,
+        useNativeDriver: NATIVE_DRIVER,
       }),
     );
     loop.start();
@@ -235,7 +236,7 @@ export function ScanningPhoto({
         toValue: 1,
         duration: 2900,
         easing: Easing.inOut(Easing.quad),
-        useNativeDriver: true,
+        useNativeDriver: NATIVE_DRIVER,
       }),
     );
     loop.start();
@@ -254,13 +255,15 @@ export function ScanningPhoto({
         {/* The photo clears as the work lands: driven by real progress, so it is
             a reading of the job rather than an animation playing over one. */}
         <View
-          pointerEvents="none"
-          style={[StyleSheet.absoluteFill, { backgroundColor: colors.ink, opacity: 0.04 + 0.3 * (1 - clarity) }]}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: colors.ink, opacity: 0.04 + 0.3 * (1 - clarity), pointerEvents: 'none' },
+          ]}
         />
 
         <Animated.View
-          pointerEvents="none"
           style={{
+            pointerEvents: 'none',
             position: 'absolute',
             left: 0,
             right: 0,
@@ -305,7 +308,7 @@ export function ScanningPhoto({
       </View>
 
       {/* The frame is drawn over the clip, or the stroke is cut in half by it. */}
-      <Svg width={width} height={height} style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Svg width={width} height={height} style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
         <Defs>
           <SvgGradient id={`frame${uid}`} x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor={colors.accent} />
@@ -417,13 +420,13 @@ export function WordTicker({
   useEffect(() => {
     if (words.length < 2) return;
     const timer = setInterval(() => {
-      Animated.timing(enter, { toValue: 0, duration: 160, useNativeDriver: true }).start(() => {
+      Animated.timing(enter, { toValue: 0, duration: 160, useNativeDriver: NATIVE_DRIVER }).start(() => {
         setIndex((n) => (n + 1) % words.length);
         Animated.timing(enter, {
           toValue: 1,
           duration: 260,
           easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: NATIVE_DRIVER,
         }).start();
       });
     }, intervalMs);
@@ -465,9 +468,9 @@ export function FactTicker({ facts, intervalMs = 4200 }: { facts: string[]; inte
   useEffect(() => {
     if (facts.length < 2) return;
     const timer = setInterval(() => {
-      Animated.timing(fade, { toValue: 0, duration: 260, useNativeDriver: true }).start(() => {
+      Animated.timing(fade, { toValue: 0, duration: 260, useNativeDriver: NATIVE_DRIVER }).start(() => {
         setIndex((n) => (n + 1) % facts.length);
-        Animated.timing(fade, { toValue: 1, duration: 320, useNativeDriver: true }).start();
+        Animated.timing(fade, { toValue: 1, duration: 320, useNativeDriver: NATIVE_DRIVER }).start();
       });
     }, intervalMs);
     return () => clearInterval(timer);

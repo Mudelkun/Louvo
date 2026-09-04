@@ -2,9 +2,11 @@ import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleProp, StyleSheet, Text, TextStyle, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
+import { createAnimatedSvg } from '@/components/animatedSvg';
+import { NATIVE_DRIVER } from '@/lib/motion';
 import { colors, type } from '@/theme/theme';
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedCircle = createAnimatedSvg(Circle);
 
 /**
  * Progress, eased.
@@ -101,8 +103,8 @@ export function ProgressRing({
     if (!pulse) return;
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(breath, { toValue: 1, duration: 780, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(breath, { toValue: 0, duration: 780, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(breath, { toValue: 1, duration: 780, easing: Easing.inOut(Easing.quad), useNativeDriver: NATIVE_DRIVER }),
+        Animated.timing(breath, { toValue: 0, duration: 780, easing: Easing.inOut(Easing.quad), useNativeDriver: NATIVE_DRIVER }),
       ]),
     );
     loop.start();
@@ -147,8 +149,7 @@ export function ProgressRing({
         // driver while the arc itself tweens in JS — one Animated.Value cannot
         // do both, and strokeDashoffset has no native path.
         <Animated.View
-          pointerEvents="none"
-          style={[StyleSheet.absoluteFill, { transform: [{ rotate: headRotation }] }]}
+          style={[StyleSheet.absoluteFill, { transform: [{ rotate: headRotation }], pointerEvents: 'none' }]}
         >
           <Animated.View
             style={[
@@ -166,7 +167,7 @@ export function ProgressRing({
         </Animated.View>
       ) : null}
 
-      <View style={[StyleSheet.absoluteFill, styles.center]} pointerEvents="none">
+      <View style={[StyleSheet.absoluteFill, styles.center, { pointerEvents: 'none' }]}>
         {showLabel ? (
           <>
             <Text style={[type.display, { color: colors.ink }, labelStyle]}>{percent}%</Text>
