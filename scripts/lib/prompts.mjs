@@ -8,7 +8,7 @@
  * two styles the generic vocabulary describes badly.
  */
 
-import { SHEET, panelLabel } from './sheet.mjs';
+import { SHEET, lengthSheet, panelLabel, parseLengthCell } from './sheet.mjs';
 
 /**
  * Left to itself the model renders hair as an editorial wig — inflated volume,
@@ -459,6 +459,157 @@ export function styleSheetPrompt({ style, gender, variant = 'any', extra, missin
     lines.push(
       '',
       `Attention: a previous attempt returned the ${listOf(labels)} ${plural(labels, 'quadrant')} still bald, with the mannequin's scalp bare. Fix that: ${listOf(labels)} must wear the same ${cut} as the other views — the same length, shape and colour, drawn correctly for that camera angle — while the ${count} views stay consistent with each other.`,
+    );
+  }
+
+  if (extra) lines.push('', extra);
+  return lines.join('\n');
+}
+
+
+// ---------------------------------------------------------------------------
+// Length sheets
+// ---------------------------------------------------------------------------
+
+/**
+ * What each stop on the length slider asks the model for.
+ *
+ * Written relative to the cut rather than in absolute measurements, and that is
+ * the whole trick: "four inches on top" is a different instruction for a
+ * pompadour than for a buzz cut, and the catalog has no per-style length to
+ * measure from. "Shorter than this cut is normally worn" is the same instruction
+ * for every style, and the model already knows where a given cut usually sits —
+ * that knowledge is what every render on disk was produced from.
+ *
+ * `medium` is the anchor and its wording says so explicitly. It has to come back
+ * as the cut at its default length, because that is what the rest of the catalog
+ * already depicts and what the app shows when the slider has not been touched.
+ * A `medium` row that drifted would put the anchor out of step with 356 renders
+ * that are not being re-shot.
+ *
+ * The clause doing the most work is the last one on `short` and `long`. Left to
+ * itself the model treats "shorter" as licence to give a different haircut, and
+ * three rows of three different cuts is exactly what a length slider must never
+ * show — the user is dragging between them and comparing them directly.
+ */
+export const HAIR_LENGTHS = {
+  short:
+    'roughly HALF the hair length of the middle row — cropped dramatically closer all over, much less weight, much less drop. A clearly, obviously shorter cut, not a slight trim',
+  medium:
+    'the cut at its normal, default length — exactly as a barber or stylist would give it if asked for it by name, with no instruction about length. This row is the reference the other rows are measured against',
+  long:
+    'roughly TWICE the hair length of the middle row — dramatically grown out, with far more length, much more weight and much more drop. A clearly, obviously longer cut, not a slight extension',
+};
+
+/**
+ * The paragraph that makes the difference between rows actually visible.
+ *
+ * It exists because the first version of this prompt did not work and could not
+ * have: "noticeably shorter" is not a quantity, and the sentence next to it —
+ * keep it unmistakably the same haircut — was read as the stronger of the two.
+ * The model split the difference and returned three rows a viewer had to
+ * compare side by side to tell apart, which is a slider that appears not to
+ * respond.
+ *
+ * Two fixes, and both are needed. The lengths are stated as *ratios against the
+ * middle row* rather than in adjectives: half and twice are quantities that mean
+ * the same thing for a buzz cut and a wolf cut, which absolute measurements
+ * ("four inches") do not. And the "same haircut" constraint is scoped to what it
+ * was always meant to protect — the parting, the shaping, the finish, the
+ * identity of the cut — explicitly *not* to the amount of hair, which is the one
+ * thing that must change.
+ *
+ * The closing clause is the mirror of the one in `baseHalfFromFrontPrompt`.
+ * There the model reliably over-rotates, so the prompt says "if in doubt, turn it
+ * less". Here it reliably under-differentiates, so it says the opposite. Both are
+ * corrections for a known bias in one direction, and both are worth the words.
+ */
+export const LENGTH_CONTRAST = [
+  'The difference in length between the rows must be large and immediately obvious. Someone glancing at the image, or seeing it as a small thumbnail, must be able to say instantly which row is shortest and which is longest without comparing them side by side or looking closely.',
+  'A subtle difference between the rows is a failure. Three rows that look nearly the same make the image unusable.',
+  'Keeping "the same haircut" across the rows means keeping the same parting, the same shaping, the same hairline, the same styling and the same finish — the cut stays recognisably itself. It does NOT mean keeping the same amount of hair. The amount of hair is the one thing that must change dramatically from row to row.',
+  'If in doubt, exaggerate the difference between the rows rather than understate it.',
+].join(' ');
+
+/** The `Length:` line for one row of a length sheet. */
+export const lengthLine = (length) =>
+  `${length.charAt(0).toUpperCase()}${length.slice(1)}: ${HAIR_LENGTHS[length]}`;
+
+/**
+ * One hairstyle at several lengths, as an edit of the composed length base.
+ *
+ * The same argument as `styleSheetPrompt` — the reference *is* the specification
+ * for the mannequin, the angles, the framing and the light — with one dimension
+ * added, and one new failure to guard against.
+ *
+ * That failure is not the bald panel (which this inherits, and which gets three
+ * times the opportunity to happen across twelve heads). It is the model reading
+ * the rows as separate *haircuts*. They are one cut sampled at three points on a
+ * continuous property, and the prompt has to say so in the terms the sheet is
+ * laid out in: down any column only the length changes, across any row only the
+ * camera moves. Both sentences are here because dropping either one loses a
+ * different half of the grid.
+ */
+export function styleLengthSheetPrompt({ style, gender, lengths, variant = 'any', extra, missing = [], flat = [] }) {
+  const layout = lengthSheet(lengths);
+  const gendered = GENDER_CUT[gender];
+  const cut = gendered ? `${gendered.label} ${style.name}` : style.name;
+  const type = hairTypeLine(variant);
+  const count = layout.cells.length;
+  const angles = SHEET.cells.join(', ');
+
+  const lines = [
+    `Use the provided image as the exact visual reference. It is a ${layout.cols} by ${layout.rows} grid containing ${count} views of the same mannequin: ${layout.rows} rows of ${layout.cols} views each, and every row shows the same head from the same ${layout.cols} camera angles in the same order (${angles}). Recreate the image while applying the requested ${cut} to every mannequin.`,
+    '',
+    `All ${count} heads must be wearing the hairstyle. Every panel is a separate head that has to be re-drawn with the new hair: none of the ${count} may be left bald, left with the reference's own hair, or copied through unchanged. A panel returned without the hairstyle makes the whole image unusable.`,
+    '',
+    'Hair specifications:',
+    '',
+    `Hairstyle: ${cut}`,
+    `Hair color: ${hairColour(variant)}`,
+    ...(type ? [type] : []),
+    ...(gendered ? [gendered.line] : []),
+    '',
+    `The ${layout.rows} rows are the same haircut worn at ${layout.rows} different lengths, shortest at the top and longest at the bottom:`,
+    '',
+    ...lengths.map((length, row) => `Row ${row + 1} (top to bottom) — ${lengthLine(length)}`),
+    '',
+    `This is one haircut at ${layout.rows} lengths, not ${layout.rows} different haircuts. Every row keeps the same shape, the same parting, the same hairline and the same finish as the others; the only thing that changes from row to row is how long the hair is. Someone reading down a single column must see one cut being grown out, never a different style.`,
+    '',
+    LENGTH_CONTRAST,
+    '',
+    `Reading across any row, only the camera angle changes: the ${layout.cols} views in a row are the same head at the same length, seen from ${angles}. Reading down any column, only the length changes: the same camera angle and the same haircut, worn shorter or longer.`,
+    '',
+    'Reference fidelity is critical: Keep the exact same mannequin design, head shape, facial surface, proportions, skin/material appearance, camera angles, framing, lighting, background, positioning, and grid layout from the reference image.',
+    '',
+    'Do not redesign or modify the mannequin in any way. Do not add facial features, eyes, nose, mouth, eyebrows, ethnicity-specific characteristics, skin-tone changes, accessories, clothing, or other identifying features.',
+    '',
+    `The only meaningful change should be the hair: replace the existing hairstyle with ${cut} while maintaining the same mannequin and presentation across all ${count} views.`,
+    '',
+    'The result should look like a clean professional hairstyle reference/catalog image, with realistic but polished 3D hair, clearly showing the haircut from every angle at every length.',
+  ];
+
+  // Naming the panel that failed is the whole point of the retry — a plain
+  // re-roll tends to skip a panel again, and often the same one.
+  if (missing.length) {
+    const labels = missing.map((cell) => {
+      const { length, angle } = parseLengthCell(cell);
+      return `${length} ${angle}`;
+    });
+    lines.push(
+      '',
+      `Attention: a previous attempt returned the ${listOf(labels)} ${plural(labels, 'panel')} still bald, with the mannequin's scalp bare. Fix that: ${listOf(labels)} must wear the same ${cut} as the rest of the grid, at the length its own row calls for, drawn correctly for that camera angle.`,
+    );
+  }
+
+  // The other measured failure, and the one this prompt was rewritten for: the
+  // rows came back so similar that the sheet is not a length range at all.
+  // Naming the rows that failed to separate is worth more than a plain re-roll,
+  // for the same reason naming a bald quadrant is.
+  if (flat.length) {
+    lines.push(
+      '',
+      `Attention: a previous attempt returned the ${listOf(flat)} ${plural(flat, 'row')} with almost exactly the same amount of hair as the row above, so the image did not show a range of lengths at all. Fix that: make the length difference between every pair of rows far larger and obvious at a glance. The shortest row must be dramatically shorter than the middle row, and the longest row dramatically longer. Exaggerate it.`,
     );
   }
 

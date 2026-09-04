@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Dimensions, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { categoriesFor, filterHairstyles, hairTypesFor, type SortId } from '@/api/client';
@@ -9,7 +9,9 @@ import { EmptyState, LoadingState } from '@/components/Feedback';
 import { StyleCard } from '@/components/StyleCard';
 import { useHairColor } from '@/hooks/useHairColor';
 import { hairTypeExample, hasHairTypeExamples } from '@/lib/hairTypeExample';
-import { ALL_HAIR_TYPES } from '@/lib/hairTypes';
+import { HERO_ANGLE } from '@/lib/hairShape';
+import { ALL_HAIR_TYPES, variantsOf } from '@/lib/hairTypes';
+import { preloadVariants } from '@/lib/mannequinPreload';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { colors, radii, spacing, type } from '@/theme/theme';
@@ -121,6 +123,25 @@ export function CatalogBrowser({
     () => filterHairstyles(hairstyles, { gender, hairType, categoryId, sort, search }),
     [hairstyles, gender, hairType, categoryId, sort, search],
   );
+
+  /**
+   * The other textures of everything on screen, fetched in the background.
+   *
+   * Changing the hair type is not a filter over one set of pictures: it picks a
+   * different render of most of the survivors, so twenty cards all reach for an
+   * image that has never been loaded and the grid changes over a card at a time.
+   * Warming them while the user is browsing makes the switch a redraw.
+   *
+   * Only the hero angle, since a card never draws anything else, and only where
+   * the type can actually be changed from the grid — a screen with no hair-type
+   * filter on it has nothing to prepare for. `preloadVariants` fetches each
+   * source once per process and one at a time, so re-running this on every
+   * filter change costs nothing and never competes with the images being drawn.
+   */
+  useEffect(() => {
+    if (!onHairTypeChange) return;
+    for (const style of results) preloadVariants(style.id, gender, variantsOf(style), [HERO_ANGLE]);
+  }, [results, gender, onHairTypeChange]);
 
   return (
     <FlatList

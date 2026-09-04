@@ -93,8 +93,11 @@ const IDENTITY_EPSILON = 0.01;
  * The `feColorMatrix` values that recolour a catalog render, or null when the
  * chosen colour is the shade the catalog was already shot in.
  *
- * Null is the point of the fast path: the default colour costs nothing, the
- * render goes straight to `<Image>` and no filter is created at all.
+ * Null is the point: the render is drawn with no filter attached at all, so a
+ * shade the catalog was already shot in costs nothing. It is drawn through the
+ * same `<Svg>` either way — `<Mannequin>` used to switch to an `<Image>` here,
+ * which made the presence of a grade a change of component and put a blank
+ * frame into every hair-type switch that crossed between the two base shades.
  */
 export function hairGrade(
   color: HairColor | null | undefined,

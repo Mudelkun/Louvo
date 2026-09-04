@@ -14,6 +14,13 @@
  * nothing: a directory listing, plus a hair mask computed locally for any render
  * that is missing one (see scripts/generate-hair-masks.mjs).
  *
+ * Being wired to `prestart` is also what makes it the right place to create the
+ * render directory tree, empty, before Metro's first crawl. Metro's Windows and
+ * Linux watcher loses files written into a directory that was created after the
+ * crawl, which is every `--lengths` run against a running dev server — see
+ * `ensureRenderDirs` in lib/renders.mjs for the mechanism. Creating the tree
+ * here means no render directory is ever born mid-session.
+ *
  *   node scripts/sync-mannequin-renders.mjs [--out assets/mannequins]
  */
 
@@ -21,7 +28,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { writeRenderModule } from './lib/renders.mjs';
+import { loadCatalog } from './lib/catalog.mjs';
+import { ensureRenderDirs, writeRenderModule } from './lib/renders.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -30,12 +38,22 @@ const outIndex = argv.findIndex((arg) => arg === '--out');
 const out = path.resolve(ROOT, outIndex >= 0 ? argv[outIndex + 1] : path.join('assets', 'mannequins'));
 const quiet = argv.includes('--quiet');
 
+// Never fatal: this runs on `prestart`, and a catalog that will not load is a
+// reason to skip the directory tree, not a reason to block `npm start`.
+let created = [];
+try {
+  created = await ensureRenderDirs({ out, catalog: await loadCatalog({ root: ROOT }) });
+} catch (error) {
+  if (!quiet) console.warn(`  ! could not pre-create render directories: ${error.message}`);
+}
+
 const result = await writeRenderModule({ root: ROOT, out });
 
 if (!quiet) {
   const masks = result.maskedNow ? `, ${result.maskedNow} hair mask(s) written` : '';
+  const dirs = created.length ? `, ${created.length} render dir(s) created` : '';
   console.log(
     `${result.relativeFile}: ${result.images} render(s) across ${result.variants} variant(s) ` +
-      `of ${result.styles} style(s)${masks}${result.changed ? '' : ' (unchanged)'}`,
+      `of ${result.styles} style(s)${masks}${dirs}${result.changed ? '' : ' (unchanged)'}`,
   );
 }

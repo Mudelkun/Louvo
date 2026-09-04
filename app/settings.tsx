@@ -120,7 +120,7 @@ export default function SettingsScreen() {
           <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
             <Pill label={`v${Constants.expoConfig?.version ?? '0.1.0'}`} />
             <Pill tone="jade" label="Frontend prototype" />
-            <Pill tone="gold" label="Mock data" />
+            <Pill tone="rust" label="Mock data" />
             {/* Whether the generator is actually wired up, stated where it can
                 be checked. `EXPO_PUBLIC_*` is inlined at bundle time, so a key
                 added to .env.local after the dev server started is not in the
@@ -128,7 +128,7 @@ export default function SettingsScreen() {
                 exactly like a model that declined to change anything. This row
                 is how that gets told apart from a bad prompt. */}
             <Pill
-              tone={generationConfigured() ? 'jade' : 'gold'}
+              tone={generationConfigured() ? 'jade' : 'rust'}
               label={generationConfigured() ? 'Generator live' : 'Generator off — previews simulated'}
             />
           </View>

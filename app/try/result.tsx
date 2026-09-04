@@ -34,6 +34,20 @@ export default function ResultScreen() {
   // catalog has to keep being drawn on the women's mannequin after the session
   // has moved on, exactly as `look.hairType` and `look.options.color` do below.
   const gender = look?.gender ?? sessionGender;
+  // And the look's own hair type, for the same reason and one more: the "try
+  // these next" rail is read as more cuts like the one on screen, so its cards
+  // belong in the texture this preview was generated in. On the session's type
+  // they answered a different question than the picture above them, and with
+  // the session on *All Types* they cross-faded through their variants — that
+  // cycle demonstrates a choice nobody has made yet, which is not the state a
+  // user standing on a finished type 4 preview is in.
+  //
+  // `look.hairType` rather than `look.hairType ?? hairTypeId`: a look records a
+  // type even when the session declared none, since the style screen sends the
+  // one its hero had arrived at. A null here is an old look with genuinely
+  // nothing declared, not a gap for the session to fill in with a type this
+  // preview was never generated in.
+  const hairType = look ? look.hairType : hairTypeId;
   const lookColor = useLookColor(look);
   const browsingColor = useHairColor();
   const { isFavourite, toggleFavourite, favouriteIds } = useLibrary();
@@ -47,8 +61,8 @@ export default function ResultScreen() {
   const hairstyle = styleById(look?.hairstyleId);
 
   const related = useMemo(
-    () => recommendationsFor(hairstyles, hairstyle?.id ?? '', gender, 8, hairTypeId),
-    [hairstyles, hairstyle?.id, gender, hairTypeId],
+    () => recommendationsFor(hairstyles, hairstyle?.id ?? '', gender, 8, hairType),
+    [hairstyles, hairstyle?.id, gender, hairType],
   );
 
   if (!look || !hairstyle) {
@@ -172,7 +186,7 @@ export default function ResultScreen() {
                     compact
                     color={browsingColor}
                     gender={gender}
-                    hairType={hairTypeId}
+                    hairType={hairType}
                     favourite={favouriteIds.includes(style.id)}
                     onToggleFavourite={() => toggleFavourite(style.id)}
                     onPress={() => openStyle(style.id)}
@@ -239,7 +253,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: 'rgba(23,21,26,0.72)',
+    backgroundColor: 'rgba(24,21,19,0.72)',
     borderRadius: radii.pill,
     paddingLeft: 6,
     paddingRight: spacing.md,

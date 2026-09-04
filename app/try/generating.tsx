@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: 'rgba(23,21,26,0.72)',
+    backgroundColor: 'rgba(24,21,19,0.72)',
     borderRadius: radii.pill,
     paddingLeft: 5,
     paddingRight: spacing.md,
