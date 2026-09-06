@@ -15,6 +15,7 @@
 
 import type { FastifyInstance, FastifyReply } from 'fastify';
 
+import { accountRoutes } from './account.js';
 import { currentRevision, getCatalog, invalidateCatalog } from './catalog.js';
 import { env } from './env.js';
 import { previewRoutes } from './previews.js';
@@ -87,6 +88,15 @@ export async function routes(app: FastifyInstance): Promise<void> {
    * service — see `src/worker.ts`.
    */
   await app.register(previewRoutes);
+
+  /**
+   * Accounts, credits, and the RevenueCat webhook.
+   *
+   * Registered before the previews it gates rather than after, purely so the
+   * reading order matches the user's: a generation is refused for want of a
+   * credit, and this is where a credit comes from.
+   */
+  await app.register(accountRoutes);
 
   /**
    * Sharing, the referral links it mints and the landing page they open.

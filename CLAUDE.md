@@ -34,7 +34,16 @@ a *hairstyle*, and what unfurls in somebody else's chat is the catalog's mannequ
 cut. `docs/sharing.md` has the design, what the operating systems actually permit, and exactly
 which installs are honestly attributable.
 
-Still simulated: accounts, favourites and saved looks (device-local).
+**Credits.** Generation costs a credit. Every device gets **two free**, held against an
+*install anchor* rather than the installation, so a reinstall does not hand out two more; after
+that a user signs in and buys a pack through the App Store or Play. The balance is server-side and
+transactional — held at submit, spent when the preview lands, refunded when it does not — and the
+client is never trusted with it. Accounts exist only so purchased credits survive a phone;
+signing in adopts the device rather than issuing a second token. `docs/credits.md` has the
+design, the margins at both store commission rates, and the four places where what the brief asks
+for and what a phone can actually do are not the same.
+
+Still simulated: favourites and saved looks (device-local).
 
 Commands (run from the repo root):
 
@@ -54,7 +63,7 @@ npm run try-on -- --photo me.jpg --style buzz-cut --dry-run   # one preview — 
 npm run api                   # the API in watch mode
 npm run worker                # the preview generation worker in watch mode
 npm run catalog:migrate       # apply server/migrations/*.sql
-npm run catalog:check         # sync check + round trip + preview lifecycle + share funnel — free
+npm run catalog:check         # sync check + round trip + previews + credits + share funnel — free
 npm run catalog:publish:dry   # transcode + report; uploads nothing, writes nothing — free
 npm run catalog:publish       # metadata into Postgres, imagery into R2
 ```
@@ -853,6 +862,90 @@ waits for nothing. **Neither failure stops a share**: no card sends the raw prev
 sends the caption without one, and both are recorded as `share_failed`. That is the same rule as
 everywhere else here — a degraded outcome is reported, never disguised — and `shareSource()`
 reports `api` or `local` in Settings beside the catalog's and the generator's.
+
+**Generation costs a credit, and the credit is the server's to move.**
+This is the phase-2 slice that turns previews from free into a product.
+`docs/credits.md` is the whole argument; the decisions that shape any change to it are these.
+
+*Two free per device, and "device" is not "installation".* The requirement is that a reinstall
+must not hand out two more, and the two platforms reach it differently. iOS already did, by
+accident of an earlier good decision: the device secret lives in `expo-secure-store`, which is the
+Keychain, and Keychain items outlive the app that wrote them. Android did not — the Keystore is
+cleared with the package — so Android additionally reports `ANDROID_ID` in `X-Install-Anchor` on
+every request. The allowance hangs off `install_anchors`, a hold is taken against **every** anchor
+a device has, and remaining is the **minimum** across them, so linking a fresh install to a known
+anchor can only ever reduce what it is owed. Taking the maximum or the sum would hand out exactly
+what the table exists to withhold. What defeats it — a factory reset, a restore-as-new, a second
+phone — is written down rather than implied; the real answer is App Attest and Play Integrity,
+which is still its own piece of work. It is deliberately **not** fingerprinting: no IP, no screen
+metrics, nothing composed from them, because both stores forbid it and a probabilistic identifier
+denies free generations to people who never had any.
+
+*Reserve, then settle, and the settle is a state transition.* A generation is **held** at submit
+and settled when the job goes terminal: `ready` turns the hold into a spend, `failed` and
+`cancelled` give it back. Holding rather than deducting is what makes "cannot generate twice on
+one credit" survive a crash. Refunding a failure is a product decision and a plain one — a model
+that fails is not the user's mistake. The one deliberate exception is a preview generated,
+notified and never collected inside the retention window: the work was done and made available,
+so the credit stays spent, and that is one commented line in `worker.ts`.
+
+*It is the one place in the service that opens a transaction.* Every other invariant here lives
+in a single row — the photograph scrub is one `update` that moves the status and nulls the key
+together. A credit cannot be: the balance is in another table. A data-modifying CTE would be one
+statement and `pg-mem` cannot run one, which would make the credit path untestable; settling in a
+second call leaves a window where a crash strands a credit in `held` forever. So the three
+terminal transitions in `jobs.ts` wrap both statements, and `check-credits.mjs` points
+`withTransaction` at its in-memory client so the atomic path is genuinely executed.
+**`unsettledCharges()` is asserted empty after every branch, exactly as `unscrubbed()` is for the
+photograph — if you add a status or a path out of `running`, that is the assertion to keep
+passing.**
+
+*Nothing can go negative, and the visible check is not the guard.* The balance moves by
+compare-and-set, the same shape the queue claims rows with. `/v1/previews` also reads the balance
+before creating a job and that read is explicitly **not** the enforcement — it exists so somebody
+with no credits sees a paywall rather than a job that appears and is cancelled a second later. The
+comment there says so, because a reader who mistook it for the guard would eventually simplify the
+real one away.
+
+*Signing in adopts the device; there is no session token.* `devices.user_id` is the column
+`003_previews.sql` created on day one and left unread, with a comment predicting this exact
+update. A second bearer token would live in the same keystore, travel the same channel and be
+exactly as strong as the secret already there; what it adds is an expiry, a refresh flow and a
+class of bug where the device is authenticated and the user is not. Signing out is the same update
+with a null. Accounts are keyed on `(provider, subject)` and **never on email** — matching on
+email would merge an Apple private-relay address with a Google account forwarding to the same
+inbox, and would let anyone who can receive mail there take over the account.
+
+*Apple is not optional on iOS.* Guideline 4.8 requires an equivalent private sign-in wherever a
+third-party one is offered, so Google-only is a rejection rather than a preference. Email is the
+third because somebody who uses neither should not lose credits they paid for. In-app account
+deletion is likewise mandatory (5.1.1(v)) and is a real deletion; purchases and ledger rows
+survive it as `on delete set null`, because a refund six weeks later has to reconcile against
+something.
+
+*Only the webhook grants a credit.* The app calls RevenueCat, RevenueCat validates the receipt
+with the store, and RevenueCat posts to us. An app that credits itself when `purchase()` resolves
+gives its credits to anyone willing to run a proxy. The cost is a race of a second or two, which
+`awaitCredit()` waits through — and on timeout the paywall says the credits are on their way,
+which is true, rather than showing an error for something that worked. Replays are caught twice,
+by `event_id` and by `(store, store_transaction_id)`, because those are two different ways to
+replay and only the second catches a re-sent historical event.
+
+*We own the credits, the store owns the price.* `credit_products` maps a product id to a number of
+generations and has **no price column**; the API never sends one. StoreKit and Play quote the
+price, localised, and a second copy in our database is a number that eventually disagrees with the
+till. Adding a pack is a row plus a store listing, not a release — the same argument the catalog
+makes. **The 20-pack is not sold with a struck-through $19.99**: it never was that price, so
+showing one would be a fictitious reference price (EU Omnibus, FTC) and reads as a trick. It is
+sold as 75c a generation against a dollar, which is the same saving stated truthfully.
+
+*The app never adjusts a balance locally.* No optimistic decrement on submit, no optimistic
+increment on purchase. The number moves without this app being involved — another device, a
+refund, a refunded failure — so a local copy drifts. `AccountContext` refreshes on mount, on
+foreground, and when a job settles. Two states must not be conflated: `ready: false` is **not**
+"no credits", so `canGenerate` is true while loading (a paywall that flashes on cold start lands
+on people who have twenty), and a failed refresh keeps the previous answer rather than blanking to
+zero.
 
 ## Where the backend plugs in
 

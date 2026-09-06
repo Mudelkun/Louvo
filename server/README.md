@@ -13,7 +13,12 @@ then deleted here.
 **Sharing** — referral links, the landing page they open, and the funnel underneath. A share is a
 hairstyle id and a code; the picture is composed on the phone and never comes back here.
 
-Still absent: accounts and favourites.
+**Credits and accounts** — generation costs a credit. Two free per device (held against an
+install anchor, so a reinstall does not reset them), then packs bought through the store and
+granted by RevenueCat's webhook. The balance is moved by compare-and-set and settled in the same
+transaction as the job's status. See `../docs/credits.md`.
+
+Still absent: favourites, and a global spend ceiling.
 
 ```
 mobile app  ->  this API  ->  Postgres (metadata + jobs)
@@ -221,13 +226,21 @@ So `scripts/check-roundtrip.mjs` runs the real schema, the real publish writers 
 offers, the `shape` descriptor and the manifest nesting. It needs no database and no
 credentials.
 
-`npm run check` runs three more things beside it:
+`npm run check` runs four more things beside it:
 
 - **`scripts/check-previews.mjs`** walks the whole job lifecycle against the same in-memory
   Postgres — idempotent submit, the compare-and-set claim, the per-device cap, every terminal
   transition — and asserts that no settled job still names an object. That last assertion is the
   privacy promise expressed as a test: one new status, one new path out of `running`, and a
   photograph sits in a bucket with nobody looking for it.
+- **`scripts/check-credits.mjs`** guards the four silent failures of a ledger, each of which
+  costs somebody money without anybody noticing: a credit spent twice (the balance is drained to
+  zero and one more is asked for), a credit lost (`unsettledCharges()` asserted empty after every
+  branch — the credit half of the scrub assertion above), a free generation handed out twice (a
+  simulated Android reinstall: new device secret, same `ANDROID_ID`), and a purchase granted twice
+  (replayed by event id *and* by transaction id, because those are two different indexes catching
+  two different replays). It points `withTransaction` at the in-memory client so the settle path is
+  genuinely executed rather than asserted about from outside.
 - **`scripts/check-shares.mjs`** guards the three things that go silently wrong in a referral
   loop: a funnel that double-counts (a retried create minting a second code, a sharer's own tap
   counted as an install), a landing page whose Open Graph tags are missing — it is scraped with
