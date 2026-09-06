@@ -1,7 +1,7 @@
 # Sharing, and the referral loop under it
 
 The brief for this feature was not "let the user share their result". It was: **make every
-shared result a small advertisement for Hairify, without making the share feel like an ad.**
+shared result a small advertisement for Luvo, without making the share feel like an ad.**
 Those two goals pull in opposite directions, and almost every decision recorded here is where
 the line was drawn between them.
 
@@ -33,7 +33,7 @@ decision below:
 - A share link names a **hairstyle**, not a picture. The landing page shows the catalog's own
   mannequin render of that cut — a public, CDN-hosted, immutable object that is identical for
   everybody who shared it.
-- Nothing that unfurls in somebody else's group chat is a photograph of a Hairify user.
+- Nothing that unfurls in somebody else's group chat is a photograph of a Luvo user.
 
 `server/scripts/check-shares.mjs` asserts the last one directly: no local file uri may appear
 in a rendered landing page.
@@ -46,7 +46,7 @@ in a rendered landing page.
 
 The raw preview is a photograph of somebody with a different haircut. It is a nice picture and
 it advertises nothing — shared as-is, the loop does not close. So the card is the same picture
-with the smallest amount of Hairify on it that still reads: a wordmark and the cut's name,
+with the smallest amount of Luvo on it that still reads: a wordmark and the cut's name,
 bottom-left, over the gradient that was already there to make the bottom edge of a photograph
 legible.
 
@@ -133,8 +133,8 @@ closed". That is a platform limit, and it is written down rather than papered ov
 The image gets attention; the caption tells a stranger what to do about it. The caption is:
 
 ```
-Trying the Textured Crop with Hairify ✂️
-Want to see how a haircut looks on you? Try Hairify: https://hairify.app/s/aB3dEf9hJk
+Trying the Textured Crop with Luvo ✂️
+Want to see how a haircut looks on you? Try Luvo: https://luvo.app/s/aB3dEf9hJk
 ```
 
 Two sentences. The first is the sharer talking about their own haircut, which is what their

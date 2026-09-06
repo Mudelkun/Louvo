@@ -23,7 +23,7 @@
  *
  * ## Why it tries the app first and why that is done the way it is
  *
- * `location.href = 'hairify://s/<code>'` on a phone with the app installed opens
+ * `location.href = 'luvo://s/<code>'` on a phone with the app installed opens
  * it and the page is never seen. On a phone without it, the scheme fails — and
  * how it fails is the part that has to be handled: iOS shows an error dialogue
  * unless the navigation happens without a user gesture and is quickly followed
@@ -47,7 +47,7 @@ export interface LandingContent {
   /** The catalog's own mannequin render of the cut. Never the user's photo. */
   imageUrl: string | null;
   gender: Gender | null;
-  /** `hairify://s/<code>`. */
+  /** `luvo://s/<code>`. */
   deepLink: string;
   iosUrl: string | null;
   androidUrl: string | null;
@@ -78,7 +78,7 @@ const escapeJs = (value: string): string => JSON.stringify(value).replace(/</g, 
  * variable, and it is what makes the card in a group chat worth opening.
  */
 export const shareTitle = (hairstyleName: string): string =>
-  `See yourself with a ${hairstyleName} — Hairify`;
+  `See yourself with a ${hairstyleName} — Luvo`;
 
 export const shareDescription =
   'Upload one photo and see how any haircut looks on you before you sit in the chair.';
@@ -96,45 +96,50 @@ export function landingPage(content: LandingContent): string {
 <link rel="canonical" href="${escapeHtml(content.canonicalUrl)}">
 <meta name="description" content="${escapeHtml(shareDescription)}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Hairify">
+<meta property="og:site_name" content="Luvo">
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(shareDescription)}">
 <meta property="og:url" content="${escapeHtml(content.canonicalUrl)}">
 ${content.imageUrl ? `<meta property="og:image" content="${escapeHtml(content.imageUrl)}">
-<meta property="og:image:alt" content="${escapeHtml(`A ${content.hairstyleName}, shown on a Hairify mannequin`)}">` : ''}
+<meta property="og:image:alt" content="${escapeHtml(`A ${content.hairstyleName}, shown on a Luvo mannequin`)}">` : ''}
 <meta name="twitter:card" content="${content.imageUrl ? 'summary_large_image' : 'summary'}">
 ${content.iosAppId ? `<meta name="apple-itunes-app" content="app-id=${escapeHtml(content.iosAppId)}, app-argument=${escapeHtml(content.canonicalUrl)}">` : ''}
 <style>
+  /* A hand-copied slice of the app's light palette (src/theme/tokens.ts), which
+     this program may not import. Light only and on purpose, for the same reason
+     <ShareCard> is: this page is Luvo's face in somebody else's chat, so what it
+     looks like is a fact about the brand rather than about the device opening
+     it. Every value here is the violet ramp measured off assets/Luvo-icon.png. */
   :root { color-scheme: light; }
   * { box-sizing: border-box; }
   body {
     margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
-    padding: 24px; background: #FAF8F5; color: #181513;
+    padding: 24px; background: #F9F8FC; color: #16121F;
     font: 500 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   .card {
-    width: 100%; max-width: 380px; background: #fff; border: 1px solid #EBE5DD; border-radius: 28px;
-    padding: 28px; text-align: center; box-shadow: 0 8px 18px rgba(42, 32, 24, 0.07);
+    width: 100%; max-width: 380px; background: #fff; border: 1px solid #EAE6F4; border-radius: 28px;
+    padding: 28px; text-align: center; box-shadow: 0 8px 18px rgba(28, 20, 48, 0.07);
   }
-  .mark { font-size: 11px; font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase; color: #9A6B24; }
+  .mark { font-size: 11px; font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase; color: #4B23A8; }
   .shot {
     margin: 20px auto 0; width: 100%; aspect-ratio: 1 / 1; border-radius: 20px; overflow: hidden;
-    background: #F2EEE8; display: flex; align-items: center; justify-content: center;
+    background: #F1EEF9; display: flex; align-items: center; justify-content: center;
   }
   .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
   h1 { font-size: 24px; line-height: 1.2; letter-spacing: -0.5px; margin: 22px 0 8px; }
-  p { margin: 0; color: #443E38; }
+  p { margin: 0; color: #453D57; }
   .cta {
     display: block; margin-top: 22px; padding: 17px 20px; border-radius: 14px;
-    background: #9A6B24; color: #fff; font-weight: 700; font-size: 16px; text-decoration: none;
+    background: #6B3FE4; color: #fff; font-weight: 700; font-size: 16px; text-decoration: none;
   }
-  .secondary { display: block; margin-top: 12px; color: #8C857C; font-size: 13px; text-decoration: none; }
-  .foot { margin-top: 22px; font-size: 12px; color: #8C857C; }
+  .secondary { display: block; margin-top: 12px; color: #837C93; font-size: 13px; text-decoration: none; }
+  .foot { margin-top: 22px; font-size: 12px; color: #837C93; }
 </style>
 </head>
 <body>
   <main class="card">
-    <div class="mark">Hairify</div>
+    <div class="mark">Luvo</div>
     <div class="shot">${
       content.imageUrl
         ? `<img src="${escapeHtml(content.imageUrl)}" alt="${escapeHtml(`A ${content.hairstyleName}`)}" width="512" height="512">`
@@ -145,9 +150,9 @@ ${content.iosAppId ? `<meta name="apple-itunes-app" content="app-id=${escapeHtml
     ${
       store
         ? `<a class="cta" id="get" href="${escapeHtml(store)}">Try it on your photo</a>`
-        : `<a class="cta" id="get" href="${escapeHtml(content.deepLink)}">Open Hairify</a>`
+        : `<a class="cta" id="get" href="${escapeHtml(content.deepLink)}">Open Luvo</a>`
     }
-    <a class="secondary" href="${escapeHtml(content.deepLink)}">Already have Hairify? Open the app</a>
+    <a class="secondary" href="${escapeHtml(content.deepLink)}">Already have Luvo? Open the app</a>
     <div class="foot">Free to try. No account needed.</div>
   </main>
 <script>

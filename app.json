@@ -1,28 +1,28 @@
 {
   "expo": {
-    "name": "Hairify",
-    "slug": "hairify",
-    "scheme": "hairify",
+    "name": "Luvo",
+    "slug": "luvo",
+    "scheme": "luvo",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hairify.app",
+      "bundleIdentifier": "com.luvoai.luvo",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Hairify needs access to your photos so you can try hairstyles on your own picture.",
-        "NSCameraUsageDescription": "Hairify needs your camera so you can take a selfie to try hairstyles on."
+        "NSPhotoLibraryUsageDescription": "Luvo needs access to your photos so you can try hairstyles on your own picture.",
+        "NSCameraUsageDescription": "Luvo needs your camera so you can take a selfie to try hairstyles on."
       },
       "associatedDomains": [
-        "applinks:hairify.app"
+        "applinks:luvo.app"
       ],
       "usesAppleSignIn": true
     },
     "android": {
-      "package": "com.hairify.app",
+      "package": "com.luvoai.luvo",
       "adaptiveIcon": {
-        "backgroundColor": "#171716",
+        "backgroundColor": "#0d0914",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
@@ -34,7 +34,7 @@
           "data": [
             {
               "scheme": "https",
-              "host": "hairify.app",
+              "host": "luvo.app",
               "pathPrefix": "/s"
             }
           ],
@@ -68,22 +68,22 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Hairify needs access to your photos so you can try hairstyles on your own picture.",
-          "cameraPermission": "Hairify needs your camera so you can take a selfie to try hairstyles on."
+          "photosPermission": "Luvo needs access to your photos so you can try hairstyles on your own picture.",
+          "cameraPermission": "Luvo needs your camera so you can take a selfie to try hairstyles on."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Hairify needs your camera so you can take a selfie to try hairstyles on.",
+          "cameraPermission": "Luvo needs your camera so you can take a selfie to try hairstyles on.",
           "recordAudioAndroid": false
         }
       ],
       [
         "expo-media-library",
         {
-          "photosPermission": "Hairify needs access to your photos so you can try hairstyles on your own picture.",
-          "savePhotosPermission": "Hairify needs permission to save hairstyle previews to your photos.",
+          "photosPermission": "Luvo needs access to your photos so you can try hairstyles on your own picture.",
+          "savePhotosPermission": "Luvo needs permission to save hairstyle previews to your photos.",
           "isAccessMediaLocationEnabled": false
         }
       ],
@@ -96,10 +96,10 @@
         {
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#FAF8F5",
+          "backgroundColor": "#F9F8FC",
           "dark": {
             "image": "./assets/splash-icon.png",
-            "backgroundColor": "#15130F"
+            "backgroundColor": "#100C18"
           },
           "enableFullScreenImage_legacy": true
         }

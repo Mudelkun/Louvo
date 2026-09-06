@@ -132,12 +132,12 @@ const previews = {
 const share = {
   /** Public origin serving `/s/:code`. Falls back to the request's own origin. */
   baseUrl: (optional('SHARE_BASE_URL') ?? '').replace(/\/$/, '') || null,
-  appScheme: process.env.APP_SCHEME ?? 'hairify',
+  appScheme: process.env.APP_SCHEME ?? 'luvo',
   iosAppStoreUrl: optional('IOS_APP_STORE_URL'),
   androidPlayUrl: optional('ANDROID_PLAY_URL'),
   /** Android package id, used to build a Play url and its `referrer` parameter. */
-  androidPackage: process.env.ANDROID_PACKAGE ?? 'com.hairify.app',
-  iosBundleId: process.env.IOS_BUNDLE_ID ?? 'com.hairify.app',
+  androidPackage: process.env.ANDROID_PACKAGE ?? 'com.luvoai.luvo',
+  iosBundleId: process.env.IOS_BUNDLE_ID ?? 'com.luvoai.luvo',
   /** Numeric App Store id, for the iOS smart app banner. */
   iosAppId: optional('IOS_APP_ID'),
   /** Team id and signing fingerprints, for the universal-link association files. */
@@ -191,14 +191,14 @@ const credits = {
  * token's `aud` is whichever one the phone used, so all of them belong here.
  */
 const auth = {
-  appleAudiences: list('APPLE_AUDIENCES').length ? list('APPLE_AUDIENCES') : [process.env.IOS_BUNDLE_ID ?? 'com.hairify.app'],
+  appleAudiences: list('APPLE_AUDIENCES').length ? list('APPLE_AUDIENCES') : [process.env.IOS_BUNDLE_ID ?? 'com.luvoai.luvo'],
   googleAudiences: list('GOOGLE_CLIENT_IDS'),
 
   emailCodeTtlSeconds: integer('EMAIL_CODE_TTL_S', 600),
   emailCodeAttempts: integer('EMAIL_CODE_ATTEMPTS', 5),
   /** Resend, or nothing. With nothing, email sign-in answers 503 rather than pretending. */
   resendApiKey: optional('RESEND_API_KEY'),
-  emailFrom: process.env.EMAIL_FROM ?? 'Hairify <hello@hairify.app>',
+  emailFrom: process.env.EMAIL_FROM ?? 'Luvo <hello@luvo.app>',
   /**
    * Returns the code in the API response instead of sending it.
    *
@@ -217,6 +217,16 @@ const auth = {
    * credits is an endpoint that grants credits to whoever finds it.
    */
   revenueCatSecret: optional('REVENUECAT_WEBHOOK_SECRET'),
+
+  /**
+   * Whether to refuse credits for App Store / Play *sandbox* purchases.
+   *
+   * Off by default so a sandbox works out of the box. Turn it **on** in
+   * production: store test purchases are free, and a TestFlight or internal-track
+   * build pointed at the live RevenueCat project would otherwise mint credits at
+   * no cost.
+   */
+  ignoreSandboxPurchases: flag('REVENUECAT_IGNORE_SANDBOX', false),
 } as const;
 
 export const env = {
@@ -235,7 +245,7 @@ export const env = {
    * a new id and a new id has never been seen before. That is a thing to know
    * before changing it, not a thing to discover afterwards.
    */
-  anchorSalt: process.env.ANCHOR_SALT ?? 'hairify.anchor.v1',
+  anchorSalt: process.env.ANCHOR_SALT ?? 'luvo.anchor.v1',
 
   credits,
   auth,

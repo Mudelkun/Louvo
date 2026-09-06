@@ -221,6 +221,6 @@ const useStyles = makeStyles(({ colors }) => ({
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
     borderRadius: radii.pill,
-    backgroundColor: 'rgba(24,21,19,0.6)',
+    backgroundColor: 'rgba(22,18,31,0.6)',
   },
 }));

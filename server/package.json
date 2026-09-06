@@ -1,9 +1,9 @@
 {
-  "name": "hairify-api",
+  "name": "luvo-api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Hairify API — the hairstyle catalog, and the preview generation queue behind it.",
+  "description": "Luvo API — the hairstyle catalog, and the preview generation queue behind it.",
   "engines": {
     "node": ">=20"
   },
@@ -21,7 +21,9 @@
     "start:worker": "node dist/worker.js",
     "sync:shared": "node scripts/sync-shared.mjs",
     "previews:cors": "node --env-file-if-exists=.env --env-file-if-exists=../.env.local scripts/preview-cors.mjs",
-    "prebuild": "node scripts/sync-shared.mjs"
+    "prebuild": "node scripts/sync-shared.mjs",
+    "sandbox": "npm run build --silent && node scripts/sandbox.mjs",
+    "sandbox:drive": "node scripts/sandbox-cli.mjs"
   },
   "dependencies": {
     "@fastify/compress": "^8.1.0",

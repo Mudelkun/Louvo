@@ -559,7 +559,7 @@ function Glass({
             StyleSheet.absoluteFill,
             {
               borderRadius: radius,
-              backgroundColor: dark ? 'rgba(24,21,19,0.12)' : 'rgba(255,255,255,0.16)',
+              backgroundColor: dark ? 'rgba(22,18,31,0.12)' : 'rgba(255,255,255,0.16)',
             },
           ]}
         />
@@ -744,7 +744,7 @@ const useStyles = makeStyles(({ colors }) => ({
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
     overflow: 'hidden',
-    boxShadow: '0px -6px 34px rgba(18, 14, 9, 0.3)',
+    boxShadow: '0px -6px 34px rgba(20, 14, 34, 0.3)',
   },
   grabArea: {
     position: 'absolute',

@@ -1,23 +1,35 @@
 #!/usr/bin/env node
 /**
- * Cuts the whole app icon set out of `assets/Hairify - icon.png`.
+ * Cuts the whole app icon set out of `assets/Luvo-icon.png`.
  *
- * The source is an icon *mockup*: the artwork sits on a rounded black tile,
- * photographed with a drop shadow on a cream ground. Shipped as-is, iOS and
- * Android would apply their own corner mask on top of that and the icon would
- * be a shrunken tile floating inside a pale border with a shadow baked into it.
- * So the tile is found, cropped square, and everything outside its rounded
- * silhouette is either filled with the tile's own black (iOS, which masks the
- * corners off itself) or made transparent (splash, favicon, Android).
+ * The source is an icon *mockup*: the artwork sits on a rounded near-black
+ * tile, floated on transparency inside a soft violet-and-pink glow with a lot
+ * of padding around it. Shipped as-is, iOS and Android would apply their own
+ * corner mask on top of that and the icon would be a shrunken tile inside a
+ * halo. So the tile is found, cropped square, and everything outside its
+ * rounded silhouette is either filled with the tile's own black (iOS, which
+ * masks the corners off itself) or made transparent (splash, favicon, Android).
  *
  * Re-run it whenever the artwork is redrawn — that is the point of it being a
  * script rather than five hand-cut PNGs:
  *
  *   npm run icons
  *
- * The one thing it needs from the artwork is the house style it already has: a
- * dark tile on a light ground, with the subject in a warm tone. Change that and
- * `findTile` and `goldBounds` are what break first.
+ * Two properties of the artwork are load-bearing, and they are what `findTile`
+ * and `subjectBounds` read:
+ *
+ * - **The tile is the opaque part.** The ground is alpha 0, the glow ramps up
+ *   to about 60, and the tile itself lands flat at 252 with a two-pixel edge
+ *   between. Everything here separates tile from ground on *alpha*, never on
+ *   luminance — the previous artwork was a dark tile on a cream ground, where
+ *   luminance was the only signal; this one is dark on dark and luminance
+ *   cannot tell the ground from the tile at all.
+ * - **The subject is the brightest thing on the tile, and it is not thin.**
+ *   Luminance alone is not enough, because the tile's rim highlight is as
+ *   bright as the figure. What separates them is width: the rim is a few
+ *   pixels of glowing line and the figure is drawn in strokes an order of
+ *   magnitude fatter, so `subjectBounds` erodes the bright mask before
+ *   measuring it and the rim disappears.
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -28,21 +40,59 @@ import { decodePng, encodePng } from './lib/png.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const assets = join(root, 'assets');
-const SOURCE = join(assets, 'Hairify - icon.png');
+const SOURCE = join(assets, 'Luvo-icon.png');
 
-/** Anything above this luminance is the mockup's ground or its drop shadow, never the tile. */
-const GROUND_LUM = 70;
-/** Grow the ground inwards by this much, to swallow the tile's anti-aliased rim. */
-const RIM = 2;
-/** A pixel is subject rather than tile if it is both light and warm. */
-const SUBJECT_LUM = 80;
-const SUBJECT_WARMTH = 30;
+/** Alpha at or above this is the tile itself. */
+const TILE_ALPHA = 200;
+/** Alpha at or below this is the mockup's outer glow, never the tile. */
+const GLOW_ALPHA = 60;
+/** A pixel is subject rather than tile if it is this much lighter than the tile. */
+const SUBJECT_LUM = 100;
+/**
+ * Erode the bright mask by this many pixels before measuring the subject.
+ *
+ * The tile's rim highlight is as bright as the figure and hugs the whole
+ * boundary, so an un-eroded bounding box is just the tile's. Four passes is
+ * measured rather than guessed: the box jumps from the tile edge to the figure
+ * between the second and the fourth, and then moves less than ten pixels
+ * between the fourth and the fourteenth. The bounds are padded back by the same
+ * amount, so the erosion costs nothing but the rim.
+ */
+const SUBJECT_ERODE = 4;
+
+/**
+ * How far inside the tile Android's art layer is bled from — deep enough to
+ * clear the artwork's glowing rim, which is a bright line of about 20px on a
+ * 962px tile over a soft falloff several times that, and runs wider at the
+ * corners. See `bleedGround`.
+ */
+const RIM_BLEED = 70;
+/**
+ * ...but never within this of the subject. Eroding past the figure makes the
+ * figure itself the bleed's source and smears it out to the canvas edge in a
+ * streak you cannot miss — at 90px this artwork grew a pink tail out of the
+ * bottom of the icon. The clearance is measured rather than assumed, so an
+ * artwork redrawn with the figure closer to the tile's edge quietly gets a
+ * shallower bleed instead of a ruined one.
+ */
+const RIM_GUARD = 8;
 
 /**
  * Android's adaptive mask can crop to a circle inscribed in 66 of the 108dp
  * canvas, so the subject is scaled to sit inside that fraction of the square.
  */
 const SAFE_ZONE = 0.66;
+
+/**
+ * The monochrome layer's cut: fully transparent at this luminance, fully opaque
+ * `SILHOUETTE_RAMP` above it. It reads the flooded square, whose tile tops out
+ * around 40, and the figure's darkest stroke — the violet under the jaw — comes
+ * in at about 110, so the gap is wide and the floor sits low in it. Set the
+ * floor too near the figure and that jaw goes grey rather than white. The ramp
+ * is what keeps the hair's edges from stepping.
+ */
+const SILHOUETTE_FLOOR = 60;
+const SILHOUETTE_RAMP = 25;
 
 const luminance = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
@@ -54,37 +104,55 @@ function pixel(image, x, y) {
   return [image.pixels[i], image.pixels[i + 1], image.pixels[i + 2]];
 }
 
+/** @param {RawImage} image */
+function alphaAt(image, x, y) {
+  if (image.channels < 4) return 255;
+  return image.pixels[(y * image.width + x) * image.channels + 3];
+}
+
 /**
  * The tile's bounding box, walked in from the middle of each edge.
  *
  * Scanning from the centre lines rather than over the whole image is what keeps
- * the drop shadow out of it: the shadow is lighter than the tile everywhere,
- * but it is only *below* the tile, so a mid-row walk meets the tile first.
+ * the glow out of it: the glow reaches furthest at the corners, but a mid-row
+ * walk meets the tile's flat edge first and stops there.
  */
 function findTile(image) {
   const midX = image.width >> 1;
   const midY = image.height >> 1;
-  const dark = (x, y) => luminance(...pixel(image, x, y)) <= GROUND_LUM;
+  const solid = (x, y) => alphaAt(image, x, y) >= TILE_ALPHA;
 
   let left = 0;
-  while (left < image.width && !dark(left, midY)) left += 1;
+  while (left < image.width && !solid(left, midY)) left += 1;
   let right = image.width - 1;
-  while (right > left && !dark(right, midY)) right -= 1;
+  while (right > left && !solid(right, midY)) right -= 1;
   let top = 0;
-  while (top < image.height && !dark(midX, top)) top += 1;
+  while (top < image.height && !solid(midX, top)) top += 1;
   let bottom = image.height - 1;
-  while (bottom > top && !dark(midX, bottom)) bottom -= 1;
+  while (bottom > top && !solid(midX, bottom)) bottom -= 1;
 
   return { left, top, width: right - left + 1, height: bottom - top + 1 };
 }
 
-/** A centred square crop, so a tile that came back a few pixels off-square still gives a square icon. */
+/**
+ * A centred square crop, so a tile that came back a few pixels off-square still
+ * gives a square icon — plus its coverage: 1 where the tile is, 0 where the
+ * mockup's ground shows through.
+ *
+ * Coverage is the source alpha, rescaled so the glow lands on 0 and the tile on
+ * 1. That rescale is the whole job: the glow is a wide, soft halo that would
+ * read as a smear around every corner if it were carried into the icon, while
+ * the tile's own edge is a two-pixel ramp that has to survive as anti-aliasing.
+ * Cutting at a flat threshold would keep the first and destroy the second.
+ * Held as a float so it can be area-averaged down into a smooth alpha.
+ */
 function squareCrop(image, tile) {
   const size = Math.min(tile.width, tile.height);
   const left = Math.round(tile.left + (tile.width - size) / 2);
   const top = Math.round(tile.top + (tile.height - size) / 2);
 
   const pixels = Buffer.alloc(size * size * 3);
+  const coverage = new Float32Array(size * size);
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
       const [r, g, b] = pixel(image, left + x, top + y);
@@ -92,71 +160,14 @@ function squareCrop(image, tile) {
       pixels[out] = r;
       pixels[out + 1] = g;
       pixels[out + 2] = b;
+      const a = alphaAt(image, left + x, top + y);
+      coverage[y * size + x] = Math.min(1, Math.max(0, (a - GLOW_ALPHA) / (TILE_ALPHA - GLOW_ALPHA)));
     }
   }
-  return { width: size, height: size, channels: 3, colorType: 2, pixels };
+  return { square: { width: size, height: size, channels: 3, colorType: 2, pixels }, coverage };
 }
 
-/**
- * Coverage: 1 where the tile is, 0 where the mockup's ground shows through.
- *
- * Flood-filled from the four corners rather than thresholded, because the
- * subject is lighter than the ground threshold too — the ground is only ground
- * by virtue of being *outside* the tile, and the tile's black separates the two
- * everywhere. Held as a float so it can be area-averaged down into a smooth
- * alpha rather than resampled from a hard edge.
- */
-function tileCoverage(square) {
-  const { width: size, pixels } = square;
-  const outside = new Uint8Array(size * size);
-  const queue = [0, size - 1, size * (size - 1), size * size - 1];
-
-  const light = (index) => {
-    const i = index * 3;
-    return luminance(pixels[i], pixels[i + 1], pixels[i + 2]) > GROUND_LUM;
-  };
-
-  for (const seed of queue) if (light(seed)) outside[seed] = 1;
-  for (let head = 0; head < queue.length; head += 1) {
-    const index = queue[head];
-    if (!outside[index]) continue;
-    const x = index % size;
-    const y = (index / size) | 0;
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const nx = x + dx;
-      const ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
-      const next = ny * size + nx;
-      if (outside[next] || !light(next)) continue;
-      outside[next] = 1;
-      queue.push(next);
-    }
-  }
-
-  // Grow it inwards: the ring where ground and tile blend is neither, and left
-  // in place it reads as a pale halo around every rounded corner.
-  for (let pass = 0; pass < RIM; pass += 1) {
-    const grown = outside.slice();
-    for (let y = 0; y < size; y += 1) {
-      for (let x = 0; x < size; x += 1) {
-        if (outside[y * size + x]) continue;
-        const near =
-          (x > 0 && outside[y * size + x - 1]) ||
-          (x < size - 1 && outside[y * size + x + 1]) ||
-          (y > 0 && outside[(y - 1) * size + x]) ||
-          (y < size - 1 && outside[(y + 1) * size + x]);
-        if (near) grown[y * size + x] = 1;
-      }
-    }
-    outside.set(grown);
-  }
-
-  const coverage = new Float32Array(size * size);
-  for (let i = 0; i < coverage.length; i += 1) coverage[i] = outside[i] ? 0 : 1;
-  return coverage;
-}
-
-/** The tile's own black, averaged over what the flood fill left dark. */
+/** The tile's own black, averaged over the darker half of what the coverage kept. */
 function tileBlack(square, coverage) {
   const { pixels } = square;
   let n = 0;
@@ -176,22 +187,49 @@ function tileBlack(square, coverage) {
 }
 
 /**
- * Replaces the ground with the tile's own colour, carried outwards from the
- * nearest tile pixel rather than filled flat.
+ * A copy of the square with the ground replaced by the tile's own colour,
+ * carried outwards from the nearest kept pixel rather than filled flat.
  *
  * Two reasons it is not a flat fill. Downsampling has to average tile into tile
- * or the cream is pulled inwards as a pale fringe — that much a flat fill also
- * gets. But the tile is lit, not painted: it runs a couple of levels brighter at
- * the top-left than at the bottom-right, and a flat corner against that reads as
- * a patch. Nearest-pixel bleed leaves no seam at any corner radius, which
- * matters because the platforms each choose their own.
+ * or the ground is pulled inwards as a fringe — that much a flat fill also
+ * gets. But the tile is lit, not painted: it runs a couple of levels brighter
+ * near its edges than in the middle, and a flat corner against that reads as a
+ * patch. Nearest-pixel bleed leaves no seam at any corner radius, which matters
+ * because the platforms each choose their own.
+ *
+ * `inset` is how far inside the tile the bleed starts, and it is the whole
+ * difference between the two layers this is called for. At 0 the tile's edge is
+ * the source, so the artwork's glowing rim survives into the corners: that is
+ * what iOS wants, because iOS masks the corners off at very nearly the radius
+ * the artwork was drawn at and the rim is the icon's own edge. Android's art
+ * layer is the opposite case — it is full-bleed under a mask the system
+ * chooses, so a rim carried outwards draws the tile's outline *inside* the
+ * finished icon and you get a rounded square within a rounded square. Bleeding
+ * from inside the rim instead carries the tile's dark interior out to the
+ * canvas and there is no edge left to see.
  */
-function bleedGround(square, coverage) {
-  const { width: size, pixels } = square;
+function bleedGround(square, coverage, inset) {
+  const { width: size } = square;
+  const pixels = Buffer.from(square.pixels);
   const done = new Uint8Array(size * size);
   const queue = [];
 
-  for (let i = 0; i < coverage.length; i += 1) if (coverage[i]) { done[i] = 1; queue.push(i); }
+  // Erode the kept region by `inset` before seeding, so the bleed's source is
+  // the tile past its rim rather than the rim itself.
+  let kept = new Uint8Array(size * size);
+  for (let i = 0; i < coverage.length; i += 1) kept[i] = coverage[i] >= 1 ? 1 : 0;
+  for (let pass = 0; pass < inset; pass += 1) {
+    const next = new Uint8Array(size * size);
+    for (let y = 1; y < size - 1; y += 1) {
+      for (let x = 1; x < size - 1; x += 1) {
+        const i = y * size + x;
+        if (kept[i] && kept[i - 1] && kept[i + 1] && kept[i - size] && kept[i + size]) next[i] = 1;
+      }
+    }
+    kept = next;
+  }
+
+  for (let i = 0; i < kept.length; i += 1) if (kept[i]) { done[i] = 1; queue.push(i); }
 
   for (let head = 0; head < queue.length; head += 1) {
     const index = queue[head];
@@ -208,28 +246,59 @@ function bleedGround(square, coverage) {
       queue.push(next);
     }
   }
+
+  return { ...square, pixels };
 }
 
-/** The subject's bounding box — light and warm, which the tile is not. */
-function goldBounds(square) {
+/**
+ * The subject's bounding box — the bright figure, with the tile's equally
+ * bright rim highlight eroded away first.
+ *
+ * The mask is thresholded on luminance, which catches the figure and the rim
+ * together, and then shrunk by `SUBJECT_ERODE` passes of a four-neighbour
+ * erosion. The rim is a few pixels of line and does not survive it; the
+ * figure's thinnest strand is several times that and barely notices. The box is
+ * then grown back by the same margin, so what comes out is the figure's real
+ * extent rather than its eroded one.
+ */
+function subjectBounds(square, coverage) {
   const { width: size, pixels } = square;
+  let mask = new Uint8Array(size * size);
+  for (let i = 0; i < mask.length; i += 1) {
+    if (coverage[i] < 1) continue;
+    const p = i * 3;
+    if (luminance(pixels[p], pixels[p + 1], pixels[p + 2]) > SUBJECT_LUM) mask[i] = 1;
+  }
+
+  for (let pass = 0; pass < SUBJECT_ERODE; pass += 1) {
+    const next = new Uint8Array(size * size);
+    for (let y = 1; y < size - 1; y += 1) {
+      for (let x = 1; x < size - 1; x += 1) {
+        const i = y * size + x;
+        if (mask[i] && mask[i - 1] && mask[i + 1] && mask[i - size] && mask[i + size]) next[i] = 1;
+      }
+    }
+    mask = next;
+  }
+
   let left = size;
   let right = -1;
   let top = size;
   let bottom = -1;
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
-      const i = (y * size + x) * 3;
-      const r = pixels[i];
-      const g = pixels[i + 1];
-      const b = pixels[i + 2];
-      if (luminance(r, g, b) <= SUBJECT_LUM || r - b <= SUBJECT_WARMTH) continue;
+      if (!mask[y * size + x]) continue;
       if (x < left) left = x;
       if (x > right) right = x;
       if (y < top) top = y;
       if (y > bottom) bottom = y;
     }
   }
+
+  left = Math.max(0, left - SUBJECT_ERODE);
+  top = Math.max(0, top - SUBJECT_ERODE);
+  right = Math.min(size - 1, right + SUBJECT_ERODE);
+  bottom = Math.min(size - 1, bottom + SUBJECT_ERODE);
   return { left, top, width: right - left + 1, height: bottom - top + 1 };
 }
 
@@ -313,15 +382,15 @@ function toRgba(small) {
  *
  * @param {'art' | 'silhouette'} mode
  */
-function adaptiveLayer(square, coverage, gold, size, mode) {
-  const artScale = (SAFE_ZONE * size) / Math.max(gold.width, gold.height);
+function adaptiveLayer(square, coverage, subject, size, mode) {
+  const artScale = (SAFE_ZONE * size) / Math.max(subject.width, subject.height);
   const source = square.width;
   const step = 1 / artScale; // one output pixel, measured in source pixels
-  const goldCx = gold.left + gold.width / 2;
-  const goldCy = gold.top + gold.height / 2;
+  const subjectCx = subject.left + subject.width / 2;
+  const subjectCy = subject.top + subject.height / 2;
   // Output pixel (size/2, size/2) must land on the subject's centre.
-  const originX = goldCx - (size / 2) * step;
-  const originY = goldCy - (size / 2) * step;
+  const originX = subjectCx - (size / 2) * step;
+  const originY = subjectCy - (size / 2) * step;
 
   const pixels = Buffer.alloc(size * size * 4);
   for (let y = 0; y < size; y += 1) {
@@ -348,7 +417,7 @@ function adaptiveLayer(square, coverage, gold, size, mode) {
           // The art layer is the tile itself, edge to edge; the silhouette is
           // the subject cut out of it, ramped over the tone gap between tile and
           // subject so the hair keeps its edges instead of stepping.
-          a += mode === 'art' ? 1 : coverage[i] * Math.min(1, Math.max(0, (lum - 50) / 45));
+          a += mode === 'art' ? 1 : coverage[i] * Math.min(1, Math.max(0, (lum - SILHOUETTE_FLOOR) / SILHOUETTE_RAMP));
           n += 1;
         }
       }
@@ -376,25 +445,37 @@ function write(name, image) {
 
 const source = decodePng(readFileSync(SOURCE));
 const tile = findTile(source);
-const square = squareCrop(source, tile);
-const coverage = tileCoverage(square);
+const { square, coverage } = squareCrop(source, tile);
 const black = tileBlack(square, coverage);
-bleedGround(square, coverage);
-const gold = goldBounds(square);
+const subject = subjectBounds(square, coverage);
+const clearance = Math.min(
+  subject.left,
+  subject.top,
+  square.width - (subject.left + subject.width),
+  square.width - (subject.top + subject.height),
+);
+const bleed = Math.max(0, Math.min(RIM_BLEED, clearance - RIM_GUARD));
+// The artwork's edge, kept for iOS and cut away for Android. See `bleedGround`.
+const edged = bleedGround(square, coverage, 0);
+const flooded = bleedGround(square, coverage, bleed);
 
 const hex = `#${black.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 console.log(`source   ${source.width}x${source.height}`);
 console.log(`  tile     ${tile.width}x${tile.height} at ${tile.left},${tile.top} — square ${square.width}px, black ${hex}`);
-console.log(`  subject  ${gold.width}x${gold.height} at ${gold.left},${gold.top}`);
+console.log(`  subject  ${subject.width}x${subject.height} at ${subject.left},${subject.top} — ${clearance}px clear of the tile`);
+console.log(`  bleed    ${bleed}px${bleed < RIM_BLEED ? ` (clamped from ${RIM_BLEED} to stay off the subject)` : ''}`);
 console.log('writing:');
 
 // iOS and the stores want a full-bleed square: the platform rounds the corners
 // itself, so the tile's own corners are filled rather than cut out.
-write('icon.png', toRgb(downsample(square, coverage, 1024)));
+write('icon.png', toRgb(downsample(edged, coverage, 1024)));
 // Splash and favicon are composited onto something, so they keep the silhouette.
-write('splash-icon.png', toRgba(downsample(square, coverage, 1024)));
-write('favicon.png', toRgba(downsample(square, coverage, 48)));
-write('android-icon-foreground.png', adaptiveLayer(square, coverage, gold, 512, 'art'));
-write('android-icon-monochrome.png', adaptiveLayer(square, coverage, gold, 432, 'silhouette'));
+write('splash-icon.png', toRgba(downsample(edged, coverage, 1024)));
+write('favicon.png', toRgba(downsample(edged, coverage, 48)));
+write('android-icon-foreground.png', adaptiveLayer(flooded, coverage, subject, 512, 'art'));
+// The monochrome layer takes the flooded square too: its canvas is the tile at
+// about 85%, so a kept rim would print the tile's outline into the silhouette
+// alongside the figure, and a themed icon is supposed to be the figure alone.
+write('android-icon-monochrome.png', adaptiveLayer(flooded, coverage, subject, 432, 'silhouette'));
 
 console.log(`\nandroid.adaptiveIcon.backgroundColor should be ${hex}`);

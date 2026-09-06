@@ -30,7 +30,7 @@ import { Platform } from 'react-native';
 
 import { installAnchorHeader } from '@/lib/installAnchor';
 
-const KEY = 'hairify.device.v1';
+const KEY = 'luvo.device.v1';
 
 /**
  * 32 random bytes, as hex.

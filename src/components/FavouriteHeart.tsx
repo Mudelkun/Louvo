@@ -258,7 +258,7 @@ function outlineTint(tone: Tone, colors: Palette): string {
   if (tone === 'dark') return colors.onDark;
   // The chip is a near-white circle on the card's plate, so its outline comes
   // from the light palette in both schemes — `colors.inkSoft` after dark is
-  // bone on white.
+  // near-white on white.
   return tone === 'chip' ? onPlate : colors.ink;
 }
 
