@@ -109,7 +109,7 @@ function androidUrlFor(code: string): string | null {
  * and a post is the only version of this anybody will send twice.
  */
 function captionFor(hairstyleName: string, url: string): string {
-  return `Trying the ${hairstyleName} with Hairify ✂️\nWant to see how a haircut looks on you? Try Hairify: ${url}`;
+  return `Trying the ${hairstyleName} with Luvo ✂️\nWant to see how a haircut looks on you? Try Luvo: ${url}`;
 }
 
 /** The mannequin render of the shared cut — the catalog's image, never the user's. */
@@ -214,7 +214,7 @@ export async function shareRoutes(app: FastifyInstance): Promise<void> {
    * What a code points at, as JSON.
    *
    * Public and unauthenticated: this is what the app calls when the OS hands it
-   * `hairify://s/<code>`, and at that moment the app may be thirty seconds old
+   * `luvo://s/<code>`, and at that moment the app may be thirty seconds old
    * and have no device secret yet. It carries no counters and nothing about who
    * made it — a link is a pointer to a haircut, and anybody holding it is
    * already entitled to see the haircut.

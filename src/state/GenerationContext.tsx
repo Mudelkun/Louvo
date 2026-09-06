@@ -51,7 +51,7 @@ const GenerationContext = createContext<GenerationState | null>(null);
  * tile that can never finish. A server job is the opposite: the work carries on
  * without the app, and this record is how the app finds it again.
  */
-const JOBS_KEY = 'hairify.jobs.v1';
+const JOBS_KEY = 'luvo.jobs.v1';
 
 /** How often a running job is asked about. Slower than the eased bar it feeds. */
 const POLL_MS = 2000;
@@ -77,7 +77,7 @@ const CREEP_MS = 400;
 function describeFailure(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error ?? '');
   const code = error instanceof PreviewError ? error.code : null;
-  console.warn('[hairify] generation failed:', code ?? 'error', error);
+  console.warn('[luvo] generation failed:', code ?? 'error', error);
 
   // Named before the generic 40x branch below, which would otherwise swallow it
   // as "the generator rejected the key" — a message that sends the reader to the

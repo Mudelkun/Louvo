@@ -1,5 +1,5 @@
 /**
- * Hairify API client.
+ * Luvo API client.
  *
  * The one module that knows where the data comes from, which is the whole point
  * of it: every screen calls these functions and none of them can tell whether

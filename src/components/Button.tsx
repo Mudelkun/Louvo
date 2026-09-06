@@ -104,12 +104,13 @@ const useStyles = makeStyles(({ colors }) => ({
  * The five fills, and the two pairs that stopped being interchangeable once
  * there was a second scheme.
  *
- * `primary` is brass with `onAccent` on it, and `dark` is the neutral fill with
- * `onInkFill` — both of which invert after dark, where the brass goes bright
- * and the neutral fill goes bone. Writing either as `onDark` would have been
- * right in one scheme and white-on-white in the other. `soft` takes `accentInk`
- * rather than `accent` for the same reason: the label on a brass-tinted panel
- * has to move to the opposite end of the brass ramp from the panel itself.
+ * `primary` is the brand violet with `onAccent` on it, and `dark` is the
+ * neutral fill with `onInkFill` — both of which invert after dark, where the
+ * violet goes bright and the neutral fill goes near-white. Writing either as
+ * `onDark` would have been right in one scheme and white-on-white in the
+ * other. `soft` takes `accentInk` rather than `accent` for the same reason:
+ * the label on a violet-tinted panel has to move to the opposite end of the
+ * accent ramp from the panel itself.
  */
 type Variants = Record<Variant, { container: ViewStyle; pressed: ViewStyle; text: { color: string } }>;
 

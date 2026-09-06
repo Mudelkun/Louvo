@@ -8,7 +8,7 @@ import type { HairColor, HairShape, VariantId } from '@/api/types';
  * mannequin instead — and the "generated" result renders the same mannequin
  * wearing the chosen style, so before/after stays meaningful.
  */
-export const DEMO_PHOTO = 'hairify://sample-photo';
+export const DEMO_PHOTO = 'luvo://sample-photo';
 
 /** The hair the sample subject starts with, before any style is applied. */
 export const DEMO_BASE_SHAPE: HairShape = {

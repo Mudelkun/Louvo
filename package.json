@@ -1,5 +1,5 @@
 {
-  "name": "hairify",
+  "name": "luvo",
   "version": "0.1.0",
   "main": "expo-router/entry",
   "scripts": {
@@ -28,6 +28,8 @@
     "hair-types:sync": "node scripts/generate-hair-type-examples.mjs --sync",
     "api": "npm --prefix server run dev",
     "worker": "npm --prefix server run dev:worker",
+    "sandbox": "npm --prefix server run sandbox",
+    "sandbox:drive": "npm --prefix server run sandbox:drive --",
     "catalog:publish": "npm --prefix server run publish",
     "catalog:publish:dry": "npm --prefix server run publish:dry",
     "catalog:migrate": "npm --prefix server run migrate",
@@ -59,6 +61,7 @@
     "expo-media-library": "~57.0.4",
     "expo-notifications": "~57.0.17",
     "expo-router": "~57.0.19",
+    "expo-screen-capture": "~57.0.2",
     "expo-secure-store": "~57.0.3",
     "expo-sharing": "~57.0.18",
     "expo-splash-screen": "~57.0.8",

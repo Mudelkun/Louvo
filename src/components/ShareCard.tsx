@@ -9,7 +9,7 @@ import { Mannequin } from '@/components/Mannequin';
 import { DEMO_PHOTO } from '@/lib/constants';
 // The one component that reads the light palette directly, on purpose. This
 // card is captured as an image and posted somewhere else: what it looks like is
-// a fact about Hairify's branding, not about the phone that made it. Two people
+// a fact about Luvo's branding, not about the phone that made it. Two people
 // sharing the same look must produce the same picture.
 import { lightColors as colors, type } from '@/theme/theme';
 
@@ -19,7 +19,7 @@ import { lightColors as colors, type } from '@/theme/theme';
  * Not the raw preview. A generated preview is a photograph of somebody with a
  * different haircut and nothing about it says where it came from — shared as it
  * is, it is a nice picture that advertises nothing. This composition is the same
- * picture with the smallest possible amount of Hairify on it, and every decision
+ * picture with the smallest possible amount of Luvo on it, and every decision
  * in here is about keeping "smallest possible" true, because **the moment the
  * branding is big enough to be embarrassing, nobody posts it and the reach goes
  * to zero.** An ad nobody sends is worth less than no ad.
@@ -129,7 +129,7 @@ export function ShareCard({ uri, hairstyleName, aspect = DEFAULT_ASPECT, demo }:
           its own. Short — 34% of the frame, fading to nothing — so it reads as
           the bottom of a photograph rather than as a banner stuck on one. */}
       <LinearGradient
-        colors={['rgba(12,10,9,0)', 'rgba(12,10,9,0.34)', 'rgba(12,10,9,0.72)']}
+        colors={['rgba(10,7,18,0)', 'rgba(10,7,18,0.34)', 'rgba(10,7,18,0.72)']}
         locations={[0, 0.45, 1]}
         style={[styles.scrim, { height: Math.round(height * 0.34) }]}
         pointerEvents="none"
@@ -140,7 +140,7 @@ export function ShareCard({ uri, hairstyleName, aspect = DEFAULT_ASPECT, demo }:
           <View style={styles.markIcon}>
             <Ionicons name="cut" size={13} color={colors.ink} />
           </View>
-          <Text style={styles.wordmark}>Hairify</Text>
+          <Text style={styles.wordmark}>Luvo</Text>
         </View>
         {/* The cut's name is the caption a stranger actually wants — it answers
             "what is that haircut called", which is the only question a good
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   // every app it lands in applies its own frame. A card with corners of its own
   // shows them as dark notches inside somebody else's rounded thumbnail.
   card: { backgroundColor: colors.surfaceSunken, overflow: 'hidden' },
-  demo: { alignItems: 'center', justifyContent: 'flex-end', backgroundColor: '#E8E1D8' },
+  demo: { alignItems: 'center', justifyContent: 'flex-end', backgroundColor: '#E7E2F1' },
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   footer: { position: 'absolute', left: 18, right: 18, bottom: 16, gap: 3 },
   mark: { flexDirection: 'row', alignItems: 'center', gap: 6 },

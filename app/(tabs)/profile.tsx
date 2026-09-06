@@ -214,7 +214,7 @@ function LookTile({
           }}
           demoWidth={CARD_HEIGHT * 0.78}
         >
-          <LinearGradient colors={['transparent', 'rgba(24,21,19,0.72)']} style={styles.caption}>
+          <LinearGradient colors={['transparent', 'rgba(22,18,31,0.72)']} style={styles.caption}>
             <Text style={[type.caption, { color: colors.onDark, fontWeight: '700' }]} numberOfLines={1}>
               {look.hairstyleName}
             </Text>
@@ -384,6 +384,6 @@ const useStyles = makeStyles(({ colors, shadow }) => ({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(24,21,19,0.55)',
+    backgroundColor: 'rgba(22,18,31,0.55)',
   },
 }));
