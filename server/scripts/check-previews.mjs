@@ -70,6 +70,17 @@ if (!dbModule) {
   process.exit(1);
 }
 dbModule.pool.query = (text, values) => client.query(text, values);
+/**
+ * The terminal transitions run in a transaction now, because they settle the
+ * job's credit in the same breath as its status (`credits.ts`). A transaction
+ * takes a *connection* rather than the pool, so this has to be substituted too —
+ * without it `markReady` tries to reach a real Postgres and the whole lifecycle
+ * half of this file stops running.
+ */
+dbModule.pool.connect = async () => ({
+  query: (text, values) => client.query(text, values),
+  release: () => undefined,
+});
 
 const jobs = await import('../dist/jobs.js');
 const { resolveReference, referenceViews, variantCandidates } = await import('../dist/reference.js');

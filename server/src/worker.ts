@@ -331,6 +331,14 @@ async function sweep(): Promise<void> {
     // Not `collected`: nobody collected it. The distinction is the difference
     // between a preview that reached its owner and one that did not, and it is
     // the number to watch if the retention window is ever argued about.
+    //
+    // The credit stays spent, and this raw update is deliberately not
+    // `markFailed` because of it. The job passed through `ready`, which settled
+    // the charge; the generation was produced, the notification was sent, and it
+    // sat available for a week. Refunding here would cost us the five cents
+    // *and* the credit for somebody who did not open the app — and since the
+    // preview is gone either way there is nothing to exploit by leaving it
+    // spent. If that judgement is ever revisited, this is the line to change.
     await query(
       `update preview_jobs set status = 'failed', error = $2, error_code = 'expired',
               result_key = null, expires_at = null, updated_at = now()
