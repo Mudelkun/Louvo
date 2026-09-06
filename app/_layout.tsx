@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { LookNotification } from '@/components/LookNotification';
+import { ScreenCaptureGuard } from '@/components/ScreenCaptureGuard';
 import { AccountProvider } from '@/state/AccountContext';
 import { CatalogProvider } from '@/state/CatalogContext';
 import { GenerationProvider } from '@/state/GenerationContext';
@@ -38,7 +39,7 @@ function AppShell() {
 
   // The window behind the navigator. Re-run on the scheme, not once on mount:
   // this is what shows through during a screen transition and behind an
-  // over-scrolled list, and left at the launch value it flashes bone white
+  // over-scrolled list, and left at the launch value it flashes near-white
   // under a dark app the first time somebody flips the switch.
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(colors.canvas).catch(() => undefined);
@@ -78,7 +79,7 @@ function AppShell() {
                           is a worse place to be taking money. */}
                       <Stack.Screen name="credits" />
                       <Stack.Screen name="sign-in" />
-                      {/* Where a shared link lands. `hairify://s/<code>` and, once
+                      {/* Where a shared link lands. `luvo://s/<code>` and, once
                           the association files are live, `https://<host>/s/<code>`
                           — see `app/s/[code].tsx`. It resolves the code and
                           replaces itself with the cut, so it is a doorway rather
@@ -87,6 +88,16 @@ function AppShell() {
                     </Stack>
                     {/* Sits above every screen: previews finish in the background. */}
                     <LookNotification />
+                    {/* Screenshots off, everywhere, for as long as the app runs
+                        — a screenshot of a card or of a finished preview is our
+                        render, extracted, and it is worth more to somebody
+                        else's image model than to us. Mounted here because the
+                        block is a property of the window rather than of a
+                        screen, so there is nowhere below this it could sit
+                        without leaving the screens above it uncovered.
+                        `src/lib/screenCapture.ts` has what each platform
+                        actually enforces. */}
+                    <ScreenCaptureGuard />
                   </PhotoPickerProvider>
                 </GenerationProvider>
               </AccountProvider>

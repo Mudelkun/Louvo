@@ -214,11 +214,11 @@ const page = landingPage({
   hairstyleName: 'Textured Crop',
   imageUrl: 'https://cdn.test/textured-crop/curly/half.webp',
   gender: 'male',
-  deepLink: `hairify://s/${made.code}`,
+  deepLink: `luvo://s/${made.code}`,
   iosUrl: 'https://apps.apple.com/app/id123456789',
-  androidUrl: `https://play.google.com/store/apps/details?id=com.hairify.app&referrer=share%3D${made.code}`,
-  fallbackUrl: 'https://hairify.app',
-  canonicalUrl: `https://hairify.app/s/${made.code}`,
+  androidUrl: `https://play.google.com/store/apps/details?id=com.luvoai.luvo&referrer=share%3D${made.code}`,
+  fallbackUrl: 'https://luvo.app',
+  canonicalUrl: `https://luvo.app/s/${made.code}`,
   iosAppId: '123456789',
 });
 
@@ -233,7 +233,7 @@ assert.match(
 );
 assert.match(page, /twitter:card" content="summary_large_image"/, 'a card with an image says so');
 assert.ok(page.includes(shareTitle('Textured Crop')), 'the title names the cut that was shared');
-assert.ok(page.includes(`hairify://s/${made.code}`), 'the page offers the app to whoever already has it');
+assert.ok(page.includes(`luvo://s/${made.code}`), 'the page offers the app to whoever already has it');
 assert.ok(page.includes('apps.apple.com'), 'and the store to whoever does not');
 assert.ok(page.includes('apple-itunes-app'), 'the smart app banner is set when the app id is known');
 
@@ -249,11 +249,11 @@ const injected = landingPage({
   hairstyleName: '"><script>alert(1)</script>',
   imageUrl: null,
   gender: null,
-  deepLink: 'hairify://s/AbCdEfGhIj',
+  deepLink: 'luvo://s/AbCdEfGhIj',
   iosUrl: null,
   androidUrl: null,
   fallbackUrl: null,
-  canonicalUrl: 'https://hairify.app/s/AbCdEfGhIj',
+  canonicalUrl: 'https://luvo.app/s/AbCdEfGhIj',
   iosAppId: null,
 });
 assert.equal(injected.includes('<script>alert(1)</script>'), false, 'the cut’s name cannot inject markup');
@@ -263,11 +263,11 @@ assert.equal(injected.includes('<meta property="og:image"'), false, 'and does no
 const dead = unknownLinkPage({
   code: 'AbCdEfGhIj',
   gender: null,
-  deepLink: 'hairify://s/AbCdEfGhIj',
+  deepLink: 'luvo://s/AbCdEfGhIj',
   iosUrl: 'https://apps.apple.com/app/id123456789',
   androidUrl: null,
   fallbackUrl: null,
-  canonicalUrl: 'https://hairify.app/s/AbCdEfGhIj',
+  canonicalUrl: 'https://luvo.app/s/AbCdEfGhIj',
   iosAppId: null,
 });
 assert.ok(dead.includes('apps.apple.com'), 'a dead link still offers the download — it is still a warm visitor');
@@ -276,12 +276,12 @@ assert.ok(dead.includes('apps.apple.com'), 'a dead link still offers the downloa
 // The association files
 // ---------------------------------------------------------------------------
 
-const aasa = appleAppSiteAssociation('ABCDE12345', 'com.hairify.app');
-assert.deepEqual(aasa.applinks.details[0].appIDs, ['ABCDE12345.com.hairify.app']);
+const aasa = appleAppSiteAssociation('ABCDE12345', 'com.luvoai.luvo');
+assert.deepEqual(aasa.applinks.details[0].appIDs, ['ABCDE12345.com.luvoai.luvo']);
 assert.equal(aasa.applinks.details[0].components[0]['/'], '/s/*', 'universal links cover the share path only');
 
-const links_json = assetLinks('com.hairify.app', ['AA:BB']);
-assert.equal(links_json[0].target.package_name, 'com.hairify.app');
+const links_json = assetLinks('com.luvoai.luvo', ['AA:BB']);
+assert.equal(links_json[0].target.package_name, 'com.luvoai.luvo');
 assert.deepEqual(links_json[0].target.sha256_cert_fingerprints, ['AA:BB']);
 
 // ---------------------------------------------------------------------------
@@ -347,7 +347,7 @@ const minted = await app.inject({
 assert.equal(minted.statusCode, 201);
 const share = minted.json().share;
 assert.match(share.url, /\/s\/[A-Za-z0-9]{10}$/, 'the url is the landing page for this code');
-assert.equal(share.deepLink, `hairify://s/${share.code}`, 'and the deep link is the app scheme');
+assert.equal(share.deepLink, `luvo://s/${share.code}`, 'and the deep link is the app scheme');
 assert.ok(share.caption.includes(share.url), 'the caption carries the link — that is the whole loop');
 assert.ok(share.caption.includes(shot.name), 'and names the cut, which is what a friend clicks for');
 

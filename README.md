@@ -1,4 +1,4 @@
-# Hairify
+# Luvo
 
 React Native / Expo app for trying hairstyles on your own photo, plus the API that serves its
 catalog.
@@ -20,6 +20,18 @@ and buys a pack through the App Store or Play. The balance is server-side and tr
 at submit, spent when the preview lands, refunded when it does not. See
 [`docs/credits.md`](docs/credits.md), which also has the margins at both store commission rates
 and an honest account of what the free-generation guard does and does not survive.
+
+**Screenshots are blocked.** A hairstyle render is what this app sells, and a screenshot of one is
+that render on its way into somebody else's image model. The app asks the OS not to capture its
+window, for every screen, for as long as it runs: on Android that is `FLAG_SECURE` and the capture
+is refused outright, on iPhone the screenshot is taken and comes out blank. Sharing a look is
+unaffected — it still goes out as a proper branded picture. The native module is not in Expo Go, so
+this only takes effect in a dev or release build; Settings says which you are running.
+
+To try any of it, `npm run sandbox` runs the whole backend in memory — no Railway, no R2, no fal,
+no money — and `npm run sandbox:drive scenario` walks the entire credit story over HTTP and
+asserts each step. [`docs/sandbox.md`](docs/sandbox.md) covers that and the App Store / Play
+sandbox setup for real purchases.
 
 Adding or replacing a hairstyle is now `npm run catalog:publish`, not an App Store release.
 Why it is built this way, what was measured, and why R2 rather than S3 or a Railway volume:
@@ -295,31 +307,38 @@ Four rules the code already respects, from the spec:
 
 ## The app icon
 
-`assets/Hairify - icon.png` is the artwork — the two half-heads in brass on a black tile — and
-it is the *only* icon file anyone edits. Everything the platforms actually load is cut from it
+`assets/Luvo-icon.png` is the artwork — the two half-heads, one violet and one pink, on a
+near-black tile — and it is the *only* icon file anyone edits. Everything the platforms actually load is cut from it
 by `npm run icons`:
 
 | File | What it is |
 | --- | --- |
 | `assets/icon.png` | 1024² RGB, full-bleed. iOS and the stores round the corners themselves. |
-| `assets/splash-icon.png` | 1024² RGBA, the rounded tile on transparency, over `#FAF8F5`. |
+| `assets/splash-icon.png` | 1024² RGBA, the rounded tile on transparency, over `#F9F8FC`. |
 | `assets/favicon.png` | 48² RGBA, the same silhouette. |
 | `assets/android-icon-foreground.png` | 512² RGBA, opaque, subject inside the adaptive safe zone. |
 | `assets/android-icon-monochrome.png` | 432² RGBA, white silhouette for Android's themed icons. |
 
-The artwork arrives as an icon *mockup* — the tile is photographed with a drop shadow on a cream
-ground — so the script's real job is to throw the mockup away and keep the tile: find it, crop it
-square, and either fill outside its rounded silhouette with the tile's own black or make it
-transparent, depending on which of the five is being cut. Shipped unprocessed, the mockup would
-give every platform a shrunken tile inside a pale border with a shadow baked in, under a second
+The artwork arrives as an icon *mockup* — the tile floats on transparency inside a soft glow,
+with a lot of padding around it — so the script's real job is to throw the mockup away and keep
+the tile: find it, crop it square, and either fill outside its rounded silhouette with the tile's
+own black or make it transparent, depending on which of the five is being cut. Shipped
+unprocessed, the mockup would give every platform a shrunken tile inside a halo, under a second
 corner mask.
 
-Two details in there are load-bearing, and both are commented at the code:
+Four details in there are load-bearing, and all four are commented at the code:
 
-- **The ground is bled, not filled.** The tile is lit rather than painted — a couple of levels
-  brighter at the top-left than at the bottom-right — so a flat black outside its corners reads
-  as a patch at any corner radius other than the tile's own, and the platforms each pick their
-  own radius.
+- **Tile and ground are told apart on alpha.** The ground is alpha 0, the glow ramps to about 60,
+  and the tile lands flat at 252. Luminance — which is what an earlier, cream-grounded artwork was
+  cut on — cannot separate a dark tile from a dark ground at all.
+- **The subject is found by eroding the bright mask, not by hue.** The tile's rim highlight is as
+  bright as the figure, so a luminance box is just the tile's; the rim is a few pixels wide and
+  the figure's strokes are many times that, so four passes of erosion leave only the figure.
+- **The ground is bled, not filled**, because the tile is lit rather than painted and a flat black
+  outside its corners reads as a patch at any radius but the tile's own. It is bled at two depths:
+  iOS keeps the glowing rim as the icon's edge, and Android's art layer bleeds from inside it, or
+  the tile's outline prints *inside* the finished icon. That depth is clamped so it can never
+  erode into the figure and smear it out to the canvas.
 - **The Android foreground is full-bleed and opaque.** Fitting the subject into the safe zone
   leaves the tile covering about four fifths of the canvas; padding the rest with transparency
   over a flat `backgroundColor` drew a faint rounded square *inside* the icon, for the same

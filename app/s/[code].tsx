@@ -14,7 +14,7 @@ import { spacing } from '@/theme/theme';
 /**
  * Where a shared link lands when the app is already installed.
  *
- * `hairify://s/<code>` — and, once the association files are live,
+ * `luvo://s/<code>` — and, once the association files are live,
  * `https://<host>/s/<code>` — route here. The screen has one job and it is a
  * short one: work out which haircut the link is about and put the recipient in
  * front of it. Everything else about this screen is arranged so that job is over

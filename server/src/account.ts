@@ -144,7 +144,7 @@ export async function accountRoutes(app: FastifyInstance): Promise<void> {
    *
    * Answers the same way whether or not the address has an account, which is the
    * point: a different answer for a known address turns this into a way of
-   * asking whether somebody uses Hairify.
+   * asking whether somebody uses Luvo.
    */
   app.post('/v1/account/email-code', async (request, reply) => {
     const deviceId = await requireDevice(request, reply);
@@ -318,8 +318,8 @@ async function sendCode(email: string, code: string): Promise<boolean> {
       body: JSON.stringify({
         from: env.auth.emailFrom,
         to: [email],
-        subject: `${code} is your Hairify code`,
-        text: `Your Hairify sign-in code is ${code}.\n\nIt expires in ${Math.round(
+        subject: `${code} is your Luvo code`,
+        text: `Your Luvo sign-in code is ${code}.\n\nIt expires in ${Math.round(
           env.auth.emailCodeTtlSeconds / 60,
         )} minutes. If you did not ask for it, you can ignore this email.`,
       }),

@@ -49,7 +49,7 @@ export function useLookDownload(uri: string | null | undefined) {
       // Write-only: saving does not need read access to the whole library.
       const permission = await MediaLibrary.requestPermissionsAsync(true);
       if (!permission.granted) {
-        notify('Photo access needed', 'Allow Hairify to save photos to add this look to your camera roll.');
+        notify('Photo access needed', 'Allow Luvo to save photos to add this look to your camera roll.');
         setStatus('idle');
         return;
       }
@@ -70,7 +70,7 @@ export function useLookDownload(uri: string | null | undefined) {
 function saveOnWeb(uri: string) {
   const link = document.createElement('a');
   link.href = uri;
-  link.download = `hairify-${Date.now()}.jpg`;
+  link.download = `luvo-${Date.now()}.jpg`;
   document.body.appendChild(link);
   link.click();
   link.remove();

@@ -7,7 +7,7 @@
  *
  * **iOS needs nothing from this file.** The device secret in `deviceId.ts` lives
  * in the Keychain, and Keychain items survive the app being deleted. Reinstall
- * Hairify and `deviceSecret()` reads back the same 32 bytes, so the device is
+ * Luvo and `deviceSecret()` reads back the same 32 bytes, so the device is
  * already the same device to the server. There is no iOS identifier worth adding
  * on top: `identifierForVendor` *resets* once every app from the vendor is gone,
  * so it would be strictly worse than what the Keychain already provides.

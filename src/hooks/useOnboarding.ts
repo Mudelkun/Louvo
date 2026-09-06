@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 
-const KEY = 'hairify.onboarded.v1';
+const KEY = 'luvo.onboarded.v1';
 
 type Status = 'unknown' | 'seen' | 'unseen';
 

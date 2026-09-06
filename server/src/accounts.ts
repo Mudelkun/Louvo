@@ -3,7 +3,7 @@
  *
  * An account exists for exactly one reason: purchased credits have to survive a
  * phone. Free generations do not need one — that is the whole point of the free
- * two — and nothing else in Hairify does either, which is why favourites and
+ * two — and nothing else in Luvo does either, which is why favourites and
  * saved looks are still device-local files and why this module holds an id, an
  * email and nothing whatsoever about hair.
  *

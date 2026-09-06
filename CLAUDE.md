@@ -41,7 +41,10 @@ transactional — held at submit, spent when the preview lands, refunded when it
 client is never trusted with it. Accounts exist only so purchased credits survive a phone;
 signing in adopts the device rather than issuing a second token. `docs/credits.md` has the
 design, the margins at both store commission rates, and the four places where what the brief asks
-for and what a phone can actually do are not the same.
+for and what a phone can actually do are not the same. `docs/sandbox.md` is how to test it: a
+whole backend in memory (`npm run sandbox`) with control routes for the things a real store and a
+real model will not do on request — forcing a generation to fail, granting a pack, simulating an
+Android reinstall.
 
 Still simulated: favourites and saved looks (device-local).
 
@@ -64,6 +67,8 @@ npm run api                   # the API in watch mode
 npm run worker                # the preview generation worker in watch mode
 npm run catalog:migrate       # apply server/migrations/*.sql
 npm run catalog:check         # sync check + round trip + previews + credits + share funnel — free
+npm run sandbox               # the whole backend, in memory: no Railway, no R2, no fal — free
+npm run sandbox:drive scenario # the credit story end to end over HTTP, asserted — free
 npm run catalog:publish:dry   # transcode + report; uploads nothing, writes nothing — free
 npm run catalog:publish       # metadata into Postgres, imagery into R2
 ```
@@ -83,7 +88,7 @@ module-scope palette read.
 Reference material: `project.md` (product spec) and `App-reference.png` (the original flow
 mockup — treated as inspiration, not a spec; the implemented design departs from it).
 
-## What Hairify is
+## What Luvo is
 
 A React Native / Expo mobile app for virtually trying hairstyles. The user flow: upload a photo → pick gender → pick hair type → browse the catalog → generate an AI preview of themselves with that style → compare before/after, save, share.
 
@@ -187,7 +192,7 @@ Two consequences worth knowing:
   gallery's caption sits, which is how it was read: something naming the picture rather than
   something to press. `<HairTypeChoice>` is the same state as a titled control: all four types every
   time in one non-scrolling row, the ones this cut is not offered for held in place as dimmed
-  outlined slots, the selection in the app's active-filter brass rather than in the solid ink it
+  outlined slots, the selection in the app's active-filter violet rather than in the solid ink it
   uses for buttons. A row whose length changes per style is a list of what exists; a row that is
   always the same four is a question with four answers. The one line under it says the thing the
   row cannot: that a cut with a single render will not change when the selection moves.
@@ -393,8 +398,29 @@ render, and the scheme is a UI palette. The one place they touch is `plate`, bel
 picks between them. Settings has a three-way control — **System / Light / Dark** — defaulting to
 `system`, which is a deferral rather than a value: the phone decides and *keeps* deciding, so a
 device on a dusk schedule flips the app with it. The choice is one AsyncStorage key
-(`hairify.theme.v1`) and `app.json` is `userInterfaceStyle: "automatic"`, without which iOS never
+(`luvo.theme.v1`) and `app.json` is `userInterfaceStyle: "automatic"`, without which iOS never
 reports dark at all.
+
+**The palette is measured off the launcher artwork, not chosen beside it.** `assets/Luvo-icon.png`
+is a violet-to-pink figure on a near-black tile, and three anchors sampled from the core of its
+strokes are what the whole scheme is built from: violet `#A98CFB` (H256), pink `#FC73AC` (H335),
+tile `#090710` (H253). Violet is `accent` at every step — light mode takes it deeper down its own
+hue until white body text clears AA on it (6.1:1, where the brass this replaced managed 4.7), dark
+mode uses the measured value as-is. **Pink is only ever the far end of a gradient**: a two-colour
+brand still needs one of them to be the colour a button *is*, and pink dark enough to carry white
+text is maroon, so the pink is spent as `accentGlow` on the two gradients that already existed —
+the progress ring and the generating screen's frame — which now draw the icon itself. The neutral
+ramp carries the tile's hue under 3% saturation. That cap is the load-bearing part and it is the
+same constraint the warm bone ramp was written against: the catalog is dark hair on flat white, so
+a neutral with real chroma in it reads as a tint laid over the renders. `plate` did not move, so
+nothing directly behind a render did either.
+
+Three things outside `tokens.ts` are part of the palette and do not follow it automatically: the
+`rgba()` scrims that are literal copies of `ink` (they are the dark-on-purpose family — a pill over
+a photograph, a caption gradient), `SCAN_GRADIENT` in `GenerationStage.tsx`, which is the light
+accent written out because a module constant may not read the palette, and the two splash
+`backgroundColor`s in `app.json`, which are `canvas` in each scheme. Re-deriving the palette from
+new artwork means re-checking those four places.
 
 The three things that made this more than swapping a hex map:
 
@@ -410,17 +436,18 @@ The three things that made this more than swapping a hex map:
 - **"Dark" meant two different things and both were spelled `ink`.** A near-black *text* colour
   and a near-black *fill* invert in opposite directions, and one token cannot do both: text goes
   light, but a selected chip that stayed dark on a dark canvas stops reading as selected. So the
-  fills are `inkFill` / `onInkFill` (white on near-black in light, near-black on bone in dark),
+  fills are `inkFill` / `onInkFill` (white on near-black in light, near-black on near-white in
+  dark),
   and `stage` is the third case — surfaces that are dark *on purpose* in both schemes, where
   `onDark` stays white because what is under it is still dark: the welcome hero, the finished-look
-  toast, a scrim over somebody's photograph. The same split runs through the brass: `accent` is
-  the fill with `onAccent` on it, `accentInk` is the brass used as a *label*, deep in light and
-  light in dark. A single brass cannot be both a panel and legible text on that panel.
+  toast, a scrim over somebody's photograph. The same split runs through the accent: `accent` is
+  the fill with `onAccent` on it, `accentInk` is the brand violet used as a *label*, deep in
+  light and light in dark. A single violet cannot be both a panel and legible text on that panel.
 - **`plate` does not invert, and neither does `<ShareCard>`.** Every catalog render is shot on
   flat white, so a dark ground under one would frame a bright rectangle of the render's own white
   — `plate` is that ground and it is a constant, not a palette entry. `<ShareCard>` is the one
   component that reads `lightColors` directly and on purpose: it is captured as an image and
-  posted somewhere else, so what it looks like is a fact about Hairify's branding rather than
+  posted somewhere else, so what it looks like is a fact about Luvo's branding rather than
   about the phone that made it. Two people sharing the same look must produce the same picture.
 
 **`plate` is `#FFFFFF`, and every surface that holds a render is one.** That was the open design
@@ -428,7 +455,8 @@ call — the grid card's image area was `surfaceAlt` and the style screen's hero
 were `surface`, so after dark a published render was a white square inside a charcoal box, with
 the seam falling exactly on the render's own edge. It was settled once the renders were on screen,
 and the answer is the one the token already implied: match the imagery rather than the scheme. A
-warm bone plate does not do it — `#EFE9E1` leaves a visible square in *both* schemes — so the
+tinted plate does not do it — a warm `#EFE9E1` left a visible square in *both* schemes, and a
+cool one tinted to the palette does the same — so the
 plate is the render's own white, and the card's border, its meta row and the canvas behind it are
 what carry the scheme. The surfaces on it: `<StyleCard>`'s image area, the style screen's hero
 card and its four angle tiles, `<MannequinBadge>`, the hair-type picker's examples and the sample
@@ -794,28 +822,52 @@ fallback for a style with no render. Described rather than shown, a cut is whate
 already thinks that name means and a different one each run — that is the thing being measured, and
 `REFERENCE_VIEWS` stays at one either way.
 
-**The launcher icon is cut from the artwork, not hand-exported.** `assets/Hairify - icon.png` is
+**The launcher icon is cut from the artwork, not hand-exported.** `assets/Luvo-icon.png` is
 the only icon file anyone edits; `npm run icons` (`scripts/generate-app-icons.mjs`) derives all
 five files the platforms load — `icon.png`, `splash-icon.png`, `favicon.png` and the two Android
 adaptive layers — and `app.json` points at those. It is free, needs no key, and takes about a
 second, so re-run it rather than editing an output by hand.
 
-The work it does is not resizing. The artwork arrives as an icon *mockup*: the tile is
-photographed with a drop shadow on a cream ground, and shipped unprocessed every platform would
-put its own corner mask over a shrunken tile floating in a pale border. So the script finds the
-tile, crops it square, and replaces the ground — with the tile's own black for iOS, which rounds
-the corners itself, and with transparency for the splash, the favicon and Android. Two things in
-there took a second attempt and are commented at the code: the ground is **bled outwards from the
-nearest tile pixel rather than filled flat**, because the tile is lit and a flat black beside it
-reads as a patch; and the Android foreground is **full-bleed and opaque**, because padding the
-safe-zone-sized art with transparency over a flat `backgroundColor` drew a faint rounded square
-inside the icon for exactly the same reason. `android.adaptiveIcon.backgroundColor` is now the
-measured `#171716` and is a fallback nothing should see. `assets/android-icon-background.png` is
-gone: it was the Expo template's, and a background layer under an opaque foreground is a file that
-can only ever be wrong.
+The work it does is not resizing. The artwork arrives as an icon *mockup*: a rounded near-black
+tile floated on transparency inside a soft violet-and-pink glow, with a lot of padding around it,
+and shipped unprocessed every platform would put its own corner mask over a shrunken tile inside a
+halo. So the script finds the tile, crops it square, and replaces the ground — with the tile's own
+black for iOS, which rounds the corners itself, and with transparency for the splash, the favicon
+and Android. `android.adaptiveIcon.backgroundColor` is the measured `#0d0914` and is a fallback
+nothing should see. `assets/android-icon-background.png` is gone: it was the Expo template's, and a
+background layer under an opaque foreground is a file that can only ever be wrong.
 
-The whole thing assumes the artwork's house style — a dark tile on a light ground, subject in a
-warm tone. `findTile` and `goldBounds` are what break first if that changes.
+Four things in there took a second attempt and are commented at the code:
+
+- **Tile and ground are separated on alpha, never on luminance.** The previous artwork was a dark
+  tile on a cream ground, where luminance was the only signal there was; this one is dark on dark
+  and luminance cannot tell them apart at all. Alpha can, and cleanly: the ground is 0, the glow
+  ramps to about 60, the tile lands flat at 252 with a two-pixel edge between. `squareCrop`
+  rescales that so the glow falls to 0 and the tile's own anti-aliasing survives — a flat
+  threshold keeps the first and destroys the second.
+- **The subject is found by eroding, not by hue.** It used to be "light and warm", which found
+  brass on black; the new figure is half pink and half violet, so warmth finds one head and loses
+  the other. Luminance alone is no good either — the tile's rim highlight is as bright as the
+  figure. What separates them is *width*: `subjectBounds` erodes the bright mask by four pixels,
+  which the rim does not survive and the figure barely notices, then grows the box back by the
+  same margin.
+- **The ground is bled outwards from the nearest tile pixel rather than filled flat**, because the
+  tile is lit and a flat black beside it reads as a patch — and the bleed now starts at two
+  different depths. iOS keeps the tile's glowing rim, since iOS masks the corners at very nearly
+  the radius the artwork was drawn at and the rim is the icon's own edge. Android's art layer
+  bleeds from 70px *inside* the rim, because it is full-bleed under a mask the system picks, and a
+  rim carried outwards draws the tile's outline inside the finished icon — a rounded square within
+  a rounded square, which is the same defect as the one below reached from the other side. That
+  depth is clamped against `subjectBounds` (`RIM_GUARD`): erode past the figure and the figure
+  becomes the bleed's source, which at 90px grew a pink tail out of the bottom of the icon.
+- **The Android foreground is full-bleed and opaque**, because padding the safe-zone-sized art
+  with transparency over a flat `backgroundColor` drew a faint rounded square inside the icon.
+
+The whole thing assumes the artwork's house style — a rounded tile carried on its own alpha, lit
+at the rim, with a subject brighter than the tile and drawn in strokes much fatter than that rim.
+`findTile` and `subjectBounds` are what break first if that changes, and the symptom is silent:
+`icon.png` comes back as the whole padded mockup, or the Android layers come back centred on the
+tile instead of on the figure. Look at the five outputs after any change to the artwork.
 
 **Sharing is a referral loop, and the picture never comes back to us.** That is the one rule the
 whole feature is arranged around, and it is the same promise `docs/preview-generation.md` makes
@@ -834,7 +886,7 @@ that, so it is not done. Four consequences, and `docs/sharing.md` has the rest:
 - **A share link names a hairstyle, not an image.** So the landing page's `og:image` — the picture
   a scraper renders into a chat card before any human sees it — is the catalog's own mannequin
   render of that cut, public and CDN-hosted and identical for everybody who shared it. Never a
-  Hairify user's face. `check-shares.mjs` asserts no local file uri can reach that page.
+  Luvo user's face. `check-shares.mjs` asserts no local file uri can reach that page.
 - **The three named buttons are shortcuts into the OS share sheet, and the screen says so.**
   Neither platform lets managed Expo code target a specific app with an image: iOS has no
   targeting API at all, and Android's needs an intent with `setPackage` plus a `FileProvider`
@@ -862,6 +914,40 @@ waits for nothing. **Neither failure stops a share**: no card sends the raw prev
 sends the caption without one, and both are recorded as `share_failed`. That is the same rule as
 everywhere else here — a degraded outcome is reported, never disguised — and `shareSource()`
 reports `api` or `local` in Settings beside the catalog's and the generator's.
+
+**Screenshots are off, everywhere, for the whole app.** A hairstyle render is the product. A
+screenshot of a style card or of a finished preview is that render extracted losslessly, and where
+it goes is somebody else's image model, as the reference our own generator was going to charge for.
+So the app asks the OS not to capture its window, once, at the root — `<ScreenCaptureGuard>` in
+`app/_layout.tsx`, over `expo-screen-capture`. The mechanism and the full argument are in
+`src/lib/screenCapture.ts`; four things decide any change to it:
+
+- **The two platforms are not the same strength, and the copy may only claim what each one does.**
+  Android sets `FLAG_SECURE`: the OS refuses the capture, recordings come back black, the recents
+  card is blank, and it is enforced below the app. iOS has no API that refuses a screenshot, so the
+  module parents the app's window into a secure `UITextField` layer — the shutter fires, a file
+  lands in Photos, and it is **black**. Nothing of ours leaves either way, which is the point, but
+  only one of them is a refusal.
+- **A blank picture is explained rather than left looking like a bug.** That is the whole reason
+  `<ScreenCaptureGuard>` renders anything: on iOS a user who screenshots gets a black image and no
+  word from the system, which reads as the app having broken. One toast says it was deliberate and
+  points at Share, which does work. Android never fires it — the OS puts up its own toast.
+- **It re-arms only when it is not already armed.** The block is held for the life of the process.
+  Toggling `FLAG_SECURE` recreates Android's window surface, so re-asking on every foreground would
+  buy a black flash on every return to the app and fix nothing; the foreground pass runs only when
+  the last attempt did not land, which is the case that can actually change underneath us.
+- **It does not break sharing, and one line makes sure of it.** Composing the share card
+  photographs a mounted view, and on iOS the library's default path is the same snapshot machinery
+  the secure layer defeats. `captureShareCard` retries once with `useRenderInContext`, which
+  rasterises the layer tree in process and is not subject to it. Android's path is `view.draw()`
+  and was never affected. **If the card ever starts coming back blank on an iPhone, this is the
+  line to read** — and note the retry is a retry rather than the default on purpose, since
+  `renderInContext:` misses anything the GPU composites late.
+
+What it does not stop is a second phone pointed at the screen, and nothing in software does.
+`screenCaptureSource()` reports `blocked` or `unavailable` in the same shape as the catalog's and
+the generator's, and Settings prints it — the native module is absent from Expo Go and on the web,
+and a build that quietly does not block screenshots looks exactly like one that does.
 
 **Generation costs a credit, and the credit is the server's to move.**
 This is the phase-2 slice that turns previews from free into a product.

@@ -173,7 +173,7 @@ export default function ResultScreen() {
               It names the *look* rather than the cut: the texture and the length
               this preview was generated in, set over the cut's own name. Two
               lines rather than one run-on caption, because the halves are
-              different kinds of thing — the small brass line is what was asked
+              different kinds of thing — the small violet line is what was asked
               for, the white line is what it was asked of — and stacking them
               keeps the pill short enough to sit over a photograph.
 
@@ -340,7 +340,7 @@ const useStyles = makeStyles(({ colors, shadow }) => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: 'rgba(24,21,19,0.72)',
+    backgroundColor: 'rgba(22,18,31,0.72)',
     borderRadius: radii.pill,
     paddingLeft: 6,
     paddingRight: spacing.md,
@@ -348,7 +348,7 @@ const useStyles = makeStyles(({ colors, shadow }) => ({
   },
   styleTagCopy: { flexShrink: 1, gap: 1 },
   /**
-   * The brass at its brightest, which is the one step of it that survives being
+   * The accent at its brightest, which is the one step of it that survives being
    * set at 9pt on a dark scrim over a photograph. Uppercased in the style rather
    * than in the string, so what gets rendered is the catalog's own copy.
    */

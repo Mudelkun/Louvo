@@ -3,8 +3,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 
 import type { GeneratedLook } from '@/api/types';
 
-const FAVOURITES_KEY = 'hairify.favourites.v1';
-const LOOKS_KEY = 'hairify.looks.v1';
+const FAVOURITES_KEY = 'luvo.favourites.v1';
+const LOOKS_KEY = 'luvo.looks.v1';
 
 /**
  * Looks stored before generation existed carry no `simulated` flag, and the

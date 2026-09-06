@@ -84,7 +84,7 @@ export default function CompareScreen() {
             beforeUri={look.sourcePhotoUri}
             afterUri={look.resultUri}
             height={STAGE_WIDTH * 1.24}
-            beforeTint={look.simulated ? 'rgba(24,21,19,0.06)' : null}
+            beforeTint={look.simulated ? 'rgba(22,18,31,0.06)' : null}
             afterTint={look.simulated ? 'rgba(255,90,60,0.08)' : null}
             beforeDemo={{ shape: DEMO_BASE_SHAPE, color: BASE_HAIR_COLOR, gender }}
             afterDemo={{ shape: hairstyle.shape, color, gender }}

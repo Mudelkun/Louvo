@@ -29,7 +29,7 @@ import { createHash, createHmac } from 'node:crypto';
 import process from 'node:process';
 
 const CONFIG = {
-  bucket: 'hairify-transient',
+  bucket: 'luvo-transient',
   endpoint: 'https://account123.r2.cloudflarestorage.com',
   region: 'auto',
   accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
