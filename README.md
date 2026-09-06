@@ -14,6 +14,13 @@ mannequin renders are WebP objects in Cloudflare R2 behind its CDN. With
 on the device. Without it, the app runs on `mockCatalog` and the bundled renders exactly as it
 always has — so a fresh checkout needs no backend, no bucket and no key.
 
+**Generations are metered.** Every device gets two free previews — held against the device
+rather than the installation, so a reinstall does not reset them — and after that a user signs in
+and buys a pack through the App Store or Play. The balance is server-side and transactional: held
+at submit, spent when the preview lands, refunded when it does not. See
+[`docs/credits.md`](docs/credits.md), which also has the margins at both store commission rates
+and an honest account of what the free-generation guard does and does not survive.
+
 Adding or replacing a hairstyle is now `npm run catalog:publish`, not an App Store release.
 Why it is built this way, what was measured, and why R2 rather than S3 or a Railway volume:
 [`docs/catalog-architecture.md`](docs/catalog-architecture.md).
@@ -22,7 +29,7 @@ Why it is built this way, what was measured, and why R2 rather than S3 or a Rail
 
 ```bash
 npm install
-npm start          # then press i / a, or scan the QR code with Expo Go
+npm start          # then press i / a, or scan the QR code with the dev build
 npm run web        # runs in a browser
 npm run typecheck  # tsc --noEmit
 
@@ -33,6 +40,12 @@ npm run try-on -- --styles           # which hairstyles have renders to referenc
 
 npm run icons      # re-cut the launcher icon set from the artwork — free, no key
 ```
+
+This is a **development build**, not Expo Go. Taking money and signing somebody in are native
+APIs, so the app now needs a binary compiled with its own native dependencies; the workflow is
+otherwise unchanged. Build one with `npm run build:dev`, install it once, and `npm start`
+attaches to it exactly as it attached to Expo Go. The profiles, and why a build never carries a
+generator key: [`docs/builds.md`](docs/builds.md).
 
 ### With the catalog backend
 

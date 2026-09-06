@@ -28,6 +28,8 @@ import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
+import { installAnchorHeader } from '@/lib/installAnchor';
+
 const KEY = 'hairify.device.v1';
 
 /**
@@ -101,7 +103,23 @@ export function deviceSecret(): Promise<string> {
   return pending;
 }
 
-/** The header every preview request carries. */
+/**
+ * The headers every API request carries.
+ *
+ * Two of them, and the second is only ever present on Android. `X-Install-Anchor`
+ * is what lets the server recognise a reinstalled phone as the same device it
+ * already gave two free generations to — the Keystore, unlike the Keychain, does
+ * not survive the package being removed, so the secret above is not enough there.
+ *
+ * It rides on *every* request rather than on a registration call, which removes
+ * the ordering bug that shape would have: a freshly reinstalled app whose first
+ * action is to generate would otherwise be an unknown device with a fresh
+ * allowance. See `installAnchor.ts` for what the value is and what it is not.
+ */
 export async function deviceHeader(): Promise<Record<string, string>> {
-  return { Authorization: `Device ${await deviceSecret()}` };
+  const anchor = installAnchorHeader();
+  return {
+    Authorization: `Device ${await deviceSecret()}`,
+    ...(anchor ? { 'X-Install-Anchor': anchor } : null),
+  };
 }

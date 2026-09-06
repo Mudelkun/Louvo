@@ -46,6 +46,7 @@ import {
 import { preloadVariants } from '@/lib/mannequinPreload';
 import { renderedVariants, renderLength, renderVariant } from '@/lib/mannequinRender';
 import { HERO_ART, HERO_PAGE, THUMB_HEIGHT, THUMB_WIDTH } from '@/lib/styleLayout';
+import { useAccount } from '@/state/AccountContext';
 import { useCatalog } from '@/state/CatalogContext';
 import { useGeneration } from '@/state/GenerationContext';
 import { useLibrary } from '@/state/LibraryContext';
@@ -131,6 +132,7 @@ export default function StyleDetailScreen() {
   // choice back is a `<SwatchRow>` bound to `setColor`; nothing below changes.
   const color = useHairColor();
   const { start } = useGeneration();
+  const { canGenerate, credits, metered } = useAccount();
   // Arriving here from the Styles tab skips the photo step, so the photo is
   // picked on this screen rather than sending the user back through the flow.
   const { pickFromLibrary, takePhoto, busy } = usePhotoPicker(setPhoto);
@@ -389,6 +391,24 @@ export default function StyleDetailScreen() {
    * from the result skips it.
    */
   const generate = () => {
+    /**
+     * The credit gate, on the user's side of it.
+     *
+     * Not the enforcement — that is `reserve()` on the server, which moves the
+     * balance by compare-and-set and cannot be raced. This is the courtesy: it
+     * sends somebody who has run out to the packs instead of letting them press
+     * a button, watch a screen appear, and be refused a second later.
+     *
+     * `canGenerate` is true while the balance is still being fetched, on purpose
+     * — a paywall that flashes on every cold start would land on people who have
+     * plenty. Being wrong in that direction costs one refused submit; being
+     * wrong in the other costs the flow.
+     */
+    if (!canGenerate) {
+      router.push('/credits?reason=out');
+      return;
+    }
+
     // The colour still goes onto the look rather than being left implicit: a
     // saved look has to keep the shade its *mannequin* is drawn in, whether the
     // user chose it or it is the catalog default.
@@ -442,7 +462,28 @@ export default function StyleDetailScreen() {
       padded={false}
       footer={
         photoUri ? (
-          <Button label="Generate my preview" icon="sparkles" onPress={generate} />
+          /**
+           * The button says what pressing it spends.
+           *
+           * Not a badge and not a separate line — the count belongs *on* the
+           * verb, because that is the moment it is relevant, and a balance shown
+           * anywhere else on this screen would be a number competing with the
+           * haircut. Out of credits it becomes the offer rather than the action,
+           * so nobody presses Generate to be told no.
+           */
+          <Button
+            label={
+              !metered || !credits.total
+                ? canGenerate
+                  ? 'Generate my preview'
+                  : 'Get more generations'
+                : credits.free > 0
+                  ? `Generate my preview · ${credits.free} free left`
+                  : `Generate my preview · ${credits.credits} left`
+            }
+            icon={canGenerate ? 'sparkles' : 'lock-open-outline'}
+            onPress={generate}
+          />
         ) : (
           <Button
             label="Add a photo to generate"

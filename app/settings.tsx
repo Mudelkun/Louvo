@@ -5,12 +5,14 @@ import React from 'react';
 import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { API_BASE_URL, catalogSource, generationSource, hasApi } from '@/api/client';
+import { purchasesConfigured } from '@/api/purchases';
 import { shareLinksConfigured, shareSource } from '@/api/share';
 import { TRY_ON_MODEL, generationConfigured } from '@/api/tryOn';
 import { ChoiceRow } from '@/components/Controls';
 import { MockNotice, Pill } from '@/components/Feedback';
 import { Header, Screen, SectionLabel } from '@/components/Screen';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { useAccount } from '@/state/AccountContext';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
 import { useSession } from '@/state/SessionContext';
@@ -109,10 +111,49 @@ export default function SettingsScreen() {
   const { savedLooks, favouriteIds, clearAll } = useLibrary();
   const { hairstyles, categories, reload } = useCatalog();
   const { reset: resetSession, gender } = useSession();
+  const { account, credits, metered, signOut, deleteAccount } = useAccount();
   const { reset: resetOnboarding } = useOnboarding();
   const { preference, setPreference, systemName } = useThemePreference();
   const [saveOriginals, setSaveOriginals] = React.useState(true);
   const [hdPreviews, setHdPreviews] = React.useState(false);
+
+  const confirmSignOut = () => {
+    Alert.alert('Log out?', 'Your generations stay on your account and come back when you sign in again.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log out', onPress: () => void signOut() },
+    ]);
+  };
+
+  /**
+   * Two taps, and the first one says the number.
+   *
+   * Deleting an account destroys unspent credits somebody paid for, so the
+   * dialog says how many rather than saying "this cannot be undone" and leaving
+   * them to remember. The second confirmation is not ceremony — this is the one
+   * irreversible, money-losing action in the app.
+   */
+  const confirmDelete = () => {
+    const balance = credits.credits;
+    Alert.alert(
+      'Delete your account?',
+      balance > 0
+        ? `This permanently deletes your account and the ${balance} generation${balance === 1 ? '' : 's'} on it. ` +
+          'They cannot be recovered or refunded.'
+        : 'This permanently deletes your account. It cannot be recovered.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert('Delete permanently?', 'Last chance — this cannot be undone.', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Delete my account', style: 'destructive', onPress: () => void deleteAccount() },
+            ]),
+        },
+      ],
+    );
+  };
 
   const confirmClear = () => {
     Alert.alert('Clear saved data?', 'This removes your saved looks and favourites from this device.', [
@@ -125,17 +166,35 @@ export default function SettingsScreen() {
     <Screen padded={false}>
       <Header title="Settings" />
       <View style={{ paddingTop: spacing.lg, paddingHorizontal: spacing.xl, gap: spacing.xl }}>
-        <View style={styles.profileCard}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(account ? '/credits' : '/sign-in')}
+          style={({ pressed }) => [styles.profileCard, pressed && { backgroundColor: colors.surfaceAlt }]}
+        >
           <View style={styles.avatar}>
-            <Ionicons name="person" size={26} color={colors.onInkFill} />
+            <Ionicons name={account ? 'person' : 'person-outline'} size={26} color={colors.onInkFill} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[type.heading, { color: colors.ink }]}>Guest</Text>
+            <Text style={[type.heading, { color: colors.ink }]}>
+              {account ? account.displayName ?? account.email ?? 'Your account' : 'Guest'}
+            </Text>
             <Text style={[type.caption, { color: colors.muted }]}>
-              Accounts arrive with the backend. Everything is stored on this device for now.
+              {account
+                ? 'Signed in. Generations you buy follow this account to a new phone.'
+                : metered
+                  ? 'Sign in to buy generations and keep them across phones.'
+                  : 'Everything is stored on this device.'}
             </Text>
           </View>
-        </View>
+          <Ionicons name="chevron-forward" size={17} color={colors.muted} />
+        </Pressable>
+
+        {/* The balance, and the first thing somebody opens this screen to see.
+            Above the stats rather than among them, because it is the only number
+            here that changes what the app will let them do — and because the
+            brief asks that Settings be where credits are managed, which means the
+            balance cannot be three sections down. */}
+        {metered ? <CreditsCard /> : null}
 
         <View style={styles.statRow}>
           <Stat value={savedLooks.length} label="Looks saved" />
@@ -218,6 +277,49 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {metered ? (
+          <View>
+            <SectionLabel>Account</SectionLabel>
+            <View style={styles.group}>
+              <LinkRow
+                icon="sparkles-outline"
+                label="Buy generations"
+                hint={purchasesConfigured() ? 'Packs of 5, 10 and 20 — no subscription' : 'This build has no store keys'}
+                onPress={() => router.push('/credits')}
+              />
+              {account ? (
+                <>
+                  <Divider />
+                  <LinkRow icon="log-out-outline" label="Log out" onPress={confirmSignOut} />
+                  <Divider />
+                  {/* Required inside the app by App Store guideline 5.1.1(v),
+                      and required to be a real deletion rather than a
+                      deactivation. The confirmation names the balance it
+                      destroys — a dialog that does not mention it is a
+                      confirmation of the wrong thing. */}
+                  <LinkRow
+                    icon="person-remove-outline"
+                    label="Delete my account"
+                    hint="Permanent, and takes any unused generations with it"
+                    destructive
+                    onPress={confirmDelete}
+                  />
+                </>
+              ) : (
+                <>
+                  <Divider />
+                  <LinkRow
+                    icon="log-in-outline"
+                    label="Sign in or create an account"
+                    hint="Needed only to buy generations"
+                    onPress={() => router.push('/sign-in')}
+                  />
+                </>
+              )}
+            </View>
+          </View>
+        ) : null}
+
         <View>
           <SectionLabel>Data</SectionLabel>
           <View style={styles.group}>
@@ -247,6 +349,16 @@ export default function SettingsScreen() {
                 can be followed back to the app and counted, and that is the half
                 the whole feature exists for. */}
             <Pill tone={shareSource() === 'api' ? 'jade' : 'rust'} label={SHARE_LABEL[shareSource()]} />
+            {/* The fourth of the same kind, and the one that costs money to get
+                wrong in either direction. A build with no API meters nothing —
+                generations are free because there is no server to count them —
+                and a build with an API but no store keys can count them and not
+                sell any, which is a dead end a user would otherwise discover at
+                the paywall. */}
+            <Pill
+              tone={!metered ? 'rust' : purchasesConfigured() ? 'jade' : 'rust'}
+              label={!metered ? 'Generations unmetered' : purchasesConfigured() ? 'Store live' : 'Store keys missing'}
+            />
           </View>
           <Text style={[type.caption, { color: colors.muted }]}>
             {generationSource() === 'server'
@@ -254,6 +366,13 @@ export default function SettingsScreen() {
               : generationConfigured()
                 ? `Previews are generated on this phone by ${TRY_ON_MODEL}, and stop if you leave the app.`
                 : 'Set EXPO_PUBLIC_API_URL (or EXPO_PUBLIC_FAL_KEY) and restart the dev server to generate real previews.'}
+          </Text>
+          <Text style={[type.caption, { color: colors.muted }]}>
+            {!metered
+              ? 'Without EXPO_PUBLIC_API_URL there is no server to count generations, so this build does not meter them.'
+              : purchasesConfigured()
+                ? 'Every device gets two free generations, kept against the device rather than the install. After that, generations are bought in packs and held on your account.'
+                : 'Generations are metered, but this build carries no RevenueCat keys — set EXPO_PUBLIC_REVENUECAT_IOS_KEY / _ANDROID_KEY to buy any.'}
           </Text>
           <Text style={[type.caption, { color: colors.muted }]}>
             {hasApi()
@@ -270,6 +389,57 @@ export default function SettingsScreen() {
         </View>
       </View>
     </Screen>
+  );
+}
+
+/**
+ * The balance, and the one number on this screen that gates anything.
+ *
+ * Free and purchased are shown apart rather than as a single total. The brief
+ * asks that the two be tracked separately, and the user-facing half of that is
+ * this: somebody with one trial left and a pack they bought should be able to
+ * see which is which, not a sum that hides what is being spent first. When both
+ * are zero it stops being a readout and becomes the offer, because at that point
+ * a number is not what anybody needs.
+ *
+ * The skeleton state is not cosmetic either. `ready` is false until the first
+ * response lands, and drawing "0" during that half-second would tell a user with
+ * twenty credits that they have none.
+ */
+function CreditsCard() {
+  const styles = useStyles();
+  const colors = useColors();
+  const router = useRouter();
+  const { credits, ready, refreshing } = useAccount();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={ready ? `${credits.total} generations remaining` : 'Loading your generations'}
+      onPress={() => router.push('/credits')}
+      style={({ pressed }) => [styles.creditsCard, pressed && { opacity: 0.85 }]}
+    >
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={[type.caption, { color: colors.onDarkMuted }]}>Generations</Text>
+        <Text style={[type.title, { color: colors.onDark }]}>
+          {ready ? credits.total : '—'}
+        </Text>
+        <Text style={[type.caption, { color: colors.onDarkMuted }]}>
+          {!ready
+            ? refreshing
+              ? 'Checking your balance…'
+              : 'Balance unavailable right now'
+            : credits.free && credits.credits
+              ? `${credits.free} free · ${credits.credits} purchased`
+              : credits.free
+                ? `${credits.free} of your ${credits.freeGranted} free generations left`
+                : credits.credits
+                  ? 'Purchased — they do not expire'
+                  : 'Tap to get more'}
+        </Text>
+      </View>
+      <Ionicons name="add-circle" size={30} color={colors.accent} />
+    </Pressable>
   );
 }
 
@@ -373,6 +543,17 @@ const useStyles = makeStyles(({ colors }) => ({
     backgroundColor: colors.inkFill,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // `stage` rather than `surface`: the balance is the one thing on this screen
+  // that is not a setting, and a dark plate is what separates a readout from the
+  // list of rows under it in both schemes.
+  creditsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    backgroundColor: colors.stage,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
   },
   statRow: { flexDirection: 'row', gap: spacing.md },
   stat: {
