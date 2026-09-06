@@ -30,7 +30,7 @@ import type { Catalog } from './types';
  */
 const SCHEMA = 2;
 
-const KEY = `hairify.catalog.v${SCHEMA}`;
+const KEY = `luvo.catalog.v${SCHEMA}`;
 
 interface Entry {
   schema: number;

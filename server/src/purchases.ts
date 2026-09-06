@@ -36,6 +36,7 @@
  */
 
 import { grant, newPurchaseId, revoke } from './credits.js';
+import { env } from './env.js';
 import { query, type Queryer } from './db.js';
 
 export interface CreditProduct {
@@ -135,6 +136,23 @@ export async function applyWebhookEvent(event: RevenueCatEvent, db: Queryer = qu
   // An anonymous RevenueCat id — somebody who bought before signing in, which
   // the app does not permit but a sandbox tester can produce. Nothing to credit.
   if (!known[0]) return { applied: 'ignored', reason: 'unknown user' };
+
+  /**
+   * Sandbox purchases, and whether they are worth anything.
+   *
+   * Apple's and Google's test purchases are free, and RevenueCat reports them
+   * with `environment: SANDBOX`. Granting credits for them is exactly what you
+   * want while testing and exactly what you do not want in production, where a
+   * TestFlight build pointed at the live RevenueCat project can mint credits at
+   * no cost.
+   *
+   * Default is to grant, so a sandbox works out of the box; set
+   * `REVENUECAT_IGNORE_SANDBOX=true` on the production deployment. Ignored is
+   * still a 200 — see the note on the return type.
+   */
+  if (env.auth.ignoreSandboxPurchases && (event.environment ?? '').toUpperCase() === 'SANDBOX') {
+    return { applied: 'ignored', reason: 'sandbox purchase' };
+  }
 
   const productId = event.product_id ?? '';
   const credits = await creditsForProduct(productId, db);

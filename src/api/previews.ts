@@ -285,7 +285,7 @@ async function uploadNative(url: string, uri: string): Promise<void> {
     return;
   } catch (error) {
     if (error instanceof PreviewError) throw error;
-    console.warn('[hairify] native upload task failed, retrying as a plain PUT:', error);
+    console.warn('[luvo] native upload task failed, retrying as a plain PUT:', error);
   }
 
   const response = await withDeadline(fetch(url, { method: 'PUT', body: file }));

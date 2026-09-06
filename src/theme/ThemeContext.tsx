@@ -14,7 +14,7 @@ import { type Palette, type Shadows, type Theme, type ThemeName, themes } from '
  */
 export type ThemePreference = 'system' | 'light' | 'dark';
 
-const KEY = 'hairify.theme.v1';
+const KEY = 'luvo.theme.v1';
 
 const PREFERENCES: ThemePreference[] = ['system', 'light', 'dark'];
 

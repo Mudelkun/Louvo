@@ -29,10 +29,11 @@ const tap = () => {
  *   same four is a question with four answers. The ones this cut is not offered
  *   for stay in place, dimmed and unpressable, because "not for this cut" is an
  *   answer about the haircut and hiding it silently answers nothing.
- * - **One prominent selection.** Selected is the brass the app already uses for
- *   an active filter (`selectActive` in `Controls.tsx`) — soft brass ground, a
- *   brass border, brass text. Unselected is flat `surfaceAlt` with no border at
- *   all: recessed, quiet, obviously the same kind of thing as its neighbour.
+ * - **One prominent selection.** Selected is the violet the app already uses
+ *   for an active filter (`selectActive` in `Controls.tsx`) — `accentSoft`
+ *   ground, an `accent` border, `accentInk` text. Unselected is flat
+ *   `surfaceAlt` with no border at all: recessed, quiet, obviously the same
+ *   kind of thing as its neighbour.
  *   The old row put the selected chip in solid ink, which is the app's button
  *   colour and read as "this is the one on screen" rather than "this is what
  *   you picked".

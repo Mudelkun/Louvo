@@ -1,4 +1,4 @@
-# Hairify API
+# Luvo API
 
 Two things, sharing a database and a deployment.
 
@@ -107,7 +107,7 @@ deployment has no bucket and no generator key, which is what a catalog-only depl
 
 Sharing is the third group, and it is the cheapest of the three: no bucket, no worker, no image
 bytes anywhere. A share link names a **hairstyle**, so the picture that unfurls in somebody
-else's group chat is the catalog's own mannequin render of that cut and never a Hairify user's
+else's group chat is the catalog's own mannequin render of that cut and never a Luvo user's
 face. See [`docs/sharing.md`](../docs/sharing.md).
 
 | | |
@@ -124,7 +124,7 @@ face. See [`docs/sharing.md`](../docs/sharing.md).
 
 ```bash
 # one-time: a SECOND R2 bucket, private, no public domain, no CDN in front of it
-#   PREVIEW_BUCKET=hairify-transient
+#   PREVIEW_BUCKET=luvo-transient
 # plus FAL_KEY. Both go in server/.env — see .env.example.
 
 npm run api      # from the repo root: the API, watching

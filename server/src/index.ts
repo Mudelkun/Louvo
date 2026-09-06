@@ -1,5 +1,5 @@
 /**
- * The Hairify catalog API.
+ * The Luvo catalog API.
  *
  * Fastify rather than Express for two reasons that are specific to this service:
  * `/v1/catalog` is a single large JSON document served to every app start, and

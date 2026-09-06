@@ -2,7 +2,7 @@
  * Where this install came from, if anywhere.
  *
  * The receiving half of the share loop. Somebody follows a friend's link, the OS
- * hands the app `hairify://s/<code>`, and this is the module that decides
+ * hands the app `luvo://s/<code>`, and this is the module that decides
  * whether that counts as a new user arriving and tells the backend once.
  *
  * ## What is honestly measurable, and what is not
@@ -40,7 +40,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { reportAttribution } from '@/api/share';
 import { track } from '@/lib/analytics';
 
-const KEY = 'hairify.referral.v1';
+const KEY = 'luvo.referral.v1';
 
 interface StoredReferral {
   code: string;

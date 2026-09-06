@@ -283,7 +283,7 @@ const useStyles = makeStyles(({ colors, shadow }) => ({
     backgroundColor: 'rgba(255,255,255,0.88)',
   },
   // The tag sits on a white pill on the plate, so its ink does not invert
-  // either — `colors.inkSoft` after dark is bone on white.
+  // either — `colors.inkSoft` after dark is near-white on white.
   variantTagText: { color: onPlate, fontWeight: '700' },
   meta: { paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: 2 },
   // The placeholder lines need the air the two real text lines get from their

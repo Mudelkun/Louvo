@@ -307,7 +307,7 @@ assert.equal(await credits.balanceFor(userId), 10, 'and neither replay moved the
 // Things it should decline to act on, all without throwing.
 assert.equal((await purchases.applyWebhookEvent({ ...event, id: 'e3', type: 'RENEWAL' })).applied, 'ignored');
 assert.equal(
-  (await purchases.applyWebhookEvent({ ...event, id: 'e4', transaction_id: 't4', product_id: 'com.hairify.unknown' }))
+  (await purchases.applyWebhookEvent({ ...event, id: 'e4', transaction_id: 't4', product_id: 'com.luvo.unknown' }))
     .applied,
   'ignored',
   'an unknown product grants nothing',

@@ -30,7 +30,7 @@ import { previewsConfigured, registerPushToken } from '@/api/previews';
 /**
  * How a notification behaves when it lands while the app is open.
  *
- * Nothing is shown. If Hairify is in the foreground the finished preview is
+ * Nothing is shown. If Luvo is in the foreground the finished preview is
  * already on screen or one tap away in My looks — a banner over it would be the
  * app telling the user about something they are looking at.
  */

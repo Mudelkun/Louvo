@@ -44,7 +44,7 @@ import { EXPORT_WIDTH } from '@/components/ShareCard';
  * artefacts appear around small light-on-dark type, which is the one part of
  * this frame that would show them.
  */
-const FORMAT = 'jpg';
+const FORMAT = 'jpg' as const;
 const QUALITY = 0.92;
 
 export const SHARE_MIME = 'image/jpeg';
@@ -78,19 +78,46 @@ export async function captureShareCard(
   // where the wordmark is.
   const height = Math.round(EXPORT_WIDTH / aspect / 2) * 2;
 
+  const options = {
+    format: FORMAT,
+    quality: QUALITY,
+    // The output size, not a transform: the view is laid out at `CARD_WIDTH`
+    // points and rasterised straight to these pixels, so nothing in the card
+    // has to know it is being enlarged.
+    width,
+    height,
+    result: 'tmpfile' as const,
+  };
+
   try {
-    const uri = await captureRef(ref, {
-      format: FORMAT,
-      quality: QUALITY,
-      // The output size, not a transform: the view is laid out at `CARD_WIDTH`
-      // points and rasterised straight to these pixels, so nothing in the card
-      // has to know it is being enlarged.
-      width,
-      height,
-      result: 'tmpfile',
-    });
+    const uri = await captureRef(ref, options);
     return { uri, width, height };
   } catch (error) {
+    // The one failure with a known cure, and it is the app's own screenshot
+    // block causing it. `src/lib/screenCapture.ts` parents the window into a
+    // secure layer on iOS, and the render server omits a secure subtree from
+    // exactly the snapshot machinery `drawViewHierarchyInRect:` uses — which is
+    // this library's default path, and which reports it as "a potential
+    // technical or security limitation". `useRenderInContext` rasterises the
+    // layer tree in process instead and is not subject to it.
+    //
+    // It is a retry rather than the default because the default is the better
+    // renderer: `renderInContext:` misses anything the GPU composites late, a
+    // `UIVisualEffectView` above all. The card is images, a gradient and text
+    // today and comes out identical either way, so this costs one failed call
+    // on iOS and nothing at all on Android, where `FLAG_SECURE` never touched
+    // the in-process `view.draw()` the Android path uses.
+    if (Platform.OS === 'ios') {
+      try {
+        const uri = await captureRef(ref, { ...options, useRenderInContext: true });
+        return { uri, width, height };
+      } catch (fallbackError) {
+        if (__DEV__) {
+          console.warn(`[share] could not compose the card: ${(fallbackError as Error).message}`);
+        }
+        return null;
+      }
+    }
     if (__DEV__) console.warn(`[share] could not compose the card: ${(error as Error).message}`);
     return null;
   }

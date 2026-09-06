@@ -188,9 +188,9 @@ create table if not exists credit_products (
 );
 
 insert into credit_products (id, credits, badge, sort_order) values
-  ('com.hairify.credits.5',  5,  null,         1),
-  ('com.hairify.credits.10', 10, null,         2),
-  ('com.hairify.credits.20', 20, 'best_value', 3)
+  ('com.luvoai.luvo.credits.5',  5,  null,         1),
+  ('com.luvoai.luvo.credits.10', 10, null,         2),
+  ('com.luvoai.luvo.credits.20', 20, 'best_value', 3)
 on conflict (id) do nothing;
 
 -- One row per granted purchase, and the idempotency record for the webhook.
