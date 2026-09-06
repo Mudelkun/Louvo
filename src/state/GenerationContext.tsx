@@ -24,6 +24,7 @@ import {
 import type { GeneratedLook, Gender, HairTypeId, LookJob } from '@/api/types';
 import { saveLookImage } from '@/lib/imageData';
 import { onPreviewNotificationTapped, registerForPreviewPush } from '@/lib/push';
+import { useAccount } from '@/state/AccountContext';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
 
@@ -78,6 +79,11 @@ function describeFailure(error: unknown): string {
   const code = error instanceof PreviewError ? error.code : null;
   console.warn('[hairify] generation failed:', code ?? 'error', error);
 
+  // Named before the generic 40x branch below, which would otherwise swallow it
+  // as "the generator rejected the key" — a message that sends the reader to the
+  // wrong place entirely. Running out of credits is not a failure of anything;
+  // it is the app working, and the tile says so in those terms.
+  if (code === 'insufficient_credits' || /insufficient_credits/.test(message)) return 'No generations left';
   if (/previews_unconfigured/.test(message)) return 'Generation is not set up yet';
   if (/EXPO_PUBLIC_FAL_KEY/.test(message)) return 'Generation is not configured';
   if (/photo_too_large/.test(message)) return 'That photo is too large';
@@ -143,6 +149,15 @@ const ADOPTABLE: PreviewStatus[] = ['queued', 'running', 'ready', 'failed'];
 export function GenerationProvider({ children }: { children: React.ReactNode }) {
   const { saveLook } = useLibrary();
   const { styleById } = useCatalog();
+  /**
+   * The balance, re-read whenever a job settles.
+   *
+   * Only `refresh` is taken, and deliberately: this provider must not read the
+   * balance to decide whether to submit. That decision belongs to the server,
+   * which reserves the credit atomically — a client-side check here would be a
+   * second, racier copy of a rule that already exists.
+   */
+  const { refresh: refreshCredits } = useAccount();
   const [jobs, setJobs] = useState<LookJob[]>([]);
   const [notification, setNotification] = useState<GeneratedLook | null>(null);
 
@@ -235,6 +250,10 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         // uncollected result is deleted by the server's retention sweep anyway.
         // This call is how it goes early rather than how it goes at all.
         await collectPreview(preview.id).catch(() => undefined);
+        // The hold became a spend when the job reached `ready`. Re-read rather
+        // than subtract: this is also the moment a free generation turns into
+        // the last one, which the button on the style screen is about to say.
+        void refreshCredits();
       } catch (error) {
         update((previous) =>
           previous.map((entry) =>
@@ -266,6 +285,11 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       }
 
       if (preview.status === 'failed' || preview.status === 'cancelled') {
+        // The server refunded the credit in the same transaction that set this
+        // status, so what the app is showing is now one behind. Nothing here
+        // adds the credit back locally — see the rule at the top of
+        // `AccountContext`.
+        void refreshCredits();
         update((previous) =>
           previous.map((entry) =>
             entry.id === job.id

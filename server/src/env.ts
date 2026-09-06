@@ -148,9 +148,97 @@ const share = {
     .filter(Boolean),
 } as const;
 
+function list(name: string): string[] {
+  return (optional(name) ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function flag(name: string, fallback: boolean): boolean {
+  const raw = optional(name);
+  if (raw === null) return fallback;
+  return !['0', 'false', 'no', 'off'].includes(raw.toLowerCase());
+}
+
+/**
+ * The credit system.
+ *
+ * `enforced` defaults to **on**, and that is the one value here worth a second
+ * look before deploying. With it on, a device gets `freeGenerations` previews
+ * and then needs an account and a purchase; with it off, generation behaves
+ * exactly as it did before credits existed. Off is for a local checkout, where
+ * two free generations is not enough to iterate on a prompt. It is not a
+ * production setting, and a deployment that turns it off is giving previews away
+ * at about five cents each.
+ */
+const credits = {
+  enforced: flag('CREDITS_ENFORCED', true),
+  freeGenerations: integer('FREE_GENERATIONS', 2),
+} as const;
+
+/**
+ * Sign-in, and the RevenueCat webhook that pays for it.
+ *
+ * All of it is optional and every piece degrades to a refusal rather than to a
+ * guess. A deployment with no Apple audience answers `apple_unconfigured` to an
+ * Apple sign-in instead of accepting a token it cannot verify — which is the
+ * only safe direction for an auth configuration to fail in.
+ *
+ * `appleAudiences` is the app's bundle id (and the Services ID, if web sign-in
+ * is ever added). `googleAudiences` is every OAuth client id that can mint a
+ * token for this app — iOS, Android and Web are three different ids and the
+ * token's `aud` is whichever one the phone used, so all of them belong here.
+ */
+const auth = {
+  appleAudiences: list('APPLE_AUDIENCES').length ? list('APPLE_AUDIENCES') : [process.env.IOS_BUNDLE_ID ?? 'com.hairify.app'],
+  googleAudiences: list('GOOGLE_CLIENT_IDS'),
+
+  emailCodeTtlSeconds: integer('EMAIL_CODE_TTL_S', 600),
+  emailCodeAttempts: integer('EMAIL_CODE_ATTEMPTS', 5),
+  /** Resend, or nothing. With nothing, email sign-in answers 503 rather than pretending. */
+  resendApiKey: optional('RESEND_API_KEY'),
+  emailFrom: process.env.EMAIL_FROM ?? 'Hairify <hello@hairify.app>',
+  /**
+   * Returns the code in the API response instead of sending it.
+   *
+   * A local-development affordance and a genuine hole: anyone who can call the
+   * endpoint can sign in as any address. Explicitly opt-in, never defaulted on,
+   * and refused outright when a mail provider is configured — because the only
+   * deployment that has both is one that meant to turn this off.
+   */
+  emailDevEcho: flag('EMAIL_DEV_ECHO', false) && !optional('RESEND_API_KEY'),
+
+  /**
+   * The shared secret on RevenueCat's webhook.
+   *
+   * Set the same value in the RevenueCat dashboard's Authorization header field.
+   * Without it the webhook refuses every delivery — an open endpoint that grants
+   * credits is an endpoint that grants credits to whoever finds it.
+   */
+  revenueCatSecret: optional('REVENUECAT_WEBHOOK_SECRET'),
+} as const;
+
 export const env = {
   /** Railway injects this. */
   databaseUrl: required('DATABASE_URL'),
+
+  /**
+   * The salt under which install anchors and email codes are hashed.
+   *
+   * Not a secret whose leak is catastrophic — an `ANDROID_ID` is 64 bits, so the
+   * hash is not brute-forceable either way — but it is what stops a stored
+   * anchor being a value anybody else can recompute from a device identifier
+   * they already have.
+   *
+   * **Rotating it resets every free allowance**, because every anchor hashes to
+   * a new id and a new id has never been seen before. That is a thing to know
+   * before changing it, not a thing to discover afterwards.
+   */
+  anchorSalt: process.env.ANCHOR_SALT ?? 'hairify.anchor.v1',
+
+  credits,
+  auth,
 
   /** Railway injects `PORT`; the default is only for a local run. */
   port: integer('PORT', 8080),

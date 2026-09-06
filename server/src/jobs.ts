@@ -21,6 +21,11 @@
  * sweeper in `worker.ts` exists to catch objects whose row was lost, not to be
  * the mechanism.
  *
+ * The credit charged for the generation settles on those same transitions and
+ * for the same reason — see `settle` in `credits.ts`. It cannot be the *same*
+ * statement, because a balance lives in another table, so those three
+ * transitions are the one place in this service that opens a transaction.
+ *
  * ## No intervals in SQL
  *
  * Every timestamp this module writes is computed in JavaScript and passed as a
@@ -32,7 +37,8 @@
 
 import { randomBytes } from 'node:crypto';
 
-import { query } from './db.js';
+import { settle } from './credits.js';
+import { query, withTransaction } from './db.js';
 import { env } from './env.js';
 import type { Gender, HairLengthId, HairTypeId, VariantId, ViewAngle } from './types.js';
 
@@ -84,6 +90,9 @@ export interface JobRow {
   error: string | null;
   error_code: string | null;
   idempotency_key: string | null;
+  /** Which pot this generation was taken out of. Null when credits are off. */
+  charge_source: 'free' | 'paid' | null;
+  charge_settled: 'spent' | 'refunded' | null;
   created_at: Date;
   updated_at: Date;
   submitted_at: Date | null;
@@ -95,7 +104,7 @@ export interface JobRow {
 const COLUMNS = `id, device_id, status, hairstyle_id, gender, hair_type, length_id, color_id,
   photo_width, photo_height, photo_key, result_key, result_width, result_height,
   variant, views, fal_request_id, fal_model, fal_status_url, fal_response_url,
-  attempts, error, error_code, idempotency_key,
+  attempts, error, error_code, idempotency_key, charge_source, charge_settled,
   created_at, updated_at, submitted_at, ready_at, expires_at, lease_until`;
 
 /** Unguessable, and short enough to sit in a url. */
@@ -301,23 +310,32 @@ export async function markReady(
   id: string,
   next: { resultKey: string; width: number | null; height: number | null; expiresAt: Date },
 ): Promise<void> {
-  await query(
-    `update preview_jobs
-        set status = 'ready', result_key = $2, result_width = $3, result_height = $4,
-            expires_at = $5, photo_key = null, ready_at = now(), lease_until = null, updated_at = now()
-      where id = $1`,
-    [id, next.resultKey, next.width, next.height, next.expiresAt],
-  );
+  await withTransaction(async (tx) => {
+    await tx(
+      `update preview_jobs
+          set status = 'ready', result_key = $2, result_width = $3, result_height = $4,
+              expires_at = $5, photo_key = null, ready_at = now(), lease_until = null, updated_at = now()
+        where id = $1`,
+      [id, next.resultKey, next.width, next.height, next.expiresAt],
+    );
+    // The generation happened and it is the user's now: the hold becomes a
+    // spend. In the same transaction, for the reason in `settle`'s header.
+    await settle(tx, id, 'spent');
+  });
 }
 
 export async function markFailed(id: string, error: string, code: string): Promise<void> {
-  await query(
-    `update preview_jobs
-        set status = 'failed', error = $2, error_code = $3,
-            photo_key = null, lease_until = null, updated_at = now()
-      where id = $1`,
-    [id, error.slice(0, 500), code],
-  );
+  await withTransaction(async (tx) => {
+    await tx(
+      `update preview_jobs
+          set status = 'failed', error = $2, error_code = $3,
+              photo_key = null, lease_until = null, updated_at = now()
+        where id = $1`,
+      [id, error.slice(0, 500), code],
+    );
+    // A generation that failed is not a generation. Nobody pays for it.
+    await settle(tx, id, 'refunded');
+  });
 }
 
 /** Back to the queue for one more attempt — the photograph is still needed. */
@@ -341,13 +359,18 @@ export async function markCollected(id: string): Promise<void> {
 }
 
 export async function markCancelled(id: string): Promise<void> {
-  await query(
-    `update preview_jobs
-        set status = 'cancelled', photo_key = null, result_key = null,
-            expires_at = null, lease_until = null, updated_at = now()
-      where id = $1`,
-    [id],
-  );
+  await withTransaction(async (tx) => {
+    await tx(
+      `update preview_jobs
+          set status = 'cancelled', photo_key = null, result_key = null,
+              expires_at = null, lease_until = null, updated_at = now()
+        where id = $1`,
+      [id],
+    );
+    // Cancelling is free. The user may have cost us a generation at fal — see
+    // the cancel route — but that is our bet on their behalf, not their bill.
+    await settle(tx, id, 'refunded');
+  });
 }
 
 // ---------------------------------------------------------------------------

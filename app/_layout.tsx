@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { LookNotification } from '@/components/LookNotification';
+import { AccountProvider } from '@/state/AccountContext';
 import { CatalogProvider } from '@/state/CatalogContext';
 import { GenerationProvider } from '@/state/GenerationContext';
 import { LibraryProvider } from '@/state/LibraryContext';
@@ -49,34 +50,46 @@ function AppShell() {
         <CatalogProvider>
           <LibraryProvider>
             <SessionProvider>
-              <GenerationProvider>
-                <PhotoPickerProvider>
-                  {/* The clock and the battery, which have to contrast with the
-                      canvas rather than match the phone: an app forced to light
-                      on a dark phone needs dark glyphs. */}
-                  <StatusBar style={name === 'dark' ? 'light' : 'dark'} />
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                      contentStyle: { backgroundColor: colors.canvas },
-                      animation: 'slide_from_right',
-                    }}
-                  >
-                    <Stack.Screen name="(tabs)" />
-                    <Stack.Screen name="welcome" options={{ animation: 'fade' }} />
-                    <Stack.Screen name="try" />
-                    <Stack.Screen name="settings" />
-                    {/* Where a shared link lands. `hairify://s/<code>` and, once
-                        the association files are live, `https://<host>/s/<code>`
-                        — see `app/s/[code].tsx`. It resolves the code and
-                        replaces itself with the cut, so it is a doorway rather
-                        than a destination. */}
-                    <Stack.Screen name="s" options={{ animation: 'fade' }} />
-                  </Stack>
-                  {/* Sits above every screen: previews finish in the background. */}
-                  <LookNotification />
-                </PhotoPickerProvider>
-              </GenerationProvider>
+              {/* Above `<GenerationProvider>` because generation reads it: a job
+                  settling refreshes the balance, and the balance is what decides
+                  whether the next one may start. */}
+              <AccountProvider>
+                <GenerationProvider>
+                  <PhotoPickerProvider>
+                    {/* The clock and the battery, which have to contrast with the
+                        canvas rather than match the phone: an app forced to light
+                        on a dark phone needs dark glyphs. */}
+                    <StatusBar style={name === 'dark' ? 'light' : 'dark'} />
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                        contentStyle: { backgroundColor: colors.canvas },
+                        animation: 'slide_from_right',
+                      }}
+                    >
+                      <Stack.Screen name="(tabs)" />
+                      <Stack.Screen name="welcome" options={{ animation: 'fade' }} />
+                      <Stack.Screen name="try" />
+                      <Stack.Screen name="settings" />
+                      {/* Both reached from Settings and from a generation that
+                          ran out of credits. Modal-ish presentation is deliberately
+                          not used: they are destinations somebody navigated to on
+                          purpose, and a sheet that can be swiped away mid-purchase
+                          is a worse place to be taking money. */}
+                      <Stack.Screen name="credits" />
+                      <Stack.Screen name="sign-in" />
+                      {/* Where a shared link lands. `hairify://s/<code>` and, once
+                          the association files are live, `https://<host>/s/<code>`
+                          — see `app/s/[code].tsx`. It resolves the code and
+                          replaces itself with the cut, so it is a doorway rather
+                          than a destination. */}
+                      <Stack.Screen name="s" options={{ animation: 'fade' }} />
+                    </Stack>
+                    {/* Sits above every screen: previews finish in the background. */}
+                    <LookNotification />
+                  </PhotoPickerProvider>
+                </GenerationProvider>
+              </AccountProvider>
             </SessionProvider>
           </LibraryProvider>
         </CatalogProvider>

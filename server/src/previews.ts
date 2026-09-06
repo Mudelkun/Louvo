@@ -18,7 +18,9 @@
 
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
+import { anchorsFrom, registerAnchors } from './anchors.js';
 import { getCatalog } from './catalog.js';
+import { attachCharge, creditState, reserve } from './credits.js';
 import { deviceIdFor, deviceSecretFrom, sameDevice, setPushToken, touchDevice } from './devices.js';
 import { env } from './env.js';
 import { cancel as cancelGeneration } from './fal.js';
@@ -70,6 +72,15 @@ interface PreviewView {
   variant: string | null;
   views: string[];
   createdAt: number;
+  /**
+   * Which pot paid for this generation, so the app can say so.
+   *
+   * Reported rather than inferred, and it is the same honesty rule the rest of
+   * this service runs on: the result screen tells somebody they have used one of
+   * their two free previews because the server said that is what happened, not
+   * because the client counted.
+   */
+  chargeSource?: 'free' | 'paid';
   /** How many generations are ahead of this one. Only while it is waiting. */
   queuePosition?: number;
   error?: string;
@@ -89,6 +100,7 @@ function view(job: JobRow, extras: Partial<PreviewView> = {}): PreviewView {
     variant: job.variant,
     views: job.views ?? [],
     createdAt: job.created_at.getTime(),
+    ...(job.charge_source ? { chargeSource: job.charge_source } : {}),
     ...(job.error ? { error: job.error } : {}),
     ...(job.error_code ? { errorCode: job.error_code } : {}),
     ...extras,
@@ -145,6 +157,30 @@ async function requireDevice(request: FastifyRequest, reply: FastifyReply): Prom
   return deviceId;
 }
 
+/**
+ * The same, plus this device's install anchors.
+ *
+ * Split from `requireDevice` on purpose, and the reason is throughput rather
+ * than tidiness. Registering an anchor is three upserts, and `GET
+ * /v1/previews/:id` is polled every two seconds by every phone watching a
+ * generation — putting it on the shared helper meant six writes a second per
+ * waiting user to re-learn something that had not changed.
+ *
+ * Only one route here needs it, and it needs it for a specific reason: the
+ * credit pre-check reads the allowance through `anchorsForDevice`, so a device
+ * whose anchors had never been registered would look like it had none left and
+ * be refused its very first free generation.
+ */
+async function requireAnchoredDevice(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<string | null> {
+  const deviceId = await requireDevice(request, reply);
+  if (!deviceId) return null;
+  await registerAnchors(deviceId, anchorsFrom(deviceId, request.headers['x-install-anchor']));
+  return deviceId;
+}
+
 /** A job this device is allowed to see, or the right refusal. */
 async function requireJob(id: string, deviceId: string, reply: FastifyReply): Promise<JobRow | null> {
   const job = await getJob(id);
@@ -184,7 +220,8 @@ export async function previewRoutes(app: FastifyInstance): Promise<void> {
    */
   app.post('/v1/previews', async (request, reply) => {
     if (!configured(reply)) return;
-    const deviceId = await requireDevice(request, reply);
+    // The one route that registers anchors — see `requireAnchoredDevice`.
+    const deviceId = await requireAnchoredDevice(request, reply);
     if (!deviceId) return;
 
     const body = (request.body ?? {}) as Record<string, unknown>;
@@ -204,6 +241,30 @@ export async function previewRoutes(app: FastifyInstance): Promise<void> {
       return { error: 'not_found', message: `no hairstyle "${hairstyleId}"` };
     }
 
+    /**
+     * The credit gate, and it is deliberately two checks rather than one.
+     *
+     * This first one exists for the user: it refuses before a job row is
+     * created, so somebody with no credits gets a paywall rather than a job that
+     * appears and is instantly cancelled. It is *not* the guard — it reads a
+     * balance and then acts on it, which is a race by construction.
+     *
+     * The guard is `reserve()` below, which moves the balance with the same
+     * compare-and-set the queue claims jobs with. Two taps on Generate cannot
+     * both pass it, whatever the timing.
+     */
+    if (env.credits.enforced) {
+      const available = await creditState(deviceId);
+      if (available.total <= 0) {
+        reply.code(402);
+        return {
+          error: 'insufficient_credits',
+          message: 'no generations left',
+          credits: available,
+        };
+      }
+    }
+
     const id = newJobId();
     const key = photoKey(id);
     const job = await createJob({
@@ -220,9 +281,38 @@ export async function previewRoutes(app: FastifyInstance): Promise<void> {
       idempotencyKey: typeof body.idempotencyKey === 'string' ? body.idempotencyKey.slice(0, 100) : null,
     });
 
+    /**
+     * Charge, but only for a job this request actually created.
+     *
+     * `createJob` is idempotent: a retried POST returns the job the first one
+     * made. Reserving unconditionally would turn a dropped response — the exact
+     * situation the idempotency key exists for — into a second credit spent on a
+     * generation that already happened. So the charge follows the same test the
+     * status code does.
+     */
+    let charged = job;
+    if (job.id === id && env.credits.enforced) {
+      const charge = await reserve(deviceId, anchorsFrom(deviceId, request.headers['x-install-anchor']));
+      if (!charge) {
+        // Lost the race for the last credit between the check above and here.
+        // Cancelling releases the (unwritten) charge as a no-op and leaves no
+        // job for the app to poll.
+        await markCancelled(job.id);
+        reply.code(402);
+        return {
+          error: 'insufficient_credits',
+          message: 'no generations left',
+          credits: await creditState(deviceId),
+        };
+      }
+      await attachCharge(job.id, charge);
+      charged = { ...job, charge_source: charge.source };
+    }
+
     reply.code(job.id === id ? 201 : 200);
     return {
-      job: view(job),
+      job: view(charged),
+      credits: await creditState(deviceId),
       // Absent once the job has moved on: a replayed submit for a job already
       // generating must not hand out a second write url for its photograph.
       upload:
