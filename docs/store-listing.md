@@ -113,9 +113,23 @@ To test purchases, generate twice to exhaust the free allowance, then tap throug
 paywall. Sandbox purchases grant credits normally.
 ```
 
+## Privacy Policy and Terms of Use
+
+Both are served by the API and both are required before either submission:
+
+- Privacy Policy URL: `https://<host>/privacy`
+- Terms of Use (custom EULA): `https://<host>/terms`
+
+The text is authored once in `src/lib/legal.ts`, rendered as screens in the app under Settings >
+Legal, and rendered as those two pages by the server. `docs/legal.md` has the design and the
+`OPERATOR` fields that must be filled in before submitting — a support inbox, a registered address
+and a governing law are all unset, and the documents currently say so rather than inventing them.
+The inbox is the blocking one: both stores require a contact that works.
+
 ## App Privacy questionnaire
 
-The precise, true answers are in `docs/preview-generation.md`. In summary:
+The precise, true answers are in `docs/preview-generation.md`, and the user-facing statement of
+the same facts is the Privacy Policy above. In summary:
 
 - **Photos** — collected, **not** linked to identity, **not** used for tracking. Purpose: App
   Functionality. Say it is collected: it does leave the device, briefly, and claiming otherwise

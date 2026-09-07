@@ -85,5 +85,3 @@ export const DEFAULT_HAIR_COLOR_ID = 'jet';
 export const baseHairColor = (variant: VariantId | null | undefined): HairColor =>
   BASE_HAIR_COLORS[variant ?? 'any'] ?? BASE_HAIR_COLOR;
 
-/** photo, gender, hair type, category+catalog, style detail. */
-export const TRY_ON_STEPS = 5;

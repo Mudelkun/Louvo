@@ -30,6 +30,7 @@ import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-nativ
 import { requestEmailCode, AccountError } from '@/api/account';
 import { appleAvailable, googleAvailable, signInWithApple, signInWithGoogle } from '@/api/signIn';
 import { Button } from '@/components/Button';
+import { LegalLinks } from '@/components/LegalLinks';
 import { Header, Screen } from '@/components/Screen';
 import { useAccount } from '@/state/AccountContext';
 import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
@@ -230,6 +231,12 @@ export default function SignInScreen() {
           We store your email address and nothing else. You can delete your account, and everything on it, from
           Settings at any time.
         </Text>
+
+        {/* Making an account is the first thing in this app that creates a
+            record with a person's name on it, so the agreement is stated here
+            rather than assumed from the welcome screen — which somebody who
+            arrived from a shared link may never have seen. */}
+        <LegalLinks action="creating an account" align="left" />
       </View>
     </Screen>
   );

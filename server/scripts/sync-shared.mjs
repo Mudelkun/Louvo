@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Copies the two app modules the server has to run itself.
+ * Copies the app modules the server has to run itself.
  *
  *   node scripts/sync-shared.mjs           write server/src/generated/
  *   node scripts/sync-shared.mjs --check   fail if they are out of date
@@ -23,7 +23,7 @@
  * that have drifted apart are two different haircuts, and no test can tell you
  * which of them is the one that was meant.
  *
- * So these two are generated, mechanically, from the single authored source, and
+ * So these are generated, mechanically, from the single authored source, and
  * `--check` runs in `npm run check` so a stale copy fails the build rather than
  * shipping. Edit `src/lib/tryOnPrompt.ts`. Never edit the output.
  *
@@ -47,8 +47,14 @@ const OUT_DIR = path.join(SERVER_ROOT, 'src', 'generated');
  * `imageSize.ts` has no imports at all — deliberately, and it says so in its own
  * header, because `scripts/try-on.mjs` already loads it through
  * `lib/transpile.mjs`. It copies verbatim.
+ *
+ * `legal.ts` is here for exactly the reason `tryOnPrompt.ts` is, one step
+ * further along: the Privacy Policy and the Terms of Use are authored prose, the
+ * app renders them as screens and the server serves the same words at /privacy
+ * and /terms for the two store listings, and two copies of a privacy policy that
+ * have drifted apart are two different promises about somebody's photograph.
  */
-const SOURCES = ['src/lib/imageSize.ts', 'src/lib/tryOnPrompt.ts'];
+const SOURCES = ['src/lib/imageSize.ts', 'src/lib/tryOnPrompt.ts', 'src/lib/legal.ts'];
 
 const TYPE_IMPORT = /^import type \{([^}]*)\} from '@\/[^']*';$/;
 const VALUE_IMPORT = /^import (?!type )/;
