@@ -46,6 +46,17 @@ whole backend in memory (`npm run sandbox`) with control routes for the things a
 real model will not do on request — forcing a generation to fail, granting a pack, simulating an
 Android reinstall.
 
+**The web.** `web/` is a Next.js app on the *same* backend — no server route was added or
+changed for it. It is not a port of the phone app: `/` **is** the try-on — upload a photo, two
+questions in a dialogue, then the catalogue already narrowed to them — rather than a landing
+page in front of a five-step run, and the catalogue's white studio plates sit on near-black
+under a display serif. It exists because a
+web release is a deploy rather than a submission, because fifty-six named haircuts on indexable
+pages is fifty-six entry points a binary does not have, and because Stripe takes ~3% where the
+stores take 15-30%. Clerk and Stripe are **planned and not implemented**; both say so on screen
+rather than showing a button that does nothing. `docs/web.md` has the design and `web/README.md`
+the operational detail.
+
 Still simulated: favourites and saved looks (device-local).
 
 Commands (run from the repo root):
@@ -71,14 +82,24 @@ npm run sandbox               # the whole backend, in memory: no Railway, no R2,
 npm run sandbox:drive scenario # the credit story end to end over HTTP, asserted — free
 npm run catalog:publish:dry   # transcode + report; uploads nothing, writes nothing — free
 npm run catalog:publish       # metadata into Postgres, imagery into R2
+
+# The website. See web/README.md.
+npm run web:dev               # Next dev server on :3000 (syncs web/lib/contract/ first)
+npm run web:build             # production build; fails on a stale contract copy
+npm run web:typecheck         # contract sync check + tsc --noEmit
+npm run web:sync              # re-cut web/lib/contract/ from the app and the server
 ```
 
 There is no linter configured. `npm run typecheck` is the check to run after changes to the
 app; the server has its own (`npm --prefix server run typecheck`) plus its real tests,
 `npm --prefix server run check` — the catalog round trip and the preview job lifecycle, both
-described below. The root `tsconfig.json` excludes `server/`: the two programs have different
-`lib`s (React Native versus Node) and typechecking one under the other's globals produces
-failures that are not bugs.
+described below; the web has `npm run web:typecheck`, which checks the contract copies are
+current before it compiles. The root `tsconfig.json` excludes **both `server/` and `web/`**: the
+three programs have different `lib`s (React Native, Node, the DOM) and typechecking one under
+another's globals produces failures that are not bugs. `web/` matters for a second reason that
+is easy to miss — the bare `node_modules` entry only excludes the root one, so without the
+exclusion `web/node_modules/@types/react` joins the app's own copy in one program, which is how
+a duplicate-identifier error appears in a file nobody touched.
 
 The app follows the phone's light/dark setting by default and Settings can pin it either way;
 the palettes and the rule that keeps them live are `src/theme/tokens.ts` and the theming
@@ -128,8 +149,379 @@ Colour is not a property of a hairstyle and is not generated. Every mannequin �
 ## Planned stack
 
 - **Mobile:** React Native with Expo (iOS + Android)
+- **Web:** Next.js (`web/`), on the same API. Sign-in is **Clerk** and payments are **Stripe**
+  there, rather than the app's Apple/Google sign-in and RevenueCat — neither is implemented yet.
 - **Backend:** Node.js API server, hosted on Railway (database also on Railway)
 - **AI image generation:** Fal.ai — used both for the per-user hairstyle previews and for generating the catalog's mannequin images
+
+## The web app
+
+`web/` is a Next.js app against the **same backend the phone app uses**. No route was added to
+the server and none was changed. `docs/web.md` is the design record; `web/README.md` is how to
+run and deploy it. The decisions that govern any change to it are these.
+
+**It is not a port, and `expo export --platform web` was the alternative that was rejected.**
+The app already builds for web and that build would have been an afternoon. What it produces is
+a phone in a browser window: one column, a tab bar, no URLs worth sharing, no server rendering,
+every screen laid out against a 390px viewport. That fails at the three things the web is being
+used *for* — being found, being linked to, and being changed on a Tuesday. `/styles/blunt-bob`
+has to return real metadata with the cut's own render as its `og:image` before a shared link is
+worth anything, and a client-only bundle cannot.
+
+The second reason decided the visual design. **The app and the site are not addressed to the
+same moment.** The app follows the phone's light/dark setting because it is a tool somebody
+opens in a queue at a barber's — it is being *used*. The site is a shopfront: opened once,
+deliberately, often on a large screen, with about four seconds to say what kind of thing Luvo
+is. So it commits to one dark look, sets its display type in a serif, and puts the catalog's
+white plates on near-black where they read as lit objects rather than as pictures on a page.
+`plate` is `#FFFFFF` there for exactly the reason it is here, and `--color-on-plate` is taken
+from the light palette for the same one.
+
+**`/` is the try-on, and there is no landing page in front of it.** The site opened on a hero,
+three explanatory sections, a privacy essay and a closing call to action, with the product one
+click away behind a button — and separate `/how-it-works` and `/pricing` pages beside it. That
+is the shape of software that has to argue before it can demonstrate. Luvo does not have to: the
+whole proposition is a forty-second demonstration and a visitor is one photograph away from it,
+so the upload box is the first thing on the page and the argument for the product is the
+product. Both marketing pages are deleted and `next.config.ts` redirects them permanently,
+because both were in the sitemap; the packs moved to `/account`, for the same reason the app has
+no paywall in its first run — a price shown before a preview is a number with nothing attached
+to it. The one explanation worth keeping, what happens to your photograph, is on the upload box
+where the decision is made rather than on a page somebody has to go and find.
+
+`web/components/home/TryOnFlow.tsx` is the flow and it has three *derived* states — a
+photograph, two questions, then the catalog already narrowed to them. No wizard index and no
+route per step. `/studio` is a redirect kept for links minted before the change;
+`/studio/generating` and `/studio/result/[id]` are untouched. Six things about it are worth not
+re-deriving:
+
+- **The hero's evidence is real before-and-afters**, wiped by hand. *This will
+  not look like me* is the objection that stops somebody, and nothing written
+  answers it. It is a **set** rather than one pair, because one face answers that
+  question for one person: a straight-haired before is evidence about straight
+  hair, and somebody with a type 4 coil reads it as a promise made to a stranger.
+  So the frame takes a list — both genders, the texture range — with thumbnails
+  under it for switching, still one wipe at a time and still nothing moving on
+  its own. The pairs are files in `web/public/hero/`, joined on whatever follows
+  the prefix (`before-1`/`after-1`) and found by `app/page.tsx` reading the
+  directory during the static render, so a checkout without them falls back to
+  catalogue plates rather than to broken images and a file with no partner is
+  dropped; `web/public/hero/README.md` is the brief for shooting them.
+  `HeroCompare` is deliberately not `<BeforeAfter>` — that one is sized for the
+  result page, where the frame has to take the shape the model returned — and it
+  sets `touch-action: pan-y` on both the figure and its range input, without
+  which a pointer target half a phone screen tall stops the front page scrolling.
+  **It plays by itself, and that reverses the rule this file used to state.** The
+  frame moved only when pushed — a drag, then the cursor — on the argument that a
+  comparison the visitor performs is evidence and one performed *at* them is an
+  advertisement. The argument was fine; its assumption was not. Both versions bet
+  that somebody four seconds into a page works out that a picture is interactive
+  and chooses to test it, and most do not — so the evidence went unseen by the
+  people it was written for. The seam now sweeps on its own and the set rotates:
+  four complete before-and-afters in seventeen seconds, touching nothing — a
+  total that grows by one cycle per face added, and is what to watch as the set
+  grows rather than the cycle, which is paced for legibility. What
+  keeps it from being a screensaver is the pacing — a 4.3s cycle of park (0.95s),
+  reveal (1.3s), **hold on the finished cut (1.15s, the longest still moment,
+  because the hold is the payoff)**, return (0.9s). Those were half again as long
+  until a fourth face made the rotation twenty-five seconds, which nobody waits
+  out; the **shape** is what a re-tune has to preserve, not the values, and
+  `CROSSFADE` has to stay inside `PARK_BEFORE` or a face swap happens in view.
+  **The pointer takes over the
+  instant it is over the picture and the loop stops dead** — autoplay that
+  ignores you is the actual insult — and `phaseNearest` re-enters the timeline
+  where the seam was left so leaving hands it back without a jump. A finger drags
+  and does the same on release, which is why `pointerType` is consulted. Tapping
+  a face **pins** the set, since a choice outranks a demonstration (the rule
+  `<HairTypeChoice>` follows), though the sweep continues because the sweep is
+  the evidence. `prefers-reduced-motion` switches off the sweep and the rotation
+  both, and an `IntersectionObserver` stops the loop when the hero is scrolled
+  away rather than animating a picture nobody is looking at. The seam is written
+  through refs in an animation frame, never state: the loop would otherwise be a
+  render of the whole hero sixty times a second to move one edge.
+- **The catalogue strip under it drifts, and it carries the whole shelf.** It was twelve
+  stationary plates, six per gender, picked by popularity — and twelve is a sample rather than a
+  catalogue: it answers *is my haircut in there* for twelve people and reads as *no* to everybody
+  else. Each shelf is now everything the catalogue has shot for that gender, moving, with **women
+  left to right and men right to left** — two rails going the same way read as one escalator and
+  the eye picks a lane, where contra-motion reads as two shelves. Speed is held constant across
+  shelves of different lengths (`SECONDS_PER_PLATE` × the plate count), it **stops under the
+  pointer** because every plate is a link, and reduced motion gets a still scrollable row rather
+  than a paused one — a paused marquee is a rail nobody can reach the end of. Each plate cycles
+  through the textures its cut was shot in on the grid's own `useVariantCycle` beat, captioned
+  with the types that render stands for, and that cycle is deliberately **not** narrowed by a
+  declared hair type: this is the hero's set-of-faces argument applied to the catalogue, and the
+  caption is what keeps it honest. `<StyleChooser>` and `/styles` still narrow strictly. The loop
+  is two copies of the shelf travelling half the track's own width — which is why the plates carry
+  their gap as a trailing margin rather than the track carrying `gap` — and the second copy is
+  `aria-hidden` and out of the tab order. The two shelves still never draw the same *photograph*
+  twice; the dedupe is on the render's url, so a unisex cut with one shot is illustrated on the
+  other shelf until its own render is published.
+- **The photograph comes first here and second in the app**, and that is one argument reaching
+  two answers. The app asks gender and hair type before the face because its first run is
+  somebody's introduction to the whole product. A browser is entered sideways and the upload box
+  is what the visitor came for, so the picture opens and the questions follow it immediately — at
+  the point they start to matter, which is the point a grid has to be narrowed to be honest.
+- **The two questions are raised on every upload, not once per visitor.** Both are about the
+  person in the *picture* rather than the person at the keyboard, so a stored answer is only good
+  for the photograph it was given about: somebody trying a cut on a friend, or returning for a
+  different face, would otherwise be silently browsing the wrong catalog with the controls a chip
+  row away — precisely where nobody looks while nothing appears to be wrong. `answeredFor` in
+  `TryOnFlow` is the photograph the answers belong to.
+- **Nothing in the dialogue arrives pre-selected**, which follows from that rather than
+  contradicting it: if an answer belongs to a photograph, last visit's answer is a fact about a
+  different picture, and showing it lit is the screen guessing about a face it has not seen. A lit
+  tile is also the easiest thing in the world to tap past without reading, which is how somebody
+  ends up browsing the wrong catalog while believing they chose it. The session still remembers —
+  the chips after the dialogue carry the answer — but the dialogue asks rather than proposes.
+- **The two questions are a dialogue, not two control rows.** `SetupDialog` — once answered they
+  are furniture, and they stay as two chips that reopen it.
+- **Neither question is illustrated with a catalog render, and both were.** *Gender* was two
+  mannequin plates, the most popular men's cut beside the most popular women's — but it asks
+  *whose catalog*, which is a category, and two haircuts side by side invites comparing them **as
+  haircuts**: the visitor reads "do I want this crop or this lob" and answers a question nobody
+  asked. It is the two gender signs now — Mars and Venus, blue and pink, the one symbol pair that
+  is read rather than interpreted — which also lets the first question render without waiting on a
+  fetch. The blue is `--color-azure`, added for this control and nothing else: two tiles in one
+  violet would read as one thing offered twice, which is the two-haircuts mistake made with
+  colour.
+  *Hair type* was wrong rather than off: the tile drew the most popular cut offered for each type
+  in that type's texture, and the most popular cut is usually the *same* cut for all four — so the
+  row was one haircut four times with a curl difference too small to see. It reads
+  `catalog.hairTypeExamples[gender][type]` instead, the set
+  `scripts/generate-hair-type-examples.mjs` makes, where the subject *is* the texture. All four
+  for a gender or none, enforced server-side. **No set has been generated yet**, so the tiles fall
+  back to the standard straight/wavy/curly/coily diagram until `npm run hair-types` has been run
+  for each gender and published — at which point the photographs take over with no code change.
+- **There is no dead end in it.** Gender has no skip, because it decides which renders exist.
+  Hair type does, because *all types* is a real answer rather than a refusal to give one — so it
+  is one of the choices rather than an escape hatch.
+- **The chooser narrows the catalogue; it does not lock it.** `StyleChooser` offered categories
+  and a search and nothing else, on the argument that gender and texture were answered two
+  questions ago and re-offering them asks the same thing twice. Half of that was right and half
+  was not: asking twice is not the failure, *answering on somebody's behalf and then hiding the
+  switch* is — a visitor who wanted the women's shelf, the coily one, or everything regardless
+  had to go back through a dialogue to find the control. So it carries the same rail `/styles`
+  does, **pre-set to the answers already given** rather than empty, which is the difference
+  between a filter and a question and why the dialogue is still worth having in front of it.
+  The rail itself is `<CatalogFilters>`, shared by both surfaces so they cannot drift into
+  offering different controls over one catalogue; what each page owns is the *frame* around it
+  — sticky and bled to the gutters on `/styles`, plain in the flow. Every control writes
+  straight to the session, so the style page a card opens moves with them. The summary row above
+  the grid no longer restates the two answers as chips: two places to change one thing.
+- **Every dimension states its answer; none of them lists its options.** The rail was fourteen
+  chips, a segmented control, a field and a select. On a laptop that was one busy line; on a
+  phone it stacked into four bands — two of them rows of identically drawn chips asking two
+  different questions — and took a third of the screen before a single haircut. The mistake was
+  treating *every option is visible* as the goal: what somebody needs to see is **which catalogue
+  they are looking at**, which is four short words. So each dimension is one pill saying its own
+  answer (`Everyone`, `All textures`, `All shapes`, `Most wanted`), tinted when it is narrowing,
+  and opening its options only when asked. They are native `<select>`s — the sort control already
+  was one — so the picker is the platform's, which on a phone is the wheel or the sheet the user
+  already knows, and there is no popover, focus trap or keyboard handling of ours to get wrong.
+  What is lost is one-tap category switching on a laptop, where the chips did fit; that is the
+  trade, and one control that is the same object at every width is worth it.
+- **A card is a link, and the preview is generated on the style page.** The grid selected a cut
+  and generated from a bar at first, and that was wrong because **a haircut has a length**: a
+  minority of cuts are offered at two or three, that control lives on the style page with the
+  four angles and the texture chooser, and generating off a card silently sent the anchor length
+  every time — a cut somebody could have had short going out at its usual length with nothing on
+  screen having mentioned it. A card also shows one three-quarter render, and *what does the back
+  look like* is a real question about a haircut. So `<TryOnAction>` in `StyleDetail` is the
+  button that spends a credit, which is also where somebody arriving from a search result or a
+  shared link finds it. `app/styles/[id]/page.tsx` reads `?length=` from its own search params —
+  a server component is handed them, so there is no hook, no Suspense boundary and no second
+  render.
+- **A missing photograph is taken on that page, not sent back to the flow for.** It degraded to
+  a link into the home flow, which asked for the picture, raised the two questions and then
+  carried the cut and the length back so the round trip ended on the style page rather than on a
+  grid. It worked and it was still wrong: somebody standing on a haircut has already done the
+  part the dialogue exists to help with — a dialogue that narrows a catalogue is worth having in
+  front of a catalogue, and in front of one cut it is a toll on the way to the thing they came
+  for. So the button opens the file picker in place (`usePhotoIntake`, shared with the hero's
+  drop box so there is one decode, one size cap and one refusal wording — two surfaces that
+  describe the upload differently are two different promises about somebody's face), the page
+  does not move, and the length, the texture and the angle are exactly as they were left.
+  **Gender is the one answer that is still asked**, because it decides which render exists — as
+  two buttons in the action itself rather than as a navigation, and hair type is not asked at
+  all: *all textures* is a real answer and its control is already on the page. The prose under
+  the action that also sets gender is drawn only while there is no photograph, so there are
+  never two live controls for one answer six inches apart. `?style=` still works — `TryOnFlow`
+  reads it, and links minted before this exist — but nothing mints it any more.
+- **An empty balance does not change that button, it changes what pressing it does.** It became
+  *Top up to keep going* pointing at `/account`, which is honest and is still the wrong control:
+  somebody standing on a cut with their photograph loaded has one intention, and answering it
+  with a different verb and a navigation loses the cut, the length and the texture they had set
+  up. The label is the same at every balance and `<TopUpDialog>` opens over the page instead —
+  the same `<Pricing />` rows, so the packs stay a database row rather than a release, with the
+  cut still behind it and nothing lost by closing it. Nothing is queued behind a purchase: the
+  generation happens when Generate is pressed again with a credit to spend, which is one tap and
+  is the truth. The line under the button is where "none left" is said, so the dialogue is not a
+  surprise.
+
+**Four programs now read the catalog, and the boundary rule is unchanged.** A *predicate* may
+be mirrored by hand and kept honest by running both copies; a *document* may not.
+`web/scripts/sync-contract.mjs` is that rule applied — it copies `server/src/types.ts`,
+`src/lib/legal.ts` and `src/lib/hairShape.ts` into `web/lib/contract/`, re-pointing only their
+import headers, and `--check` runs in `web:typecheck` and `prebuild` so a stale copy fails
+rather than ships. **Edit the source, never the output.** `web/lib/hairTypes.ts` is the
+deliberate exception: the hairstyle × hair type predicates, mirrored by hand, because they must
+compile against the web's own types and because two implementations of "is this cut offered for
+type 4" genuinely can be compared by running them.
+
+**The device secret is weaker in a browser, and the code says so rather than papering over it.**
+`Authorization: Device <secret>` works unchanged — 32 random bytes minted on first use. The
+difference is where they live: on a phone that is the platform keystore, which on iOS outlives
+a reinstall; in a browser it is `localStorage`, which a private window does not have. So the two
+free previews are easier to take twice there. That is a deliberate trade, because the
+alternative is fingerprinting — which this codebase refuses, which both stores forbid, and which
+denies free generations to people who never had any. No `X-Install-Anchor` is sent: it is
+Android's answer to a cleared keystore and there is no browser equivalent that is not
+fingerprinting. The real fix, when there is money on the line, is an account *before* the free
+allowance rather than after, which is a Clerk change and not a client one.
+
+**CSS `mask-image` is subject to CORS and SVG `<mask>` is not, and that decides how the colour
+grade is drawn.** The catalog's CDN serves renders public and immutable with no
+`Access-Control-Allow-Origin`, so a masked `<img>` overlay — the obvious implementation, and the
+one the app uses — has its mask request rejected, the element is treated as fully masked out,
+and the grade silently disappears. Nothing looks broken: what you get is a grid with **two hair
+colours in it**, espresso beside black, which is exactly the defect the grade exists to remove.
+So `web/components/Plate.tsx` draws the overlay as an inline `<svg>` whose `<mask>` holds an
+`<image>`: SVG masks paint cross-origin content without CORS because nothing is read back.
+**Do not "align" it with `<Mannequin>`** — `react-native-svg` has no such rule, which is why the
+app can use a plain masked layer and why this could never have appeared there. Adding CORS to
+the bucket would also work and was rejected: it makes correct rendering depend on a bucket
+setting nobody would think to check.
+
+**Two deployment facts, and both fail silently.** The photo upload is the one request that
+leaves the site's origin, so the preview bucket needs that origin in its CORS policy — a bucket
+with no policy answers the preflight `403 CORS not configured`, which a browser reports to
+JavaScript as a bare `TypeError` with no status, after which the job sits in `awaiting_upload`
+looking exactly like a slow queue (`node server/scripts/preview-cors.mjs https://origin`). And
+`SHARE_BASE_URL` should point at the site rather than at the API host, or minted links open the
+app's install landing page instead of a hairstyle.
+
+**Clerk and Stripe are planned and not implemented**, and both say so on screen rather than
+showing a button that does nothing. `AccountContext` is the sign-in seam and its header
+describes the intended shape: exchange a Clerk session for `POST /v1/account/sign-in`, which
+adopts the browser's device rather than issuing a second token — the server already does that
+for Apple and Google, and `devices.user_id` is the column it sets. `web/lib/pricing.ts` holds
+indicative prices **and is deleted** when a Stripe Price lookup replaces it: `credit_products`
+has no price column and the API never sends one, so the till is the authority there exactly as
+it is on a store. The packs themselves are already real rows from `/v1/credits`.
+
+**The result page is two columns, and what to try next is one of them.** The preview on the
+left, the cut's description and four suggestions on the right — beside the picture from `lg`
+rather than a scroll below it, because somebody looking at a haircut on their own face is the
+most likely they will ever be to want a second one and a suggestion under the fold is one most
+people never see. A phone has no "beside", so the same pieces interleave instead: the cut's
+name above the picture, the actions under it, and the suggestions directly beneath those. Both
+wrappers are `contents` below `lg` and every piece carries an `order`, so there is one DOM and
+two arrangements rather than a second copy of anything. The four
+are seeded from the cut that was just generated by the same `relatedTo` the style page uses —
+narrowed by the gender and hair type recorded on **the look** rather than the ones in the
+session, for the reason `TryOnFlow` re-asks both on every upload: those answers are about the
+photograph, and a session that has moved on to a different face would narrow the row to the
+wrong catalog. From `sm` they still sit below "About this cut", because that heading names the
+cut in the picture and four other haircuts above it would leave it pointing at whichever one the
+eye landed on last — but on a phone that ordering put them under two screens of scroll, which is
+where suggestions go unread. Below `sm` they come straight after the buttons and **drift**, right
+to left, on the front page's own marquee: four cards two-up is two rows and the second is under
+the fold, where a row with one card always arriving is not. It stops under the pointer, since
+every card is a link, and reduced motion gets a still scrollable row rather than a paused one.
+**That row is `<SuggestionShelf>`, and the style page's *In the same direction* is the same
+component** — one heading, one "All cuts" link, one grid and one drift. Two places offering a
+next haircut in two different shapes read as two features rather than as the catalogue's own
+"and then?", and a marquee written twice is two chances for the phone and the laptop to
+disagree. Each page owns only the frame: the result page its column order and the sentence
+about the photograph, the style page its rule and the space below the fold. There is no such
+sentence on the style page, because the button above it has already said what a preview costs.
+The preview is capped at `42svh` on a phone to make the room — still the largest thing on the
+page by a wide margin, just no longer the only thing on it.
+
+**The preview is shown whole; the comparison is a button.** The page opened on the wipe at
+half — the first sight of what a credit had just bought was half of it, with an unchanged
+photograph filling the rest and a handle down the middle of somebody's face. The comparison is
+the *second* question; the first is "what do I look like", and only the whole picture answers
+it. `<BeforeAfter>` is used in both states, handed `before={null}` when it is not comparing,
+which is its own no-slider branch — swapping between two frames would move the picture by
+whatever the two disagreed about.
+
+**Every link out of a preview carries the answers it was generated with**, and
+`useAdoptedAnswers` in `SessionContext` is what reads them back in — once, and only after the
+session has hydrated, since the provider reads `localStorage` in an effect and a child's effect
+runs before its parent's. `?gender=…&hairType=…` goes on the cut, on the four suggestions and
+on "All cuts", so a catalogue reached from a finished preview opens already narrowed to it; the
+style page and `CatalogBrowser` both adopt it, which is also what finally makes the query
+`CatalogBrowser` has always minted into its card links do something. The **length is not** in
+that set: gender and texture are facts about the person in the photograph and travel to any
+cut, where a length is a fact about *one* haircut and most of the catalog is offered at only
+its anchor — so it is added to the link to the generated cut alone. The result page adopts the
+look's own two answers the same way, because without it the cards are drawn from the look and
+the page any of them opens is drawn from the session: one texture on the card, another on the
+page.
+
+**On a phone the style page's plate is a deck you swipe, and the two adjustments sit under it.**
+Two changes against one problem. The four angles were thumbnails below the picture — a fine
+control with a mouse, a poor one with a thumb, and one somebody has to work out is there at all —
+so the picture itself is now a scroll-snapped deck of the four, which is the gesture every
+photograph on the device already answers to. Snapping rather than a hand-written pan, so
+momentum, rubber-banding and the platform's pointer behaviour come free.
+
+**The tiles stayed, and that was a correction.** The deck first carried four dots, on the
+reasoning that something you swipe does not need a second way to page it. Both halves of that
+were wrong: a dot says a panel exists and nothing about what is on it, so *what does the back
+look like* still cost three swipes and a guess — and a swipe is invisible until somebody tries
+it, so a visitor who never thinks to try had no way in at all. `<AngleTiles>` is now one
+component for both surfaces, differing only in `onPick`: a tap scrolls the deck on a phone and
+sets the angle on a laptop. Tapping scrolls rather than setting, so the angle follows the
+scroller in both directions and a tap gets the same snap a swipe does. The panels are
+anchored on **one** variant list resolved at the hero angle, never one per angle: a partially
+shot cut would otherwise put its curly front beside its coily back, which is the failure
+`mannequinMask` avoids a level down. The deck does not depend on the selected angle either, so a
+swipe moves the scroller and rebuilds nothing.
+
+The second change is what the deck's capped height buys. Hair type and length used to sit below
+the description, the "Suits" line and the tag row — about 200 points of prose between a control
+and the picture it changes, so a tap on *Coily* was answered off screen. That prose was reordered
+below the controls on a phone first, and is now **off the style page entirely**: four studio
+angles of the cut in the visitor's own texture say more about what it is than three sentences do,
+and the decision being made on that page is whether to spend a credit putting it on your own
+face, which no adjective moves. Nothing is deleted with it — a catalogue card still captions
+itself with the cut's first tag, `searchStyles` still matches on the description, and the result
+page keeps "About this cut", where the picture is of the *visitor* and the prose is the only
+thing naming what was done. The placeholder lost its three text lines in the same change, since a
+skeleton standing in for prose that never arrives is the layout lying about itself. Picture and
+controls now land on one screen, which is the same argument the app's `<ControlCard>` makes about
+its own fold, reached on a different device.
+
+**The style page has a way back at the top.** Its back link is `/styles` rather than the
+browser's own Back, since a search result and a shared link both land there with nothing behind
+them, and one destination serves both entry points — the catalog reads the same session answers
+the flow's chooser does.
+
+The honesty rules carry over intact and are worth not re-deriving: the footer reports whether
+the catalog came from the API or from the browser's offline copy; nothing on the generating page
+invents progress (the countdown ratchets earlier only, a queued job shows its real position
+rather than an estimate, and the stage word is gated on the stage the server reported); the
+client never adjusts a balance locally, and `ready: false` is not "no credits".
+
+**The bar on that page is paced by the clock, not by the poll**, and that is a fix rather than a
+refinement — it used to reach 90% within a few seconds of a forty-five second generation and
+then sit there, which is the frozen-bar failure the screen exists to avoid. Two causes: the poll
+effect was keyed on the job *object*, so every state change re-ran it and fired an immediate
+poll — and a poll sets state, so the loop ran as fast as the network answered rather than every
+two seconds; and the bar advanced a fixed fraction of its remaining range *per report*, which
+makes its speed a fact about the network rather than about the work. `stageFill` in
+`web/lib/state/GenerationContext.tsx` replaces both: a stage spends 75% of its range at a steady
+rate over however long that stage usually takes, then decelerates for ever without arriving, and
+a queued job holds outright because nothing has been done to it yet. **The app's
+`GenerationContext` has a milder version of the same curve** (a 6%-of-remaining creep every
+400ms, which parks near the ceiling about fifteen seconds into the same wait) and has not been
+changed. One thing the
+sandbox cannot exercise, because it publishes no imagery: **the colour grade and its mask
+overlay**. `web/lib/colorGrade.ts` mirrors the app's maths and its two measured anchors — check
+it against a real publish before launch.
 
 ## Architectural constraints from the spec
 

@@ -1,0 +1,413 @@
+@import 'tailwindcss';
+
+/**
+ * Luvo on the web.
+ *
+ * The palette is the app's, measured off `assets/Luvo-icon.png` and documented
+ * at length in `src/theme/tokens.ts` — violet `#A98CFB`, pink `#FC73AC`, tile
+ * `#090710`. Nothing here invents a colour. What changes is which end of the
+ * palette the product lives at.
+ *
+ * ## Why the web is dark by default and the app is not
+ *
+ * The app follows the phone's setting because it is a tool somebody opens in a
+ * queue at a barber's. This is a shopfront: it is looked at once, deliberately,
+ * often on a large screen, and it has about four seconds to say what kind of
+ * thing Luvo is. Near-black is what makes the one asset we actually sell — a
+ * white studio plate with a haircut on it — read as a lit object rather than as
+ * a picture on a page. The plate does the work; the ground gets out of its way.
+ *
+ * That is also why `--color-plate` is `#FFFFFF` here exactly as it is there.
+ * Every render in the catalog is shot on flat white. A tinted or dark ground
+ * under one draws a bright rectangle of the render's own white, with the seam
+ * falling on the render's own edge. Match the imagery, and let the card's
+ * border and its meta row carry the scheme instead.
+ *
+ * ## The one rule to keep
+ *
+ * **Violet is a colour something is; pink is only ever the far end of a
+ * gradient.** Pink dark enough to carry white text is maroon and stops being
+ * the logo's pink at all, so it is spent where a gradient already exists — the
+ * hero wash, the progress arc, the generating frame. Solid accent surfaces are
+ * violet. That is the rule `tokens.ts` argues for; breaking it here would make
+ * the web a different brand.
+ */
+
+@theme {
+  /* Ground and surfaces. The artwork's tile hue held under 4% saturation, so
+     the canvas belongs to the violet without tinting a render laid on it. */
+  --color-canvas: #08060e;
+  --color-canvas-raised: #0f0b19;
+  --color-surface: #15101f;
+  --color-surface-alt: #1c1629;
+  --color-surface-sunken: #241c34;
+
+  /* Ink */
+  --color-ink: #f4f1fa;
+  --color-ink-soft: #c9c2d8;
+  --color-muted: #8b839e;
+  --color-faint: #5d566e;
+
+  /* Hairlines. Alpha rather than a solid, so one line reads the same over a
+     surface, over the canvas, and over the aurora wash between them. */
+  --color-line: rgb(255 255 255 / 0.08);
+  --color-line-strong: rgb(255 255 255 / 0.16);
+
+  /* Brand */
+  --color-violet: #a98cfb;
+  --color-violet-deep: #6b3fe4;
+  --color-violet-ink: #c9b3ff;
+  --color-pink: #fc73ac;
+
+  /**
+   * The one blue in the product, and it is not a brand colour.
+   *
+   * It exists for exactly one control: the two tiles that ask *whose catalogue*.
+   * That question wants its two answers to read as a pair of equals at a glance,
+   * and the convention everybody already knows is blue and pink. Using the brand
+   * violet for both would make them look like one thing chosen twice.
+   *
+   * It is picked to sit at the measured pink's lightness and chroma so neither
+   * tile dominates, and far enough from `--color-violet` (H256) that it is
+   * plainly a different colour rather than a second violet. Nothing else may use
+   * it: this is a semantic pair, not an accent, and the rule that violet is what
+   * a thing *is* stands everywhere else.
+   */
+  --color-azure: #73b4fc;
+  --color-on-violet: #17102b;
+
+  /* The ground every mannequin render sits on. Not a scheme colour — the
+     render's own white. See the header. */
+  --color-plate: #ffffff;
+  --color-on-plate: #453d57;
+  --color-on-plate-muted: #837c93;
+  --color-on-plate-ink: #16121f;
+
+  /* Support */
+  --color-jade: #4fc59d;
+  --color-amber: #e0a35a;
+  --color-danger: #f2695f;
+
+  --font-display: var(--font-serif), ui-serif, Georgia, serif;
+  --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-plate: 20px;
+  --radius-sheet: 28px;
+
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    /* The measured violet and pink as raw triples, for the gradients and
+       shadows that need an alpha a hex token cannot carry. */
+    --violet-rgb: 169 140 251;
+    --pink-rgb: 252 115 172;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: rgb(var(--violet-rgb) / 0.28);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-violet);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* The scrollbar is part of a dark page whether or not you designed it. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.14) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 0.12);
+    border-radius: 99px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 0.22);
+    background-clip: content-box;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Utilities
+   -------------------------------------------------------------------------- */
+
+@layer utilities {
+  /**
+   * The brand gesture, and the only place the two logo colours meet.
+   */
+  .brand-gradient {
+    background-image: linear-gradient(100deg, var(--color-violet) 0%, var(--color-pink) 100%);
+  }
+
+  .text-gradient {
+    background-image: linear-gradient(100deg, var(--color-violet) 0%, var(--color-pink) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    /* Descenders are clipped by background-clip on some engines without this. */
+    padding-bottom: 0.08em;
+  }
+
+  /**
+   * The wash behind the hero and the section breaks: two very soft radial
+   * lights, violet and pink, at an opacity where they read as a room rather
+   * than as a gradient. Anything stronger and the plates stop being the
+   * brightest thing on the page, which is the one thing this layout is for.
+   */
+  .aurora {
+    position: relative;
+  }
+  .aurora::before {
+    content: '';
+    position: absolute;
+    inset: -30% -10% auto -10%;
+    height: 90%;
+    pointer-events: none;
+    background:
+      radial-gradient(52% 46% at 22% 30%, rgb(var(--violet-rgb) / 0.2) 0%, transparent 68%),
+      radial-gradient(46% 44% at 82% 18%, rgb(var(--pink-rgb) / 0.13) 0%, transparent 66%);
+    filter: blur(8px);
+    z-index: 0;
+  }
+
+  /** A hairline that fades out at both ends — a rule, not a box edge. */
+  .rule-fade {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.14), transparent);
+  }
+
+  .glass {
+    background: rgb(15 11 25 / 0.72);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+  }
+
+  /** Numerals that line up in a column: prices, credits, countdowns. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /** Clamp helpers, for card titles and descriptions that must not reflow. */
+  .clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Motion
+   -------------------------------------------------------------------------- */
+
+@keyframes luvo-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes luvo-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/**
+ * The skeleton breath, and it is one shared keyframe on purpose.
+ *
+ * Every placeholder on a page runs this with the same duration and no delay, so
+ * they stay in phase: a dozen blocks each pulsing from their own mount fan out
+ * into noise within a second. That is the argument `<Skeleton>` makes in the
+ * app, with the difference that CSS animations on one document already share a
+ * clock — so here it costs nothing to keep.
+ */
+/**
+ * The hero's cross-dissolve, as one face in the before/after set gives way to
+ * the next. Runs on the *outgoing* copy, which is mounted only for the length of
+ * the fade — `both` so it holds at zero for the frames between the animation
+ * ending and React unmounting it, which is where a flash back to full opacity
+ * would otherwise land.
+ */
+@keyframes luvo-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes luvo-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes luvo-sweep {
+  from {
+    transform: translateY(-110%);
+  }
+  to {
+    transform: translateY(210%);
+  }
+}
+
+@keyframes luvo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/**
+ * The blades opening and closing about the screw.
+ *
+ * Deliberately not tied to progress — see the header of `GeneratingStage.tsx`.
+ * Its job is to separate "slow" from "hung", and a snip that slowed with the
+ * queue would read as the site struggling rather than as the queue being busy.
+ */
+@keyframes luvo-snip {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(9deg);
+  }
+}
+
+.animate-rise {
+  animation: luvo-rise 0.6s var(--ease-out-quint) both;
+}
+.animate-fade {
+  animation: luvo-fade 0.5s ease both;
+}
+.animate-fade-out {
+  animation: luvo-fade-out 0.7s ease both;
+}
+
+/**
+ * The catalogue shelves, drifting.
+ *
+ * The strip on the front page used to be twelve stationary plates. Twelve is
+ * not a catalogue — it is a sample of one, and the visitor's question is *is my
+ * haircut in there*, which a sample can only answer for twelve people. Moving
+ * the shelves turns the same strip into the whole shelf: everything the
+ * catalogue has actually shot for that gender goes past, and the two rows run in
+ * opposite directions so the section reads as one thing rather than as two lists
+ * that happen to be animated.
+ *
+ * The track holds exactly two copies of the shelf and travels half its own
+ * width, which lands the second copy precisely where the first started — a loop
+ * with no seam and no measurement. That exactness is why the items carry their
+ * gap as a trailing margin rather than the track carrying `gap`: with `gap` the
+ * track is `2n` items and `2n - 1` gaps, and half of that is not one copy.
+ */
+@keyframes luvo-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* The plates enter and leave rather than being clipped off at a hard edge —
+   a cut sliced in half by the gutter reads as a layout fault. */
+.marquee {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: luvo-marquee linear infinite;
+  /* The duration is set per row, from the number of plates in it, so a short
+     shelf and a long one drift at the same speed. */
+}
+
+/* Women left to right, men right to left. Same keyframes, run backwards. */
+.marquee-track[data-direction='reverse'] {
+  animation-direction: reverse;
+}
+
+/**
+ * It stops the instant the pointer is over it, and while anything inside it has
+ * focus. Every plate is a link, and a link that moves out from under the cursor
+ * is a link nobody can follow — the same rule the hero's sweep follows, where
+ * the pointer takes the timeline over rather than fighting it.
+ */
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
+  animation-play-state: paused;
+}
