@@ -33,7 +33,12 @@
     "catalog:publish": "npm --prefix server run publish",
     "catalog:publish:dry": "npm --prefix server run publish:dry",
     "catalog:migrate": "npm --prefix server run migrate",
-    "catalog:check": "npm --prefix server run check"
+    "catalog:check": "npm --prefix server run check",
+    "web:dev": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build",
+    "web:start": "npm --prefix web run start",
+    "web:typecheck": "npm --prefix web run typecheck",
+    "web:sync": "npm --prefix web run sync"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

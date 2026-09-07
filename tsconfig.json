@@ -12,8 +12,21 @@
     "**/*.ts",
     "**/*.tsx"
   ],
+  "//": [
+    "`server` and `web` are excluded for the same reason: they are separate",
+    "programs with different `lib`s (Node and the DOM against React Native), and",
+    "typechecking one under the other's globals produces failures that are not",
+    "bugs. Each has its own `npm run typecheck`.",
+    "",
+    "`web` matters for a second reason that is easy to miss: the bare",
+    "`node_modules` entry below only excludes the root one, so without this line",
+    "`web/node_modules/@types/react` is pulled into this program alongside the",
+    "app's own copy. Two React type packages in one compilation is how a",
+    "duplicate-identifier error appears in a file nobody touched."
+  ],
   "exclude": [
     "node_modules",
-    "server"
+    "server",
+    "web"
   ]
 }
