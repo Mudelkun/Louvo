@@ -11,11 +11,12 @@ import { TRY_ON_MODEL, generationConfigured } from '@/api/tryOn';
 import { ChoiceRow } from '@/components/Controls';
 import { MockNotice, Pill } from '@/components/Feedback';
 import { Header, Screen, SectionLabel } from '@/components/Screen';
-import { useOnboarding } from '@/hooks/useOnboarding';
+import { PRIVACY_POLICY, TERMS_OF_USE } from '@/lib/legal';
 import { screenCaptureSource } from '@/lib/screenCapture';
 import { useAccount } from '@/state/AccountContext';
 import { useCatalog } from '@/state/CatalogContext';
 import { useLibrary } from '@/state/LibraryContext';
+import { useOnboarding } from '@/state/OnboardingContext';
 import { useSession } from '@/state/SessionContext';
 import { makeStyles, radii, spacing, useColors, useThemePreference, type } from '@/theme/theme';
 import type { ThemePreference } from '@/theme/theme';
@@ -339,6 +340,31 @@ export default function SettingsScreen() {
           <SectionLabel>Data</SectionLabel>
           <View style={styles.group}>
             <LinkRow icon="trash-outline" label="Clear saved looks and favourites" destructive onPress={confirmClear} />
+          </View>
+        </View>
+
+        {/* The two documents, where somebody who goes looking for them expects
+            to find them. They are screens rather than links out: the app has to
+            be able to show them with no network, and a build with no API has no
+            public page to link to. `src/lib/legal.ts` is the text itself, and
+            the server renders the same words at /privacy and /terms for the two
+            store listings. */}
+        <View>
+          <SectionLabel>Legal</SectionLabel>
+          <View style={styles.group}>
+            <LinkRow
+              icon="lock-closed-outline"
+              label={PRIVACY_POLICY.title}
+              hint="What happens to your photo"
+              onPress={() => router.push('/legal/privacy')}
+            />
+            <Divider />
+            <LinkRow
+              icon="document-text-outline"
+              label={TERMS_OF_USE.title}
+              hint="The agreement between you and Luvo"
+              onPress={() => router.push('/legal/terms')}
+            />
           </View>
         </View>
 

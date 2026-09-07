@@ -94,6 +94,34 @@ A React Native / Expo mobile app for virtually trying hairstyles. The user flow:
 
 The user picks a haircut. The length and fade-level controls the spec originally called for are gone from the app: the cut is the product.
 
+**The first run is the same flow, walked in a different order.** `src/state/OnboardingContext.tsx`
+holds it and `docs/onboarding.md` is the argument. There is deliberately no second copy of any
+screen — an onboarding catalog would be a second place a hairstyle can be shown, and it would go
+stale the first time either one was touched. Welcome leads *into* the flow rather than past it
+(`begin()`), and exactly three things differ while the run is `active`:
+
+- **Every screen shows where it is.** `step()` fills the progress bar `<Header>` already had.
+  Outside the run it returns undefined and no screen shows a step, which is the honest state — the
+  style page used to claim "Step 5 of 5" to somebody who had arrived from the Styles tab.
+- **The photo is asked third, not first.** Gender and hair type decide *which catalog exists*, so
+  they come before the face: a user who uploads a photograph and is only then asked two questions
+  has done the work before being told why. The home tab keeps the opposite order on purpose — it is
+  not a questionnaire, it is a screen whose one job is to take a photo. Both ask through the same
+  `<PhotoChooser>`, so there is one wording and one promise.
+- **Generation ends on the notification, explained.** `app/try/notify.tsx` sits *after* submit, so
+  the preview is already being made while it is on screen and the offer is about a job with an id.
+  It exists because the alternative is the bare system dialog — the most consequential yes/no this
+  app ever puts up, with no room to say that the one notification it sends is the finished preview
+  the user just asked for. `claimPushPrompt()` in `src/lib/push.ts` is what stops
+  `GenerationContext` also raising it, and `previewPushAvailability()` is why the step never
+  appears in a build that could not deliver a notification anyway.
+
+**There is no paywall in it.** The credit gate is untouched and still sits where it always did —
+`canGenerate` on the style screen — which for a first run means it never fires: every device has
+two free generations, so the guided run is a complete preview from photograph to result without
+a price ever being named. That is deliberate. Somebody who has not yet seen the product cannot
+value it, and a pack shown before the first preview is a number with nothing attached to it.
+
 Hair type *is* a property of a hairstyle — see the matrix section below — and is generated.
 Colour is not a property of a hairstyle and is not generated. Every mannequin — drawing and AI render alike — is produced in one shade (`BASE_HAIR_COLOR` in `src/lib/constants.ts`) and recoloured on screen by `src/lib/colorGrade.ts`. **There is no colour picker in the UI right now**, but the app is no longer at the identity grade: the session starts at `DEFAULT_HAIR_COLOR_ID` (jet), so every mannequin is graded to black and the two shades the catalog is shot in stop showing as two hair colours in one grid. The grade, the masks and the session's `colorId` are all live and working. Putting the choice back is a `<SwatchRow>` bound to `setColor` — the default is a starting value, not a lock — and the reason it is worth keeping intact is below.
 
@@ -1032,6 +1060,37 @@ foreground, and when a job settles. Two states must not be conflated: `ready: fa
 "no credits", so `canGenerate` is true while loading (a paywall that flashes on cold start lands
 on people who have twenty), and a failed refresh keeps the previous answer rather than blanking to
 zero.
+
+**The Privacy Policy and the Terms of Use are written once, and the privacy policy is a
+description of this repository.** `src/lib/legal.ts` is both documents as data; `app/legal/[doc].tsx`
+renders them as screens and `server/src/legal.ts` renders the same words at `/privacy` and
+`/terms`, which are the urls the two store listings need. The server's copy is cut by
+`sync-shared.mjs` for the reason `tryOnPrompt.ts` is — authored prose cannot be a hand-written
+mirror, because two copies of a privacy policy that have drifted apart are two different promises
+about somebody's photograph — so **edit the app's file and never
+`server/src/generated/legal.ts`**, and keep `legal.ts` import-free or the sync refuses it.
+`docs/legal.md` has the design; three decisions govern any change:
+
+- **Every factual sentence in the policy describes something the code actually does**, and the
+  places to check are the ones the policy leans on: the photograph scrub in `check-previews.mjs`,
+  the install anchor in `docs/credits.md`, the funnel in `docs/sharing.md`, and
+  `server/migrations/` for every column that exists. A change that makes one of those sentences
+  false has to edit `src/lib/legal.ts` **in the same commit** — adding a column about a person, a
+  third-party service, an analytics SDK, or a path out of `running` that does not scrub.
+- **They are screens, not links out.** The moment anybody reads a privacy policy is the moment
+  they are deciding whether to hand over a photograph of their face, so it cannot depend on a
+  network; a build with no `EXPO_PUBLIC_API_URL` has no public page to link to; and from the
+  paywall a browser hand-off is a purchase abandoned. `<LegalLinks>` is the one sentence that
+  links to both, on welcome, sign-in, the paywall (App Store guideline 3.1.2 requires it there)
+  and Settings.
+- **`OPERATOR` is the only thing in the file that is not about the software**, and every field of
+  it — contact inbox, postal address, governing law — is **unset**. Each degrades to a sentence
+  that is true and visibly incomplete rather than to a plausible placeholder, which is the point:
+  an inbox that bounces turns "not set up yet" into "ignored you". None of them is optional at
+  launch — both stores require a working support contact, GDPR and the CCPA require a route for
+  exercising rights that is not "delete the app", a policy with no postal address does not answer
+  an identity-of-the-controller request, and terms with no governing law are a contract whose
+  disputes go to whoever reaches a court first.
 
 ## Where the backend plugs in
 

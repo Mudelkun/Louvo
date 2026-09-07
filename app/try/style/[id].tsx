@@ -27,7 +27,7 @@ import { VariantCrossfade } from '@/components/VariantCrossfade';
 import { useHairColor } from '@/hooks/useHairColor';
 import { usePhotoPicker } from '@/hooks/usePhotoPicker';
 import { useVariantCycle } from '@/hooks/useVariantCycle';
-import { DEMO_BASE_SHAPE, DEMO_PHOTO, TRY_ON_STEPS } from '@/lib/constants';
+import { DEMO_BASE_SHAPE, DEMO_PHOTO } from '@/lib/constants';
 import { HERO_ANGLE, VIEW_ANGLES, type ViewAngle } from '@/lib/hairShape';
 import {
   defaultLength,
@@ -50,9 +50,9 @@ import { useAccount } from '@/state/AccountContext';
 import { useCatalog } from '@/state/CatalogContext';
 import { useGeneration } from '@/state/GenerationContext';
 import { useLibrary } from '@/state/LibraryContext';
+import { useOnboarding } from '@/state/OnboardingContext';
 import { useSession } from '@/state/SessionContext';
 import { makeStyles, onPlateAccent, onPlateMuted, plate, radii, spacing, useColors, type } from '@/theme/theme';
-
 
 /** Caption on the tile, and the longer label a screen reader announces. */
 const ANGLE_LABELS: Record<ViewAngle, { short: string; long: string }> = {
@@ -133,6 +133,7 @@ export default function StyleDetailScreen() {
   const color = useHairColor();
   const { start } = useGeneration();
   const { canGenerate, credits, metered } = useAccount();
+  const { active: onboarding, step, shouldAskPush, complete } = useOnboarding();
   // Arriving here from the Styles tab skips the photo step, so the photo is
   // picked on this screen rather than sending the user back through the flow.
   const { pickFromLibrary, takePhoto, busy } = usePhotoPicker(setPhoto);
@@ -249,7 +250,7 @@ export default function StyleDetailScreen() {
       // Unpadded like the screen it stands in for: the hero and the cards carry
       // their own margins, and a second inset would move every one of them.
       <Screen padded={false}>
-        <Header step={{ current: 5, total: TRY_ON_STEPS }} />
+        <Header step={step('style')} />
         {/* The screen that is coming, with its content not yet in it — rather
             than a spinner on an empty page that then reflows into this. */}
         <StyleScreenSkeleton />
@@ -454,6 +455,22 @@ export default function StyleDetailScreen() {
       photoUri,
       options,
     });
+    /**
+     * The guided run has one beat left: the notification, explained rather than
+     * sprung. The job is already submitted at this point and runs whichever way
+     * this goes — see `app/try/notify.tsx` — so the step costs the preview
+     * nothing and buys the one permission this app ever asks for a sentence of
+     * context.
+     *
+     * `shouldAskPush()` is false wherever the permission is already granted or
+     * cannot be granted at all, and then there is nothing to explain and the
+     * flow ends here as it always did.
+     */
+    if (onboarding && shouldAskPush()) {
+      router.push(`/try/notify?job=${jobId}`);
+      return;
+    }
+    if (onboarding) complete();
     router.push(`/try/generating?job=${jobId}`);
   };
 
@@ -504,7 +521,7 @@ export default function StyleDetailScreen() {
           was carrying only the step counter. */}
       <Header
         title={hairstyle.name}
-        step={{ current: 5, total: TRY_ON_STEPS }}
+        step={step('style')}
         right={
           <FavouriteHeart
             accessibilityLabel={favourite ? 'Remove from favourites' : 'Add to favourites'}

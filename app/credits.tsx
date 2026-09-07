@@ -34,6 +34,7 @@ import React from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { LegalLinks } from '@/components/LegalLinks';
 import { Header, Screen, SectionLabel } from '@/components/Screen';
 import { useAccount } from '@/state/AccountContext';
 import { fetchOffers, purchase, purchasesConfigured, restore, type Offer } from '@/api/purchases';
@@ -212,6 +213,13 @@ export default function CreditsScreen() {
           One generation is one credit. Generations do not expire, and there is no subscription. If a generation
           fails, its credit is returned to you automatically.
         </Text>
+
+        {/* Required on any screen that takes money: App Store review guideline
+            3.1.2 asks for the terms of use and the privacy policy to be
+            reachable from the purchase screen itself, and Google Play asks the
+            same of a store listing. It is also where the sentence above is
+            spelled out — what a credit is, and that it is not money. */}
+        <LegalLinks action="buying generations" />
       </View>
     </Screen>
   );
