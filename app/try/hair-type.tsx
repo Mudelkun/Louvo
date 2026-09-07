@@ -7,11 +7,13 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { hairTypesFor } from '@/api/client';
 import type { Gender, HairTypeId } from '@/api/types';
+import { Reveal } from '@/components/Reveal';
 import { Header, Screen } from '@/components/Screen';
 import { Skeleton, SkeletonGroup, SkeletonLine } from '@/components/Skeleton';
 import { hairTypeExample, hasHairTypeExamples } from '@/lib/hairTypeExample';
 import { HAIR_TYPE_IDS } from '@/lib/hairTypes';
 import { useCatalog } from '@/state/CatalogContext';
+import { useOnboarding } from '@/state/OnboardingContext';
 import { useSession } from '@/state/SessionContext';
 import { makeStyles, plate, radii, spacing, useColors, type } from '@/theme/theme';
 
@@ -53,6 +55,7 @@ export default function HairTypeScreen() {
   const router = useRouter();
   const { hairTypes, loading } = useCatalog();
   const { gender, setHairType } = useSession();
+  const { active, step } = useOnboarding();
   // `undefined` is "nothing tapped yet", which `null` cannot be: null is a real
   // answer here — it is All Types.
   const [chosen, setChosen] = useState<HairTypeId | null | undefined>(undefined);
@@ -76,25 +79,30 @@ export default function HairTypeScreen() {
     if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => undefined);
     setChosen(value);
     setHairType(value);
-    router.push('/try/catalog');
+    // The guided run has not taken a photo yet: it asks the two questions that
+    // decide which catalog exists before it asks for a face. Every other way in
+    // arrives here with the photo already in the session.
+    router.push(active ? '/try/photo' : '/try/catalog');
   };
 
   return (
     <Screen padded={false}>
-      <Header />
+      <Header step={step('hairType')} />
 
       <View style={styles.body}>
-        <Text style={[type.display, styles.title]}>Your hair type</Text>
-        <Text style={[type.body, styles.subtitle]}>
-          Some cuts sit completely differently depending on your texture. We will show you the
-          version that matches yours.
-        </Text>
+        <Reveal index={0}>
+          <Text style={[type.display, styles.title]}>Your hair type</Text>
+          <Text style={[type.body, styles.subtitle]}>
+            Some cuts sit completely differently depending on your texture. We will show you the
+            version that matches yours.
+          </Text>
+        </Reveal>
 
         {loading ? (
           <HairTypeSkeleton gender={gender} />
         ) : (
           <>
-            <View style={styles.group} accessibilityRole="radiogroup">
+            <Reveal index={1} style={styles.group} accessibilityRole="radiogroup">
               {entries.map((entry, index) => {
                 const selected = chosen === entry.id;
                 const example = showExamples ? hairTypeExample(gender, entry.id) : null;
@@ -148,36 +156,38 @@ export default function HairTypeScreen() {
                   </Pressable>
                 );
               })}
-            </View>
+            </Reveal>
 
             {/* Deliberately outside the group and deliberately quieter: it is the
                 answer for someone who wants to look around, not a fifth type. */}
-            <Pressable
-              accessibilityRole="radio"
-              accessibilityLabel="All types"
-              accessibilityHint="Browse everything, whatever your hair does"
-              accessibilityState={{ selected: chosen === null }}
-              onPress={() => choose(null)}
-              style={({ pressed }) => [
-                styles.allPill,
-                chosen === null && styles.allPillSelected,
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <Text
-                style={[
-                  type.label,
-                  { color: chosen === null ? colors.accentInk : colors.inkSoft },
+            <Reveal index={2}>
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityLabel="All types"
+                accessibilityHint="Browse everything, whatever your hair does"
+                accessibilityState={{ selected: chosen === null }}
+                onPress={() => choose(null)}
+                style={({ pressed }) => [
+                  styles.allPill,
+                  chosen === null && styles.allPillSelected,
+                  pressed && { opacity: 0.7 },
                 ]}
               >
-                Not sure — show me all types
-              </Text>
-              <Ionicons
-                name="arrow-forward"
-                size={15}
-                color={chosen === null ? colors.accentInk : colors.muted}
-              />
-            </Pressable>
+                <Text
+                  style={[
+                    type.label,
+                    { color: chosen === null ? colors.accentInk : colors.inkSoft },
+                  ]}
+                >
+                  Not sure — show me all types
+                </Text>
+                <Ionicons
+                  name="arrow-forward"
+                  size={15}
+                  color={chosen === null ? colors.accentInk : colors.muted}
+                />
+              </Pressable>
+            </Reveal>
           </>
         )}
       </View>

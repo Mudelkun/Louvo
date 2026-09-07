@@ -18,6 +18,8 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { accountRoutes } from './account.js';
 import { currentRevision, getCatalog, invalidateCatalog } from './catalog.js';
 import { env } from './env.js';
+import { LEGAL_DOCUMENTS } from './generated/legal.js';
+import { legalPage } from './legal.js';
 import { previewRoutes } from './previews.js';
 import { shareRoutes } from './shares.js';
 import { storage } from './storage.js';
@@ -107,6 +109,43 @@ export async function routes(app: FastifyInstance): Promise<void> {
    * phone that made it.
    */
   await app.register(shareRoutes);
+
+  /**
+   * The Privacy Policy and the Terms of Use, as public pages.
+   *
+   * They are here rather than in a marketing site because both store consoles
+   * require a url that resolves today, and this deployment is the only thing
+   * this repository actually serves. Two paths each: `/privacy` and `/terms` are
+   * the short ones that go on a store listing, and `/legal/privacy` and
+   * `/legal/terms` match the routes the app uses for the same documents, so a
+   * link copied from one place works in the other.
+   *
+   * `text/html`, cacheable for an hour — the text changes when somebody edits
+   * `src/lib/legal.ts` and redeploys, which is not a thing that happens between
+   * two requests.
+   */
+  for (const document of LEGAL_DOCUMENTS) {
+    for (const path of [`/${document.slug}`, `/legal/${document.slug}`]) {
+      app.get(path, async (request, reply) => {
+        // Named from the request rather than from `SHARE_BASE_URL`: these pages
+        // are reachable on whatever origin somebody found them on, and a
+        // canonical link pointing at a different host than the one being read is
+        // a canonical link that is wrong.
+        const proto = (request.headers['x-forwarded-proto'] as string | undefined)?.split(',')[0] ?? request.protocol;
+        const host = (request.headers['x-forwarded-host'] as string | undefined)?.split(',')[0] ?? request.headers.host;
+        const origin = env.share.baseUrl ?? `${proto}://${host}`;
+        const other = LEGAL_DOCUMENTS.find((entry) => entry.slug !== document.slug) ?? document;
+
+        reply.type('text/html; charset=utf-8').header('Cache-Control', 'public, max-age=3600');
+        return legalPage(
+          document,
+          `${origin}/${document.slug}`,
+          `${origin}/${other.slug}`,
+          other.title,
+        );
+      });
+    }
+  }
 
   /**
    * Liveness and readiness in one, because Railway asks for one URL.

@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GENERATION_STEPS } from '@/api/client';
 import type { GeneratedLook, Hairstyle, LookJob } from '@/api/types';
 import { ChoiceRow } from '@/components/Controls';
+import { CreditBadgeRow } from '@/components/CreditBadge';
 import { EmptyState } from '@/components/Feedback';
 import { PhotoFrame } from '@/components/PhotoFrame';
 import { ProgressRing } from '@/components/ProgressRing';
@@ -69,7 +70,8 @@ export default function ProfileTab() {
 
   return (
     <Screen padded={false}>
-      <View style={{ paddingTop: insets.top + spacing.md, paddingHorizontal: spacing.xl, gap: spacing.lg }}>
+      <CreditBadgeRow paddingTop={insets.top + spacing.md} />
+      <View style={{ paddingHorizontal: spacing.xl, gap: spacing.lg }}>
         <View style={styles.titleRow}>
           <Text style={[type.title, { color: colors.ink }]}>Profile</Text>
           <Pressable

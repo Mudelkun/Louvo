@@ -4,7 +4,9 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Gender } from '@/api/types';
+import { Reveal } from '@/components/Reveal';
 import { Header, Screen } from '@/components/Screen';
+import { useOnboarding } from '@/state/OnboardingContext';
 import { useSession } from '@/state/SessionContext';
 import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
@@ -33,6 +35,7 @@ export default function GenderScreen() {
   const colors = useColors();
   const router = useRouter();
   const { setGender } = useSession();
+  const { step } = useOnboarding();
   const [chosen, setChosen] = useState<Gender | null>(null);
 
   const choose = (value: Gender) => {
@@ -43,13 +46,15 @@ export default function GenderScreen() {
 
   return (
     <Screen padded={false}>
-      <Header />
+      <Header step={step('gender')} />
 
       <View style={styles.body}>
-        <Text style={[type.display, styles.title]}>Select gender</Text>
-        <Text style={[type.body, styles.subtitle]}>This helps us show you relevant styles.</Text>
+        <Reveal index={0}>
+          <Text style={[type.display, styles.title]}>Select gender</Text>
+          <Text style={[type.body, styles.subtitle]}>This helps us show you relevant styles.</Text>
+        </Reveal>
 
-        <View style={styles.row}>
+        <Reveal index={1} style={styles.row}>
           {OPTIONS.map((option) => {
             const selected = chosen === option.id;
             return (
@@ -78,7 +83,7 @@ export default function GenderScreen() {
               </Pressable>
             );
           })}
-        </View>
+        </Reveal>
       </View>
     </Screen>
   );

@@ -11,6 +11,7 @@ import { AccountProvider } from '@/state/AccountContext';
 import { CatalogProvider } from '@/state/CatalogContext';
 import { GenerationProvider } from '@/state/GenerationContext';
 import { LibraryProvider } from '@/state/LibraryContext';
+import { OnboardingProvider } from '@/state/OnboardingContext';
 import { PhotoPickerProvider } from '@/state/PhotoPickerContext';
 import { SessionProvider } from '@/state/SessionContext';
 import { ThemeProvider, useTheme } from '@/theme/theme';
@@ -50,58 +51,71 @@ function AppShell() {
       <SafeAreaProvider>
         <CatalogProvider>
           <LibraryProvider>
-            <SessionProvider>
-              {/* Above `<GenerationProvider>` because generation reads it: a job
-                  settling refreshes the balance, and the balance is what decides
-                  whether the next one may start. */}
-              <AccountProvider>
-                <GenerationProvider>
-                  <PhotoPickerProvider>
-                    {/* The clock and the battery, which have to contrast with the
-                        canvas rather than match the phone: an app forced to light
-                        on a dark phone needs dark glyphs. */}
-                    <StatusBar style={name === 'dark' ? 'light' : 'dark'} />
-                    <Stack
-                      screenOptions={{
-                        headerShown: false,
-                        contentStyle: { backgroundColor: colors.canvas },
-                        animation: 'slide_from_right',
-                      }}
-                    >
-                      <Stack.Screen name="(tabs)" />
-                      <Stack.Screen name="welcome" options={{ animation: 'fade' }} />
-                      <Stack.Screen name="try" />
-                      <Stack.Screen name="settings" />
-                      {/* Both reached from Settings and from a generation that
-                          ran out of credits. Modal-ish presentation is deliberately
-                          not used: they are destinations somebody navigated to on
-                          purpose, and a sheet that can be swiped away mid-purchase
-                          is a worse place to be taking money. */}
-                      <Stack.Screen name="credits" />
-                      <Stack.Screen name="sign-in" />
-                      {/* Where a shared link lands. `luvo://s/<code>` and, once
-                          the association files are live, `https://<host>/s/<code>`
-                          — see `app/s/[code].tsx`. It resolves the code and
-                          replaces itself with the cut, so it is a doorway rather
-                          than a destination. */}
-                      <Stack.Screen name="s" options={{ animation: 'fade' }} />
-                    </Stack>
-                    {/* Sits above every screen: previews finish in the background. */}
-                    <LookNotification />
-                    {/* Screenshots off, everywhere, for as long as the app runs
-                        — a screenshot of a card or of a finished preview is our
-                        render, extracted, and it is worth more to somebody
-                        else's image model than to us. Mounted here because the
-                        block is a property of the window rather than of a
-                        screen, so there is nowhere below this it could sit
-                        without leaving the screens above it uncovered.
-                        `src/lib/screenCapture.ts` has what each platform
-                        actually enforces. */}
-                    <ScreenCaptureGuard />
-                  </PhotoPickerProvider>
-                </GenerationProvider>
-              </AccountProvider>
-            </SessionProvider>
+            {/* Above the navigator because the guided first run is a property of
+                the flow rather than of any screen in it: the welcome screen
+                starts it, five screens read where they are in it, and the
+                notification step ends it. */}
+            <OnboardingProvider>
+              <SessionProvider>
+                {/* Above `<GenerationProvider>` because generation reads it: a job
+                    settling refreshes the balance, and the balance is what decides
+                    whether the next one may start. */}
+                <AccountProvider>
+                  <GenerationProvider>
+                    <PhotoPickerProvider>
+                      {/* The clock and the battery, which have to contrast with the
+                          canvas rather than match the phone: an app forced to light
+                          on a dark phone needs dark glyphs. */}
+                      <StatusBar style={name === 'dark' ? 'light' : 'dark'} />
+                      <Stack
+                        screenOptions={{
+                          headerShown: false,
+                          contentStyle: { backgroundColor: colors.canvas },
+                          animation: 'slide_from_right',
+                        }}
+                      >
+                        <Stack.Screen name="(tabs)" />
+                        <Stack.Screen name="welcome" options={{ animation: 'fade' }} />
+                        <Stack.Screen name="try" />
+                        <Stack.Screen name="settings" />
+                        {/* Both reached from Settings and from a generation that
+                            ran out of credits. Modal-ish presentation is deliberately
+                            not used: they are destinations somebody navigated to on
+                            purpose, and a sheet that can be swiped away mid-purchase
+                            is a worse place to be taking money. */}
+                        <Stack.Screen name="credits" />
+                        <Stack.Screen name="sign-in" />
+                        {/* The Privacy Policy and the Terms of Use, read in the
+                            app rather than in a browser: the moment somebody
+                            wants them is the moment they are deciding whether to
+                            hand over a photograph, and that moment must not
+                            depend on a network. The same text is served publicly
+                            by the API — see `src/lib/legal.ts`. */}
+                        <Stack.Screen name="legal" />
+                        {/* Where a shared link lands. `luvo://s/<code>` and, once
+                            the association files are live, `https://<host>/s/<code>`
+                            — see `app/s/[code].tsx`. It resolves the code and
+                            replaces itself with the cut, so it is a doorway rather
+                            than a destination. */}
+                        <Stack.Screen name="s" options={{ animation: 'fade' }} />
+                      </Stack>
+                      {/* Sits above every screen: previews finish in the background. */}
+                      <LookNotification />
+                      {/* Screenshots off, everywhere, for as long as the app runs
+                          — a screenshot of a card or of a finished preview is our
+                          render, extracted, and it is worth more to somebody
+                          else's image model than to us. Mounted here because the
+                          block is a property of the window rather than of a
+                          screen, so there is nowhere below this it could sit
+                          without leaving the screens above it uncovered.
+                          `src/lib/screenCapture.ts` has what each platform
+                          actually enforces. */}
+                      <ScreenCaptureGuard />
+                    </PhotoPickerProvider>
+                  </GenerationProvider>
+                </AccountProvider>
+              </SessionProvider>
+            </OnboardingProvider>
           </LibraryProvider>
         </CatalogProvider>
       </SafeAreaProvider>
