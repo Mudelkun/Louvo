@@ -4,6 +4,7 @@ import React from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CreditBadge, CREDIT_BADGE_SLOT } from '@/components/CreditBadge';
 import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
 interface ScreenProps {
@@ -90,6 +91,9 @@ export function Header({ title, subtitle, step, onBack, hideBack, right, tone = 
   return (
     <View style={{ paddingTop: insets.top + spacing.sm }}>
       <View style={styles.headerRow}>
+        {/* The back button keeps the corner it owns on every phone ever made,
+            so the counter sits immediately beside it; with `hideBack` there is
+            nothing in front of it and it is flush to the corner itself. */}
         <View style={styles.headerSide}>
           {hideBack ? null : (
             <Pressable
@@ -106,6 +110,7 @@ export function Header({ title, subtitle, step, onBack, hideBack, right, tone = 
               <Ionicons name="chevron-back" size={20} color={tint} />
             </Pressable>
           )}
+          <CreditBadge tone={tone} />
         </View>
 
         <View style={styles.headerCenter}>
@@ -121,7 +126,7 @@ export function Header({ title, subtitle, step, onBack, hideBack, right, tone = 
           ) : null}
         </View>
 
-        <View style={[styles.headerSide, { alignItems: 'flex-end' }]}>{right}</View>
+        <View style={[styles.headerSide, { justifyContent: 'flex-end' }]}>{right}</View>
       </View>
 
       {step ? (
@@ -170,7 +175,12 @@ const useStyles = makeStyles(({ colors }) => ({
     paddingHorizontal: spacing.lg,
     minHeight: 48,
   },
-  headerSide: { width: 76, justifyContent: 'center' },
+  headerSide: {
+    width: CREDIT_BADGE_SLOT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   headerCenter: { flex: 1, alignItems: 'center', gap: 2 },
   backButton: {
     width: 40,

@@ -135,6 +135,7 @@ ${content.iosAppId ? `<meta name="apple-itunes-app" content="app-id=${escapeHtml
   }
   .secondary { display: block; margin-top: 12px; color: #837C93; font-size: 13px; text-decoration: none; }
   .foot { margin-top: 22px; font-size: 12px; color: #837C93; }
+  .foot a { color: #837C93; }
 </style>
 </head>
 <body>
@@ -153,7 +154,8 @@ ${content.iosAppId ? `<meta name="apple-itunes-app" content="app-id=${escapeHtml
         : `<a class="cta" id="get" href="${escapeHtml(content.deepLink)}">Open Luvo</a>`
     }
     <a class="secondary" href="${escapeHtml(content.deepLink)}">Already have Luvo? Open the app</a>
-    <div class="foot">Free to try. No account needed.</div>
+    <div class="foot">Free to try. No account needed.<br>
+      <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Use</a></div>
   </main>
 <script>
 (function () {

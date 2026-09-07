@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Gender, HairTypeId } from '@/api/types';
 import { CatalogBrowser } from '@/components/CatalogBrowser';
 import { ChoiceRow } from '@/components/Controls';
+import { CreditBadgeRow } from '@/components/CreditBadge';
 import { ALL_HAIR_TYPES } from '@/lib/hairTypes';
 import { useSession } from '@/state/SessionContext';
 import { makeStyles, spacing, useColors, type } from '@/theme/theme';
@@ -35,6 +36,7 @@ export default function StylesTab() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.canvas, paddingTop: insets.top + spacing.md }}>
+      <CreditBadgeRow paddingTop={0} />
       <CatalogBrowser
         gender={filter}
         hairType={hairType}

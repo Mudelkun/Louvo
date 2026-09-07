@@ -64,14 +64,79 @@ async function ensureChannel(): Promise<void> {
 }
 
 /**
+ * Whether the OS dialog is somebody else's to raise.
+ *
+ * There are two places that want the permission: the moment a preview is
+ * submitted (`GenerationContext`, which is where it is obviously about the user
+ * rather than about us) and the onboarding step that exists to *explain* it
+ * first. Both firing means the bare system dialog appears over the screen
+ * written to introduce it, which is the one arrangement worse than either alone.
+ *
+ * So a screen that is going to ask claims the prompt for as long as it is on
+ * the flow, and `registerForPreviewPush` quietly downgrades to a silent refresh
+ * while the claim is held. It is module state rather than a prop because the two
+ * callers are a context and a screen with no relationship to each other, and the
+ * thing being coordinated is a single OS-wide dialog — of which there is exactly
+ * one, module-scoped, whether we model it that way or not.
+ */
+let promptClaimed = false;
+
+/** Takes the OS prompt. Returns the release — call it when the screen is done. */
+export function claimPushPrompt(): () => void {
+  promptClaimed = true;
+  return () => {
+    promptClaimed = false;
+  };
+}
+
+/** What asking would actually do, so a screen can decide whether to offer it. */
+export type PushAvailability = 'ask' | 'granted' | 'unavailable';
+
+/**
+ * Whether there is a permission worth asking for.
+ *
+ * `unavailable` is the honest answer for every build that cannot deliver a
+ * notification at all — the web, Expo Go, a checkout with no EAS project id, an
+ * app with no API to send one — and it is read before the onboarding step is
+ * shown. Promising a ping we have no way to send would be the one thing the
+ * waiting screen is written never to do, one step earlier.
+ */
+export async function previewPushAvailability(): Promise<PushAvailability> {
+  if (!previewsConfigured() || Platform.OS === 'web' || !projectId()) return 'unavailable';
+  try {
+    const existing = await Notifications.getPermissionsAsync();
+    if (existing.granted) return 'granted';
+    return existing.canAskAgain ? 'ask' : 'unavailable';
+  } catch {
+    return 'unavailable';
+  }
+}
+
+/**
+ * Raises the dialog, come what may, and registers whatever comes back.
+ *
+ * For the screen holding the claim above: it has just told the user what the
+ * notification is for and is acting on their answer, so it is the one caller
+ * that is not downgraded.
+ */
+export function askForPreviewPush(): Promise<string | null> {
+  return register(true);
+}
+
+/**
  * Asks for permission, gets a token, and tells the backend about it.
  *
  * Returns the token or null, and never throws. `ask` is false on the paths that
  * only want to refresh an existing registration — a permission prompt on app
  * start, before the user has generated anything, is a prompt most people say no
- * to once and forever.
+ * to once and forever. It is also false in effect while a screen holds the
+ * claim above, whatever the caller passed.
  */
-export async function registerForPreviewPush(ask = false): Promise<string | null> {
+export function registerForPreviewPush(ask = false): Promise<string | null> {
+  return register(ask && !promptClaimed);
+}
+
+async function register(ask: boolean): Promise<string | null> {
   if (!previewsConfigured() || Platform.OS === 'web') return null;
 
   try {
