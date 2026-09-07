@@ -89,7 +89,7 @@ export interface LegalDocument {
  */
 export const OPERATOR = {
   /** Trading name. Replace with the registered entity once one exists. */
-  entity: 'Luvo',
+  entity: 'Roda Production',
   /** Registered postal address, or null while there is not one to print. */
   address: null as string | null,
   /** e.g. 'England and Wales', 'the State of Delaware, USA'. */
