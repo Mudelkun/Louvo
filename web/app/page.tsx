@@ -5,12 +5,28 @@ import { Suspense } from 'react';
 
 import type { HeroImages } from '../components/home/HeroCompare';
 import { TryOnFlow } from '../components/home/TryOnFlow';
+import { HOME_FAQ, HomeSeo } from '../components/seo/HomeSeo';
+import { JsonLd } from '../components/seo/JsonLd';
 import { Skeleton } from '../components/ui';
+import { abs, faqLd, graph, og, ORG_ID, SITE_DESCRIPTION, SITE_ID, tw } from '../lib/seo';
+
+/**
+ * The title carries the two nouns people search with, then the promise.
+ *
+ * "Try a haircut on before you sit in the chair" describes the product to
+ * somebody who already knows what it is. What gets typed is "virtual hairstyle
+ * try on", "haircut simulator", "what haircut suits me" — so the category noun
+ * leads, and the sentence that made the old title good is still the second half
+ * of it.
+ */
+const TITLE = 'Virtual hairstyle try-on — see any haircut on your own photo';
 
 export const metadata: Metadata = {
-  title: 'Luvo — try a haircut on before you sit in the chair',
-  description:
-    'Upload one photo and see yourself in any haircut in the Luvo catalogue. Every preview is generated from a studio render of that exact cut, not guessed from its name.',
+  title: TITLE,
+  description: SITE_DESCRIPTION,
+  alternates: { canonical: '/' },
+  openGraph: og({ path: '/', title: TITLE, description: SITE_DESCRIPTION }),
+  twitter: tw({ title: TITLE, description: SITE_DESCRIPTION }),
 };
 
 /**
@@ -30,9 +46,38 @@ export const metadata: Metadata = {
  */
 export default function HomePage() {
   return (
-    <Suspense fallback={<FlowSkeleton />}>
-      <TryOnFlow hero={heroImages()} />
-    </Suspense>
+    <>
+      <JsonLd
+        data={graph(
+          {
+            '@type': 'WebPage',
+            '@id': `${abs('/')}#page`,
+            url: abs('/'),
+            name: TITLE,
+            description: SITE_DESCRIPTION,
+            isPartOf: { '@id': SITE_ID },
+            publisher: { '@id': ORG_ID },
+            inLanguage: 'en',
+          },
+          faqLd(HOME_FAQ),
+        )}
+      />
+      <Suspense fallback={<FlowSkeleton />}>
+        <TryOnFlow hero={heroImages()} />
+      </Suspense>
+      {/*
+        Below the product, never in front of it.
+
+        `<TryOnFlow>` is a client component, so until this block the html served
+        for `/` was a skeleton — the front door of a site meant to rank for
+        "virtual hairstyle try-on" contained no sentence a crawler could read
+        without executing JavaScript. This is that sentence, and the four others
+        worth having, placed after everything a visitor came for. The header of
+        `<HomeSeo>` has the whole argument, including why it is not the landing
+        page coming back.
+      */}
+      <HomeSeo />
+    </>
   );
 }
 
