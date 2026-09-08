@@ -225,9 +225,15 @@ re-deriving:
   that somebody four seconds into a page works out that a picture is interactive
   and chooses to test it, and most do not — so the evidence went unseen by the
   people it was written for. The seam now sweeps on its own and the set rotates:
-  four complete before-and-afters in seventeen seconds, touching nothing — a
+  six complete before-and-afters in twenty-six seconds, touching nothing — a
   total that grows by one cycle per face added, and is what to watch as the set
-  grows rather than the cycle, which is paced for legibility. What
+  grows rather than the cycle, which is paced for legibility. **That total is now
+  past what the pacing was tuned for**: it was four faces in seventeen seconds
+  until an Asian pair of each gender took the set to six, and twenty-six seconds
+  is the figure the last re-tune was a reaction to. The set covers three
+  ethnicities, both genders and the texture range, which is what it is *for*, so
+  the cycle is the thing to shorten if it goes — preserving the shape, not the
+  values. What
   keeps it from being a screensaver is the pacing — a 4.3s cycle of park (0.95s),
   reveal (1.3s), **hold on the finished cut (1.15s, the longest still moment,
   because the hold is the payoff)**, return (0.9s). Those were half again as long
