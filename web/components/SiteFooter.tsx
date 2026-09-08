@@ -16,7 +16,7 @@
 
 import Link from 'next/link';
 
-import { hasApi, hasClerk, hasStripe } from '../lib/config';
+import { hasApi } from '../lib/config';
 import { LEGAL_DOCUMENTS } from '../lib/contract/legal';
 import { useCatalog } from '../lib/state/CatalogContext';
 import { Logo } from './Logo';
@@ -55,8 +55,14 @@ function SourceLine() {
     <p className={`text-[11.5px] ${tone}`}>
       {text}
       {!hasApi ? ' · NEXT_PUBLIC_API_URL is unset' : ''}
-      {hasApi && !hasClerk ? ' · sign-in not yet enabled' : ''}
-      {hasApi && !hasStripe ? ' · checkout not yet enabled' : ''}
+      {/* Sign-in used to be named here too, and is not any more: it is a mailed
+          code against the same API, so with a service configured it works, and
+          a build with none has already said so on the line above. */}
+      {/* Checkout used to be named here from a `NEXT_PUBLIC_STRIPE_*` key in
+          this build, which was a guess about a setting on the API. It is the
+          server's answer now and it is reported where it matters — on the packs
+          themselves, in `<Pricing>`, rather than in a footer nobody reads while
+          deciding to buy something. */}
     </p>
   );
 }

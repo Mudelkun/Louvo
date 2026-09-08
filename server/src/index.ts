@@ -23,6 +23,7 @@ import { assertConnectable, pool } from './db.js';
 import { env } from './env.js';
 import { routes } from './routes.js';
 import { storage } from './storage.js';
+import { stripeConfigured } from './stripe.js';
 
 const app = Fastify({
   logger: { level: env.logLevel },
@@ -90,7 +91,14 @@ try {
   // urls into a bucket nothing reads, and every symptom of that appears three
   // hops away — as a job that never leaves `awaiting_upload`.
   app.log.info(
-    { previews: !!(storage && env.previews.falKey), bucket: env.previews.storage?.bucket ?? null },
+    {
+      previews: !!(storage && env.previews.falKey),
+      bucket: env.previews.storage?.bucket ?? null,
+      // Said out loud for the same reason the bucket is: a key added to a `.env`
+      // under a running process is not read, and the only other place that shows
+      // is a website quietly saying nothing can be bought.
+      checkout: stripeConfigured(),
+    },
     'ready',
   );
 } catch (error) {

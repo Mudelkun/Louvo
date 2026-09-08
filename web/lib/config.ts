@@ -42,23 +42,51 @@ export const SITE_URL =
   'http://localhost:3000';
 
 /**
- * Whether sign-in is wired up.
+ * Whether Clerk is configured, which decides how this browser signs in.
  *
- * Clerk is the plan and is not implemented yet, so this is false everywhere
- * today and the account surface says so plainly rather than showing a button
- * that does nothing. `lib/auth.ts` is the seam.
+ * This flag was deliberately absent while Clerk was a plan, on the argument that
+ * sign-in was a six-digit code from the API this file already names and that a
+ * second flag would only be a way for the two to disagree. The note ended by
+ * saying that when Clerk landed it would want a publishable key and this is
+ * where it would go. It has, and this is it.
+ *
+ * The old argument does not apply to what is here now, because `hasApi` and this
+ * are not about the same thing: one is whether there is a backend, the other is
+ * which of two doors it is reached through. With a key, `/sign-in` mounts
+ * Clerk's own card — Google, Apple, and Clerk's emailed code; without one the
+ * same page falls back to `<EmailCodeForm>` against `/v1/account/email-code`,
+ * signing in as provider `email`. Both end at the same route and the same
+ * adopted device.
+ *
+ * The fallback is not decoration. `<ClerkProvider>` throws outright with no
+ * publishable key, so without this flag a fresh clone of the repository — and
+ * the sandbox, which is a whole backend in memory with no keys at all — could
+ * not render a page, let alone sign anybody in.
  */
 export const hasClerk = !!trim(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
-/**
- * Whether checkout is wired up.
+/*
+ * There is no `hasStripe` here any more, and its absence is not the same story
+ * as the flag above it.
  *
- * Stripe is the plan and is not implemented yet. The pricing page is real, the
- * packs are real, and the buy button says "coming soon" rather than opening a
- * checkout that 500s — a broken payment button is worse than an absent one, the
- * same argument the landing page makes about store links in `server/src/env.ts`.
+ * `hasClerk` earns its place because it decides something about *this* bundle:
+ * whether `<ClerkProvider>` can be rendered at all. Nothing equivalent is true
+ * of payments — checkout is **hosted**, the visitor leaves for Stripe's own page
+ * and comes back, so no card field, no Stripe.js and no publishable key ever
+ * exist in this build. There is nothing here for a Stripe flag to configure.
+ *
+ * What was here read `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` to decide whether to
+ * draw a Buy button or the words "coming soon". That was a *guess about a server
+ * setting* made by a different program: the key that decides whether anybody can be
+ * charged is `STRIPE_SECRET_KEY` on the API, and a build with the publishable
+ * key set and the API without its own would have shown a button that 503s.
+ *
+ * Checkout is hosted — the visitor leaves for Stripe's own page and comes back —
+ * so the browser needs no Stripe key of any kind, and nothing in this bundle
+ * configures payments. `/v1/credits` reports `checkout: true|false` from the
+ * process that actually holds the key, in the same shape `catalogSource()`
+ * reports where the catalogue came from, and `<Pricing>` renders that answer.
  */
-export const hasStripe = !!trim(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 /** How long the browser waits on the API before calling it unreachable. */
 export const REQUEST_TIMEOUT_MS = 15_000;

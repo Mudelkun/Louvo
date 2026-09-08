@@ -230,12 +230,105 @@ export interface CreditProduct {
   credits: number;
   /** "Best value" and the like, set per row so it is not hardcoded per client. */
   badge: string | null;
+  /**
+   * What the till says, or null.
+   *
+   * The rule above is unchanged: this is **not** a price column. The server
+   * reads it from the Stripe Price the pack points at, per request, and never
+   * stores it — so there is exactly one place a price exists and it is the thing
+   * that will charge somebody. Null means no Stripe key on this deployment, no
+   * Price pointed at this pack, or Stripe unreachable for a label; all three are
+   * drawn as "price not set yet" rather than as a figure with nothing behind it.
+   *
+   * `web/lib/pricing.ts` used to hold indicative figures for exactly this and is
+   * deleted. Nothing in this repository writes a price any more.
+   */
+  price: Price | null;
+  /** Whether this pack can be bought here and now. */
+  purchasable: boolean;
+}
+
+/** Minor units, so no float ever touches an amount. */
+export interface Price {
+  amount: number;
+  currency: string;
 }
 
 export const fetchAccount = (): Promise<AccountState> => call<AccountState>('/v1/account');
 
-export const fetchCredits = (): Promise<{ credits: CreditState; products: CreditProduct[] }> =>
-  call<{ credits: CreditState; products: CreditProduct[] }>('/v1/credits');
+export interface CreditsResponse {
+  credits: CreditState;
+  products: CreditProduct[];
+  /**
+   * Whether this deployment can take money at all.
+   *
+   * The server's answer, not a `NEXT_PUBLIC_` flag in this build. Checkout is
+   * hosted — the visitor leaves for Stripe's own page — so the browser needs no
+   * key of its own, and a build guessing at a server setting is the mistake
+   * `hasClerk` was deleted for. Same shape as `catalogSource()`: the state is
+   * reported rather than assumed.
+   */
+  checkout: boolean;
+}
+
+export const fetchCredits = (): Promise<CreditsResponse> => call<CreditsResponse>('/v1/credits');
+
+// ---------------------------------------------------------------------------
+// Buying
+// ---------------------------------------------------------------------------
+
+/**
+ * Starts a purchase, and answers with somewhere to send the browser.
+ *
+ * Two things it does not do, both deliberate. It sends **no price and no
+ * amount** — the pack id is the whole request, and what it costs is settled
+ * between the server and Stripe, so a page cannot ask to be charged less.
+ * And it sends a **path**, never a url: `success_url` is a link the payer is
+ * sent to from Stripe's own domain immediately after entering card details,
+ * which is as trustworthy a moment as a phishing page ever gets, so the origin
+ * is the server's to decide.
+ *
+ * The path is where the visitor was standing. Somebody who ran out of credits on
+ * a haircut comes back to that haircut with their length and texture intact,
+ * rather than to a balance page and the job of finding the cut again.
+ */
+export const createCheckout = (productId: string, returnPath?: string): Promise<{ url: string; sessionId: string }> =>
+  call<{ url: string; sessionId: string }>('/v1/checkout/session', {
+    method: 'POST',
+    body: JSON.stringify({ productId, returnPath }),
+  });
+
+/**
+ * Back from Stripe: did that work, and are the credits on the account yet?
+ *
+ * This exists for a two-second race and not for a security property. The webhook
+ * is the authority and will arrive; this asks the server to read the session
+ * back from Stripe *now* so the balance is right by the time the page repaints,
+ * rather than showing somebody who has just paid their old number under a
+ * spinner. `applied: 'duplicate'` is the good case as often as `'granted'` is —
+ * it means the webhook won the race.
+ */
+export interface CheckoutConfirmation {
+  paid: boolean;
+  applied: string;
+  /**
+   * Previews this purchase was worth, from `credit_products` rather than from
+   * the difference between two balances. The `+5` the banner shows and the
+   * distance the header's count-up travels are both this number.
+   *
+   * It has to come from the server because a return from Stripe is a fresh page
+   * load: the first balance this tab ever reads may already include the pack, so
+   * anything computed here would be zero whenever the webhook was quick.
+   */
+  purchased: number;
+  credits: CreditState;
+}
+
+export const confirmCheckout = (sessionId: string): Promise<CheckoutConfirmation> =>
+  call<CheckoutConfirmation>('/v1/checkout/confirm', {
+    method: 'POST',
+    body: JSON.stringify({ sessionId }),
+  });
 
 export interface CreditHistoryEntry {
   kind: string;
@@ -247,6 +340,162 @@ export interface CreditHistoryEntry {
 
 export const fetchCreditHistory = (): Promise<{ history: CreditHistoryEntry[] }> =>
   call<{ history: CreditHistoryEntry[] }>('/v1/credits/history');
+
+// ---------------------------------------------------------------------------
+// What was paid
+// ---------------------------------------------------------------------------
+
+/**
+ * One payment. Mirrors `PurchaseRecord` in `server/src/purchases.ts`.
+ *
+ * `amount` is in minor units and pairs with `currency` — the same shape `Price`
+ * has, deliberately, so `formatPrice` renders both without a second formatter.
+ * Either may be null on a purchase made through an app store that reported no
+ * price, which is why `formatPrice` is never called on this without checking.
+ */
+export interface Purchase {
+  id: string;
+  store: string;
+  productId: string;
+  credits: number;
+  amount: number | null;
+  currency: string | null;
+  status: 'granted' | 'revoked';
+  at: number;
+  /** Whether an invoice can be asked for. False for app-store purchases. */
+  documented: boolean;
+}
+
+export interface PurchaseHistory {
+  purchases: Purchase[];
+  /** Per currency, because two currencies cannot be added together. */
+  spent: Price[];
+  credits: number;
+  /** Purchases with no amount recorded, and so absent from `spent`. */
+  unpriced: number;
+}
+
+export const fetchPurchases = (): Promise<PurchaseHistory> => call<PurchaseHistory>('/v1/purchases');
+
+/**
+ * Where the document for one payment lives, asked for at the moment it is
+ * wanted.
+ *
+ * A url rather than the bytes: the invoice is Stripe's PDF on Stripe's domain,
+ * and the server neither proxies nor stores the address — see `paymentDocument`
+ * in `server/src/stripe.ts`. `kind` is honest about which of the two came back,
+ * so a hosted receipt is never labelled an invoice.
+ */
+export interface PaymentDocument {
+  kind: 'invoice' | 'receipt';
+  url: string;
+  number: string | null;
+}
+
+export const fetchInvoice = (purchaseId: string): Promise<PaymentDocument> =>
+  call<PaymentDocument>(`/v1/purchases/${encodeURIComponent(purchaseId)}/invoice`);
+
+// ---------------------------------------------------------------------------
+// Sign-in
+// ---------------------------------------------------------------------------
+
+/**
+ * The three account calls, and one thing they share: **there is no session
+ * token.**
+ *
+ * Signing in *adopts this browser's device* — the server sets `devices.user_id`
+ * on the device secret it already trusts, which is the column
+ * `003_previews.sql` created on day one with a comment predicting exactly this.
+ * So there is nothing to store here, nothing to refresh and nothing that can
+ * expire out of step with the device. `Authorization: Device <secret>` is still
+ * the only credential this browser holds, before and after.
+ *
+ * There are two providers here and they are not alternatives to each other.
+ * **Clerk is the web's sign-in wherever it is configured** — it is the one that
+ * can offer a Google button, and routing every browser sign-in through it is
+ * what stops one person ending up with two accounts by arriving through two
+ * doors. `email` is the fallback for a deployment with no Clerk keys, which is
+ * what keeps a fresh checkout and the sandbox able to sign in at all.
+ *
+ * Apple and Google are the app's. `server/src/accounts.ts` verifies all four
+ * identically, so adding one was a token from somewhere else handed to the same
+ * route rather than a second sign-in system.
+ */
+
+/**
+ * Asks the server to mail a code.
+ *
+ * `devCode` comes back **only** from a deployment that set `EMAIL_DEV_ECHO` and
+ * has no mail provider — the sandbox does, so a local checkout can sign in with
+ * no Resend key. It is a development affordance and a real hole, which is why
+ * the server refuses to echo whenever it can actually send.
+ */
+export const requestEmailCode = (email: string): Promise<{ sent: boolean; devCode?: string }> =>
+  call<{ sent: boolean; devCode?: string }>('/v1/account/email-code', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+
+/**
+ * The account state, plus whether this sign-in was the one that granted the
+ * welcome credit.
+ *
+ * `bonusGranted` is the server's answer rather than a comparison of balances
+ * before and after: the balance moves for other reasons — a preview settling in
+ * another tab — and inferring a grant from a number going up would eventually
+ * congratulate somebody for a refund.
+ */
+export interface SignInResult extends AccountState {
+  bonusGranted?: boolean;
+}
+
+export const signInWithCode = (email: string, code: string): Promise<SignInResult> =>
+  call<SignInResult>('/v1/account/sign-in', {
+    method: 'POST',
+    body: JSON.stringify({ provider: 'email', email, token: code }),
+  });
+
+/**
+ * The same route, with a Clerk session token instead of a mailed code.
+ *
+ * This is the whole of the Clerk integration on our side, and its smallness is
+ * the point: Clerk establishes *who somebody is*, and this hands that proof to
+ * the route that already knew what to do with one. The server verifies the JWT
+ * against Clerk's published JWKS exactly as it verifies Apple's and Google's,
+ * then adopts this browser's device secret and grants the welcome credit.
+ *
+ * The address is sent as a *label*, not as a credential. Clerk's default
+ * session token carries no email claim at all, and the server prefers the signed
+ * one whenever a JWT template supplies it — see `verifyClerk`. The identity is
+ * always the signed `sub`, so what a client could lie about here is the name on
+ * its own account and nothing else.
+ *
+ * Note what does **not** happen. No Clerk token is stored, no session is kept
+ * here, and nothing downstream of this call knows Clerk exists —
+ * `Authorization: Device <secret>` remains the only credential this browser
+ * holds, before and after. Clerk's own session cookie is Clerk's business, and
+ * losing it signs somebody out of Clerk without signing them out of Luvo, which
+ * is why `ClerkBridge` re-adopts rather than assuming.
+ */
+export const signInWithClerk = (
+  token: string,
+  { email, displayName }: { email?: string | null; displayName?: string | null } = {},
+): Promise<SignInResult> =>
+  call<SignInResult>('/v1/account/sign-in', {
+    method: 'POST',
+    body: JSON.stringify({ provider: 'clerk', token, email, displayName }),
+  });
+
+/**
+ * Sign out.
+ *
+ * One update on the server and nothing else here. The saved looks in this
+ * browser's database were never the account's to clear, and the credits stay on
+ * the account waiting for the next sign-in — which is the entire reason an
+ * account exists.
+ */
+export const signOut = (): Promise<AccountState> =>
+  call<AccountState>('/v1/account/sign-out', { method: 'POST' });
 
 // ---------------------------------------------------------------------------
 // Previews
