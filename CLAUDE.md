@@ -53,9 +53,11 @@ page in front of a five-step run, and the catalogue's white studio plates sit on
 under a display serif. It exists because a
 web release is a deploy rather than a submission, because fifty-six named haircuts on indexable
 pages is fifty-six entry points a binary does not have, and because Stripe takes ~3% where the
-stores take 15-30%. Clerk and Stripe are **planned and not implemented**; both say so on screen
-rather than showing a button that does nothing. `docs/web.md` has the design and `web/README.md`
-the operational detail.
+stores take 15-30%. **Sign-in is real, and it is a page rather than a dialogue** — Clerk's card
+where there is a key for it and a mailed six-digit code where there is not — and
+**Stripe is real and is a hosted checkout** — the visitor leaves for Stripe's own page, so this
+build holds no publishable key and no card field. `docs/web.md` has the design and
+`web/README.md` the operational detail.
 
 Still simulated: favourites and saved looks (device-local).
 
@@ -82,6 +84,10 @@ npm run sandbox               # the whole backend, in memory: no Railway, no R2,
 npm run sandbox:drive scenario # the credit story end to end over HTTP, asserted — free
 npm run catalog:publish:dry   # transcode + report; uploads nothing, writes nothing — free
 npm run catalog:publish       # metadata into Postgres, imagery into R2
+
+# Stripe. See docs/web.md and server/.env.example.
+npm --prefix server run stripe:setup -- --list   # which pack points at which Price — free
+npm --prefix server run stripe:setup             # create the missing Products and Prices
 
 # The website. See web/README.md.
 npm run web:dev               # Next dev server on :3000 (syncs web/lib/contract/ first)
@@ -149,8 +155,9 @@ Colour is not a property of a hairstyle and is not generated. Every mannequin �
 ## Planned stack
 
 - **Mobile:** React Native with Expo (iOS + Android)
-- **Web:** Next.js (`web/`), on the same API. Sign-in is **Clerk** and payments are **Stripe**
-  there, rather than the app's Apple/Google sign-in and RevenueCat — neither is implemented yet.
+- **Web:** Next.js (`web/`), on the same API. Sign-in is a **mailed six-digit code** (Resend),
+  with **Clerk** as a second provider on the same route; payments are **Stripe Checkout** there
+  rather than RevenueCat, hosted, with both keys on the server.
 - **Backend:** Node.js API server, hosted on Railway (database also on Railway)
 - **AI image generation:** Fal.ai — used both for the per-user hairstyle previews and for generating the catalog's mannequin images
 
@@ -401,14 +408,132 @@ looking exactly like a slow queue (`node server/scripts/preview-cors.mjs https:/
 `SHARE_BASE_URL` should point at the site rather than at the API host, or minted links open the
 app's install landing page instead of a hairstyle.
 
-**Clerk and Stripe are planned and not implemented**, and both say so on screen rather than
-showing a button that does nothing. `AccountContext` is the sign-in seam and its header
-describes the intended shape: exchange a Clerk session for `POST /v1/account/sign-in`, which
-adopts the browser's device rather than issuing a second token — the server already does that
-for Apple and Google, and `devices.user_id` is the column it sets. `web/lib/pricing.ts` holds
-indicative prices **and is deleted** when a Stripe Price lookup replaces it: `credit_products`
-has no price column and the API never sends one, so the till is the authority there exactly as
-it is on a store. The packs themselves are already real rows from `/v1/credits`.
+**Sign-in is a page, not a dialogue, and it is `/sign-in` and `/sign-up`.**
+`web/components/auth/AuthScreen.tsx` builds both: Clerk's own card where there is a publishable
+key, and `<EmailCodeForm>` — an address and a six-digit code against our own API — where there
+is not, which is what keeps a fresh checkout and the sandbox able to sign in with no keys at
+all. It was a modal, and the argument for that was `<TopUpDialog>`'s and was real: answering a
+two-field errand with a navigation loses the cut, the length and the texture. What it cost was
+the rest — the most consequential form on the site in a box a stray click dismissed, with no url
+to come back to and nothing to link to from an email, reading as something that had interrupted
+you rather than as somewhere you had gone.
+
+**`?next=` is what the modal was actually protecting.** Every door into sign-in carries the path
+it was pressed on (`useReturnPath` in `components/AuthButtons.tsx`) and the visitor is put back
+on it — Clerk through `fallbackRedirectUrl`, the mailed code through its own confirmation, and
+`<Pricing>` additionally through `?buy=<pack>`, so a purchase interrupted by sign-in resumes on
+the way back. `safeNext` refuses anything not starting with a single `/`, the same rule
+`checkout.ts` applies to Stripe's return. The one thing that does not survive the trip is a
+photograph uploaded but not yet submitted: it is an object url in the tab's memory. The answers
+about it are in the session and do come back.
+
+**The page is one centred column.** A second one beside the form — what Luvo is, in three
+points — was written and then removed: the copy that belongs there is still being decided, and
+whatever lands there goes in `AuthScreen`'s own column rather than inside Clerk's card. Clerk
+draws that card and **is not restyled**: it carries its own title and its own back link
+between steps, and hiding its `header` to remove the duplicated heading would take that back
+link with it. `[[...sign-in]]` is an optional catch-all because the card is not one screen —
+verification, factor two and the SSO tail are child paths. `/account/profile` mounts
+`<UserProfile />` the same way, for the same reason: one kind of surface for one kind of errand.
+
+There is no separate sign-up without Clerk, because there is no separate route — `upsertAccount`
+creates the account when the identity is new and finds it when it is not, and a first sign-in
+carries `grantSignupBonus`, which is why the confirmation names the balance rather than
+navigating away.
+
+**Signing out is in the header**, under `<AccountMenu>` — the account mark, which is the Clerk
+profile photograph where the identity came with one (`hasImage`, never `imageUrl`, which is
+never empty) and the initial where it did not. It was only on `/account`, which made leaving the
+one errand on the site somebody had to navigate to do.
+
+**Signing in adopts the browser's device rather than issuing a second token**, which is why
+neither the provider nor the dialog stores anything: the server sets `devices.user_id` on the
+device secret it already trusts — the column `003_previews.sql` created on day one — so
+`Authorization: Device <secret>` remains the only credential a browser holds, before and after.
+`signIn` and `signOut` set the state from the **server's own reply** rather than adjusting the
+previous one, which is the same rule that forbids an optimistic balance anywhere else here.
+
+**A deployment with no `RESEND_API_KEY` cannot mail a code**, and it says so — the route answers
+`email_unconfigured` and the dialog reports it as this deployment's fault rather than the
+visitor's. `EMAIL_DEV_ECHO=true` hands the code back in the response instead, prefilled and
+labelled as a development setting, and the server refuses to echo whenever a mail provider is
+configured. That is what makes the sandbox a complete sign-in with no key at all.
+
+**Stripe is built, it is hosted Checkout, and there is no publishable key anywhere.** The
+visitor leaves for Stripe's own page and comes back, so no card field, no Stripe.js and no
+`NEXT_PUBLIC_STRIPE_*` exist in this build — both credentials are secrets on the API, and our PCI
+surface is SAQ A. `server/src/stripe.ts` is four calls and a form encoder rather than the SDK, for
+the reason `mail.ts` is plain `fetch` and `storage.ts` signs SigV4 by hand. `docs/web.md` has the
+design; six things decide any change to it:
+
+- **The price is a Stripe Price and there is no copy of it here.** `credit_products` gained
+  `stripe_price_id`, which is a *pointer*: the API reads the Price when it lists the packs and
+  sends the amount as a label, cached a minute, never stored. `web/lib/pricing.ts` — the
+  indicative figures under a disabled button — **is deleted**, and `web/lib/money.ts` is
+  formatting with no numbers in it. `server/scripts/stripe-setup.mjs` creates the Prices and
+  writes the pointers, and it is a script rather than a migration because test and live are two
+  Stripe accounts with two sets of Price ids behind one schema.
+- **The webhook is the authority and the confirmation is the timing.** Stripe redirects the payer
+  back a second or two before the delivery lands, and showing somebody who has just paid their old
+  balance is the worst possible moment to look broken. `POST /v1/checkout/confirm` reads the
+  session **from Stripe** rather than trusting the browser, and both paths write a purchase row
+  keyed on the PaymentIntent — so whichever arrives second is caught by `purchases_transaction_idx`
+  and grants nothing. That index is load-bearing rather than defensive. The alternative was
+  polling `/v1/credits` the way the phone waits on RevenueCat, which cannot tell "the webhook has
+  not arrived" from "the payment failed".
+- **The signature is the whole security model, and it needs the raw bytes.** `JSON.parse` then
+  `JSON.stringify` is not the same string, so `stripeWebhookRoutes` is a separate plugin with its
+  own buffer content-type parser — encapsulation is what keeps that off `/v1/account/sign-in`.
+  Constant-time compare, any matching `v1` (a rotation signs with both), and a five-minute
+  timestamp window so a captured delivery cannot be replayed. Idempotency is deliberately *not*
+  in that check: a legitimately retried delivery is signed correctly and must be accepted, then
+  found to be a duplicate by the indexes.
+- **The credit count is looked up, never read off the payload.** `credit_products` is the row this
+  service owns; the metadata on a session is for the Stripe dashboard and for reconciliation. A
+  session that claims a thousand credits grants what the pack is worth.
+- **The browser sends a return *path*, never a url.** `success_url` is a link the payer follows
+  from Stripe's own domain moments after typing card details, which is as trustworthy as a
+  phishing target ever gets, so the origin is the server's (`CHECKOUT_RETURN_URL`) and
+  `//evil.example` is refused rather than sanitised. The path is where the visitor was standing,
+  so somebody who topped up on a haircut comes back to that haircut with its length and texture
+  intact — which is why `<CheckoutBanner>` is mounted in the root layout rather than on
+  `/account`: most purchases start in `<TopUpDialog>` over a cut, so the receipt has to be able to
+  appear anywhere.
+- **Whether checkout is open is the server's answer.** `/v1/credits` reports `checkout:
+  true|false` and `hasStripe` is gone from `lib/config.ts` — it read a publishable key in *this*
+  build to decide something about a key on the *API*, which a build with one and not the other
+  would have shown as a button that 503s. Same rule as `catalogSource()`: reported, never assumed.
+- **The account's email is prefilled and Stripe holds it read-only.** Read from `users` inside
+  the route rather than taken from the request, for the reason `client_reference_id` is, so the
+  receipt reaches the inbox the credits are held against rather than one typed once at a till. An
+  account with no address — Apple with the email hidden, a Clerk token with no claim — sends no
+  field and Stripe asks.
+- **`/account` lists what was paid, under the packs, and it is not the credit ledger.** A total
+  spent, the previews it bought, and one row per completed checkout —
+  `<PurchaseHistory>` over `GET /v1/purchases`. The ledger was cut from this page on purpose and
+  stays cut: one row per *movement of a credit* is a support tool that reads as a bank statement,
+  where one row per *transaction* is what somebody arrives asking for. The total is the server's
+  and `spent` is **a list, per currency**, because two currencies cannot be added without a rate
+  and a rate is a second price. A refunded row is shown and not counted — hiding a reversal
+  leaves a history nobody can reconcile, counting it overstates what we were paid — and
+  `check-stripe.mjs` asserts both halves.
+- **The invoice is Stripe's document, fetched at the press and never stored.** `invoice_creation`
+  puts a numbered PDF behind each payment, because an invoice needs a sequence, a tax
+  registration and an address that this service does not hold and should not start holding.
+  `GET /v1/purchases/:id/invoice` answers with a **url**: no bytes through this process, nothing
+  cached, since a stored `invoice_pdf` is a link that outlives what it pointed at. It is not
+  retroactive — a payment taken before it was on falls back to the charge's hosted receipt and
+  says `kind: 'receipt'`, and the row re-labels its own button rather than calling a receipt an
+  invoice. A purchase id is not a bearer token (`where id = $1 and user_id = $2`), and an
+  app-store row carries `documented: false` so no button is drawn over a receipt that lives in
+  somebody's Apple account. **There is no card on file to manage** — a pack is one payment with
+  `setup_future_usage` unset — so the page says that instead of offering to manage nothing.
+
+`server/scripts/check-stripe.mjs` runs in `npm run check` with no key and no network, and
+`npm run sandbox` serves a **miniature Stripe from its own process** — Buy opens a stand-in
+checkout, Pay delivers a correctly signed `checkout.session.completed` to the deployment's own
+webhook, and `POST /__sandbox/stripe/refund` does the other half. `STRIPE_API_BASE` is what makes
+that possible and is the only test hook in the service; never set it on a real deployment.
 
 **The result page is two columns, and what to try next is one of them.** The preview on the
 left, the cut's description and four suggestions on the right — beside the picture from `lg`
@@ -423,18 +548,24 @@ narrowed by the gender and hair type recorded on **the look** rather than the on
 session, for the reason `TryOnFlow` re-asks both on every upload: those answers are about the
 photograph, and a session that has moved on to a different face would narrow the row to the
 wrong catalog. From `sm` they still sit below "About this cut", because that heading names the
-cut in the picture and four other haircuts above it would leave it pointing at whichever one the
+cut in the picture and other haircuts above it would leave it pointing at whichever one the
 eye landed on last — but on a phone that ordering put them under two screens of scroll, which is
-where suggestions go unread. Below `sm` they come straight after the buttons and **drift**, right
-to left, on the front page's own marquee: four cards two-up is two rows and the second is under
-the fold, where a row with one card always arriving is not. It stops under the pointer, since
-every card is a link, and reduced motion gets a still scrollable row rather than a paused one.
-**That row is `<SuggestionShelf>`, and the style page's *In the same direction* is the same
-component** — one heading, one "All cuts" link, one grid and one drift. Two places offering a
+where suggestions go unread, so below `sm` they come straight after the buttons.
+
+**The row is `<SuggestionShelf>`, the style page's *In the same direction* is the same component,
+and it drifts at every width** — left to right, on the front page's own marquee, the same
+keyframes run backwards. It was a static four-card grid from `sm` and a drifting row only below
+it, on the argument that four cards a laptop can already see whole have nothing to gain from
+moving. That was true about the *cards* and wrong about the *catalogue*: four is a sample, and a
+row of exactly four reads as the four this page has rather than as the shelf it is standing on —
+the same mistake the front page's twelve stationary plates made before they became the whole
+catalogue, moving. So it asks for `SUGGESTION_COUNT` (ten) and always has one more arriving. It
+stops under the pointer, since every card is a link, and reduced motion gets a still scrollable
+row rather than a paused one. One heading, one "All cuts" link, one rail: two places offering a
 next haircut in two different shapes read as two features rather than as the catalogue's own
 "and then?", and a marquee written twice is two chances for the phone and the laptop to
 disagree. Each page owns only the frame: the result page its column order and the sentence
-about the photograph, the style page its rule and the space below the fold. There is no such
+about the photograph, the style page its rule and the space under the plate. There is no such
 sentence on the style page, because the button above it has already said what a preview costs.
 The preview is capped at `42svh` on a phone to make the room — still the largest thing on the
 page by a wide margin, just no longer the only thing on it.
@@ -494,6 +625,24 @@ thing naming what was done. The placeholder lost its three text lines in the sam
 skeleton standing in for prose that never arrives is the layout lying about itself. Picture and
 controls now land on one screen, which is the same argument the app's `<ControlCard>` makes about
 its own fold, reached on a different device.
+
+**On a laptop the picture column *is* the plate, and the plate is capped by the window's height**
+— the same argument as the phone's fold, reached on a different device. A square plate across a
+730px column is a 730px picture, and under it four angle tiles, a rule and a heading, so *In the
+same direction* began below the fold on every laptop, which is exactly where a suggestion goes
+unread. Nothing was bought by the extra 300px: the subject is one head on a white ground and at
+`clamp(280px,38svh,440px)` it is still the largest thing on the page by a wide margin.
+
+Capping the *picture* was the first attempt and it is the instructive failure: the column was
+still `1fr`, so a 730px track held a 340px plate and the page gained a 370px hole down its middle.
+The cap belongs on the **grid track** (`--plate`), which leaves the column no width to sit the
+picture in the middle of and hands the tiles beneath the plate's width for free. `--measure`
+(`--plate` + the gap + the 430px detail column) is then the width of the whole page — the back
+link, both columns, the rule and the shelf — centred in the window, so one left edge runs the
+length of the page and there is nothing left over to distribute. Both are set once, as custom
+properties on `StyleDetail`'s own wrapper: `StyleDetailSkeleton` is a descendant and inherits
+them, so the placeholder is laid out on the measure the catalogue lands in and the page does not
+jump when it does.
 
 **The style page has a way back at the top.** Its back link is `/styles` rather than the
 browser's own Back, since a search result and a shared link both land there with nothing behind

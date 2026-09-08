@@ -175,6 +175,34 @@ function flag(name: string, fallback: boolean): boolean {
 const credits = {
   enforced: flag('CREDITS_ENFORCED', true),
   freeGenerations: integer('FREE_GENERATIONS', 2),
+
+  /**
+   * The free allowance granted to a *browser*, which is smaller than a phone's.
+   *
+   * Not an inconsistency — the two anchors are not equally strong. A phone keeps
+   * its secret in the platform keystore, which on iOS outlives a reinstall, so
+   * two free generations there are two per device in a sense that holds up. A
+   * browser keeps its secret in `localStorage`, which is cleared by a menu item
+   * and absent in a private window, so the same number is worth much less and
+   * costs the same money. One, plus one more for signing in, reaches the same
+   * two for anybody who stays — and asks for an account from the person who
+   * clears their storage to avoid one.
+   */
+  webFreeGenerations: integer('WEB_FREE_GENERATIONS', 1),
+
+  /**
+   * Credits granted once, the first time an account signs in.
+   *
+   * Granted into the *balance* rather than as another install anchor, and that
+   * is forced rather than chosen: `allowanceFor()` takes the minimum across a
+   * device's anchors, deliberately, so adding an anchor to reward a sign-in
+   * would award zero. See `006_web_auth.sql`.
+   *
+   * One, so that somebody who has not spent their anonymous preview has two in
+   * total afterwards — the same number the app has always offered, reached by
+   * giving something away before asking for anything.
+   */
+  signupBonus: integer('SIGNUP_BONUS_CREDITS', 1),
 } as const;
 
 /**
@@ -193,6 +221,31 @@ const credits = {
 const auth = {
   appleAudiences: list('APPLE_AUDIENCES').length ? list('APPLE_AUDIENCES') : [process.env.IOS_BUNDLE_ID ?? 'com.luvoai.luvo'],
   googleAudiences: list('GOOGLE_CLIENT_IDS'),
+
+  /**
+   * Clerk, which is how the *web* signs in. The app keeps Apple and Google.
+   *
+   * Only the issuer is needed, and that is worth noticing: a Clerk session token
+   * is a JWT verified against the issuer's published JWKS, exactly as Apple's
+   * and Google's are, so this server needs no Clerk API key at all. The secret
+   * key belongs to the Next.js app, and a copy of it here would be a credential
+   * held for nothing.
+   *
+   * `CLERK_ISSUER` is the Frontend API origin — `https://<slug>.clerk.accounts.dev`
+   * in development, or the custom domain in production. With it unset, a Clerk
+   * sign-in answers `clerk_unconfigured` rather than accepting a token it cannot
+   * verify, which is the only safe direction for an auth setting to fail in.
+   */
+  clerkIssuer: optional('CLERK_ISSUER'),
+  /**
+   * Accepted `azp` values, if the deployment wants to pin them.
+   *
+   * Clerk session tokens carry no `aud` by default; the authorised-party claim
+   * is the origin the token was minted for. Empty means "do not check", which is
+   * safe here because the issuer and signature already establish the token came
+   * from this Clerk instance.
+   */
+  clerkParties: list('CLERK_AUTHORIZED_PARTIES'),
 
   emailCodeTtlSeconds: integer('EMAIL_CODE_TTL_S', 600),
   emailCodeAttempts: integer('EMAIL_CODE_ATTEMPTS', 5),
@@ -229,6 +282,106 @@ const auth = {
   ignoreSandboxPurchases: flag('REVENUECAT_IGNORE_SANDBOX', false),
 } as const;
 
+/**
+ * Stripe, which is how the *web* is paid. The app keeps StoreKit and Play.
+ *
+ * Two keys and nothing else, and both are secret — there is deliberately no
+ * publishable key anywhere in this repository. Checkout is **hosted**: the
+ * visitor leaves for Stripe's own page and comes back, so no card field, no
+ * Stripe.js and no client key ever exist in the browser bundle. That is a
+ * smaller integration and a much smaller PCI surface, and it is why
+ * `web/lib/config.ts` has no `hasStripe` flag: whether a pack can be bought is
+ * something this server knows and the browser is told, exactly as it is told
+ * whether previews are configured.
+ *
+ * Every piece degrades to a refusal rather than a guess. With no
+ * `STRIPE_SECRET_KEY` the checkout route answers `checkout_unconfigured`, the
+ * packs are listed with no prices, and the site says checkout is not open on
+ * this deployment — which is true, and is the same shape as
+ * `previews_unconfigured`.
+ *
+ * `STRIPE_WEBHOOK_SECRET` is separate from the API key and is not optional in
+ * production: it is the *only* thing standing in front of an endpoint that adds
+ * credits. Without it the webhook refuses every delivery, for the reason the
+ * RevenueCat one does.
+ */
+const stripe = {
+  secretKey: optional('STRIPE_SECRET_KEY'),
+  webhookSecret: optional('STRIPE_WEBHOOK_SECRET'),
+
+  /**
+   * Pinned rather than left to the account's dashboard default, so a response
+   * shape cannot move under a running deployment with no commit behind it.
+   */
+  apiVersion: process.env.STRIPE_API_VERSION ?? '2024-06-20',
+
+  /**
+   * Where Stripe lives. A test hook, and the only reason it exists: the sandbox
+   * serves a miniature Stripe from its own process, so a complete purchase can
+   * be walked end to end with no key, no network and no money. Never set this
+   * on a real deployment.
+   */
+  apiBase: (optional('STRIPE_API_BASE') ?? 'https://api.stripe.com').replace(/\/$/, ''),
+
+  /**
+   * Where a finished checkout comes back to.
+   *
+   * The browser sends a *path* rather than a url, and this is the origin it is
+   * resolved against — which is what makes an open redirect impossible rather
+   * than merely unlikely. Falls back to `SHARE_BASE_URL`, since a deployment
+   * that has told the world where its site is has already answered this.
+   */
+  returnUrl: (optional('CHECKOUT_RETURN_URL') ?? optional('SHARE_BASE_URL') ?? '').replace(/\/$/, '') || null,
+
+  /** Stripe collects and remits where it must; the tax on a pack is not ours to compute. */
+  automaticTax: flag('STRIPE_AUTOMATIC_TAX', false),
+
+  /**
+   * Whether Checkout issues a real invoice for each payment.
+   *
+   * On by default, because "download my invoice" is a thing a buyer is entitled
+   * to ask for and Stripe is the only party here that can produce a document
+   * with a number on it — we hold no addresses, no tax registration and no
+   * sequence. Turning it off leaves the purchase and the credits exactly as they
+   * are; what is lost is the PDF, and the account page falls back to Stripe's
+   * hosted receipt for the payment, which is a weaker document rather than none.
+   */
+  invoices: flag('STRIPE_INVOICES', true),
+
+  /** How long a Price may be reused before it is read again. See `fetchPrice`. */
+  priceCacheMs: integer('STRIPE_PRICE_CACHE_MS', 60_000),
+
+  /** Stripe's own default, and the window a captured delivery stops replaying in. */
+  webhookToleranceSeconds: integer('STRIPE_WEBHOOK_TOLERANCE_S', 300),
+} as const;
+
+/**
+ * The anonymous ceiling. See `abuse.ts` for what this is and is not.
+ *
+ * The defaults are chosen against a cost rather than a threat model: a
+ * generation is about five cents, so three per bucket per day is at most fifteen
+ * cents from somebody determined to have them, and the alert exists so that
+ * "somebody determined" is a thing that gets noticed rather than discovered on
+ * an invoice.
+ */
+const anon = {
+  /** Anonymous generations per bucket per window. */
+  maxPerBucket: integer('ANON_MAX_PER_BUCKET', 3),
+  /** How long that window is. A day, so the limit reads as "today". */
+  windowSeconds: integer('ANON_WINDOW_S', 86_400),
+  /**
+   * Distinct device secrets from one bucket before an email is sent.
+   *
+   * Above the generation cap on purpose. A bucket that hits three generations is
+   * three flatmates and is uninteresting; a bucket that presents five *devices*
+   * has minted more identities than it can have used, which only really happens
+   * when somebody is clearing storage in a loop.
+   */
+  alertDevices: integer('ANON_ALERT_DEVICES', 5),
+  /** Where those alerts go. Unset, nothing is sent and nothing is logged as an error. */
+  alertEmail: optional('ABUSE_ALERT_EMAIL'),
+} as const;
+
 export const env = {
   /** Railway injects this. */
   databaseUrl: required('DATABASE_URL'),
@@ -249,6 +402,8 @@ export const env = {
 
   credits,
   auth,
+  anon,
+  stripe,
 
   /** Railway injects `PORT`; the default is only for a local run. */
   port: integer('PORT', 8080),

@@ -88,6 +88,13 @@ export async function generateMetadata({
  * wrong-image failure the variant system exists to prevent. `StyleDetail` adopts
  * them into the session once, through `useAdoptedAnswers`.
  *
+ * `buy` is the fourth and is not about the picture at all: it is a pack somebody
+ * pressed Buy on here while signed out, carried through `/sign-in` and back. The
+ * packs on this page live inside `<TopUpDialog>`, which is closed on the way
+ * back in, so `<Pricing>` — the one thing that knows how to resume a purchase —
+ * would never be mounted to notice. Handing it down reopens the dialogue over
+ * the cut the visitor was standing on, which is where the pack was pressed.
+ *
  * A server component is already handed its search params, which costs no hook,
  * no Suspense boundary and no second render.
  */
@@ -102,7 +109,7 @@ export default async function StylePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
-  const { length, gender, hairType } = await searchParams;
+  const { length, gender, hairType, buy } = await searchParams;
   return (
     <Section className="pb-24 pt-3 sm:pt-14">
       <StyleDetail
@@ -110,6 +117,7 @@ export default async function StylePage({
         length={one(length)}
         gender={one(gender)}
         hairType={one(hairType)}
+        buy={one(buy)}
       />
     </Section>
   );

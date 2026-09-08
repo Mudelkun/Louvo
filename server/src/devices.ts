@@ -64,6 +64,32 @@ export async function touchDevice(deviceId: string): Promise<void> {
   );
 }
 
+/**
+ * Whether this request came from a browser or from the app.
+ *
+ * It decides which anchor kind the device secret is registered under, and
+ * therefore how large a free allowance it is granted — a browser gets fewer,
+ * because `localStorage` is not a keystore. See `grantedFor` in `anchors.ts`.
+ *
+ * `Origin` is the signal, and it is a good one for a reason that is structural
+ * rather than lucky: browsers set it on every cross-origin request and forbid
+ * pages from overriding it, and native clients do not send it at all. The
+ * explicit header is accepted alongside it so a future same-origin deployment,
+ * where `Origin` may be absent, does not silently start granting browsers the
+ * phone's allowance.
+ *
+ * **It is not a security boundary and must not be used as one.** A script can
+ * send neither header and be granted a phone's allowance instead of a browser's
+ * — which is one extra free generation, obtained with more effort than simply
+ * clearing `localStorage`, which the anonymous ceiling in `abuse.ts` already
+ * answers. Nothing here decides whether a request is authorised; it decides how
+ * generous a first visit is.
+ */
+export function deviceKindFor(origin: unknown, client: unknown): 'device' | 'web' {
+  if (typeof client === 'string' && client.trim().toLowerCase() === 'web') return 'web';
+  return typeof origin === 'string' && origin.trim() ? 'web' : 'device';
+}
+
 export interface PushRegistration {
   token: string | null;
   platform: string | null;

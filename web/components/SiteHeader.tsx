@@ -11,10 +11,29 @@
  *   be somewhere the visitor has to go looking for. It is drawn from the server's
  *   answer only — `ready: false` shows nothing rather than showing zero, because
  *   a "0 credits" that turns out to be "not loaded yet" is the one mistake this
- *   number can make.
+ *   number can make. It is a number and `<PreviewIcon>` rather than a number and
+ *   a word, which is what pays for the next sentence: the mark carries the noun,
+ *   so the pill does not change width between "1 preview" and "12 previews" and
+ *   is narrow enough to sit in a **phone** bar, which "3 previews" was not — it
+ *   used to be `sm:` and up, with the menu behind the hamburger carrying it on a
+ *   phone, which is the one width where somebody is most likely to be about to
+ *   spend one. The room comes from `<AuthButtons collapse>`, which drops the
+ *   secondary door below `sm`.
  * - **A generation in flight is a live link back to it.** Leaving the wait
  *   costs the view, not the work, so there has to be a way back in from
  *   anywhere. Without it, navigating away reads as having lost the preview.
+ * - **Sign in *and* Sign up are both here, rather than only on `/account`.**
+ *   They are links to `/sign-in` and `/sign-up`, each carrying the path it was
+ *   pressed on so the visitor is put back where they were — which is how a page
+ *   keeps the one thing the modal these replaced was protecting. Both are shown
+ *   because they answer different questions, *I have been
+ *   here* and *I am new*; `<AuthButtons>` has the rest of that argument. Once
+ *   there is an account they become the mark for it, and the balance beside it
+ *   stops being a fact about this browser.
+ * - **So is the way out.** That mark is `<AccountMenu>`: the profile photograph
+ *   where the identity came with one, and under it the name, the address, the
+ *   account page and Sign out. Signing out lived only on `/account`, which made
+ *   leaving the one errand on this site you had to go somewhere to do.
  */
 
 import Link from 'next/link';
@@ -22,9 +41,15 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { isTerminal } from '../lib/api';
+import { BALANCE_ANCHOR_ID } from '../lib/celebrate';
+import { hasApi } from '../lib/config';
+import { useCreditRoll } from '../lib/useCreditRoll';
 import { useAccount } from '../lib/state/AccountContext';
 import { useGeneration } from '../lib/state/GenerationContext';
+import { AccountMenu } from './AccountMenu';
+import { AuthButtons } from './AuthButtons';
 import { Logo } from './Logo';
+import { PreviewIcon } from './PreviewIcon';
 
 /**
  * Two links, and both of them are places with something in them.
@@ -101,7 +126,8 @@ function PendingDot() {
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const { credits, ready } = useAccount();
+  const { credits, ready, account, usable } = useAccount();
+  const { shown, landing } = useCreditRoll(credits.total);
   const { job, savedLookId } = useGeneration();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -130,6 +156,22 @@ export function SiteHeader() {
    */
   const unfinished = !!job && (working || (job.status === 'ready' && !savedLookId));
 
+  /**
+   * Whether there is anything to sign into from here.
+   *
+   * Two conditions, both of which make the control a lie rather than a
+   * limitation if ignored: a build with no `NEXT_PUBLIC_API_URL` has no service
+   * behind it, and a browser that cannot keep its device secret — a private
+   * window, site data turned off — has no device for an account to be adopted
+   * onto, so the request would 401 on the way out. `/account` explains both in
+   * words; the header simply does not offer what it cannot do.
+   *
+   * `ready` is the third gate and it is the same rule the balance follows: the
+   * account arrives with the first successful read, so drawing this before then
+   * would show "Sign in" for a moment to somebody who already is.
+   */
+  const offerSignIn = hasApi && usable && ready;
+
   return (
     <header
       className={
@@ -137,7 +179,11 @@ export function SiteHeader() {
         (scrolled || open ? 'glass border-b border-line' : 'border-b border-transparent')
       }
     >
-      <div className="mx-auto flex h-[68px] w-full max-w-[1240px] items-center gap-6 px-5 sm:px-8 lg:px-12">
+      {/* `gap-3` below `sm`: with the balance in the bar the phone line is
+          logo, pill, door, menu, and at 360px the 24px gutter between the logo
+          and the group is the difference between fitting and the door being
+          squeezed. Nothing above `sm` changes. */}
+      <div className="mx-auto flex h-[68px] w-full max-w-[1240px] items-center gap-3 px-5 sm:gap-6 sm:px-8 lg:px-12">
         <Link href="/" className="shrink-0" aria-label="Luvo, home">
           <Logo />
         </Link>
@@ -189,16 +235,50 @@ export function SiteHeader() {
           ) : null}
 
           {ready ? (
+            /* The word is in the label rather than on screen: the mark says
+               "preview" and the number is the only thing that changes, so the
+               pill stays the same width whatever the balance is. A screen
+               reader still gets the noun, since a mark on its own is not one. */
             <Link
+              id={BALANCE_ANCHOR_ID}
               href="/account"
+              /* The label is the server's number, never the rolling one. A count
+                 that is mid-animation is a fact about a transition; announcing
+                 each step of it would read out four balances in a second. */
+              aria-label={`${credits.total} ${credits.total === 1 ? 'preview' : 'previews'} left`}
               className={
-                'hidden items-baseline gap-1.5 rounded-full bg-white/5 px-3.5 py-2 text-[12.5px] ' +
-                'text-muted ring-1 ring-inset ring-line transition-colors hover:text-ink sm:inline-flex'
+                'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 ' +
+                'text-[12.5px] text-muted ring-1 ring-inset transition-colors duration-300 ' +
+                'hover:text-ink sm:px-3.5 ' +
+                (landing ? 'bg-violet/15 ring-violet/45' : 'bg-white/5 ring-line')
               }
             >
-              <span className="tnum font-bold text-ink">{credits.total}</span>
-              {credits.total === 1 ? 'preview' : 'previews'}
+              {/* The count-up, and the pop that says the chip landed here. Both
+                  run only during a grant — see `useCreditRoll`, which is inert
+                  the rest of the time and hands back `credits.total` unchanged. */}
+              <span
+                className="tnum font-bold text-ink"
+                style={landing ? { animation: 'luvo-pop 0.5s var(--ease-out-quint)' } : undefined}
+              >
+                {shown}
+              </span>
+              <PreviewIcon
+                className={
+                  'h-[15px] w-[15px] text-violet transition-transform duration-300 ' +
+                  (landing ? 'scale-125' : '')
+                }
+              />
             </Link>
+          ) : null}
+
+          {offerSignIn ? (
+            account ? (
+              <AccountMenu email={account.email} displayName={account.displayName} />
+            ) : (
+              <div className="flex items-center gap-2">
+                <AuthButtons collapse />
+              </div>
+            )
           ) : null}
 
           <button
@@ -239,8 +319,21 @@ export function SiteHeader() {
               {unfinished && link.href === '/looks' ? <PendingDot /> : null}
             </Link>
           ))}
+          {/* No balance row here. It used to be the menu's job because the top
+              bar only had room for the words "3 previews" from `sm`; a number
+              and a mark fit at every width, so the bar carries it always and a
+              second copy in here would be one more thing to keep in step. */}
+          {/* The doors, uncollapsed — the bar drops "Sign in" below `sm` to make
+              room for the balance, and this is where it lands. Signed in there
+              is nothing to offer here: the account's own menu is in the bar. */}
+          {offerSignIn && !account ? (
+            <div className="flex items-center gap-2 pt-3">
+              <AuthButtons />
+            </div>
+          ) : null}
         </nav>
       ) : null}
+
     </header>
   );
 }

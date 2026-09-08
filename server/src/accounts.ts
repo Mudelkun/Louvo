@@ -55,7 +55,7 @@ import { newUserId } from './credits.js';
 import { query, type Queryer } from './db.js';
 import { env } from './env.js';
 
-export const PROVIDERS = ['apple', 'google', 'email'] as const;
+export const PROVIDERS = ['apple', 'google', 'email', 'clerk'] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
 export interface Account {
@@ -92,6 +92,22 @@ const jwks = {
   google: createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs')),
 };
 
+/**
+ * Clerk's key set, which is per-deployment and therefore cannot be a constant.
+ *
+ * Memoised on the issuer rather than created per request, for the reason the two
+ * above are created once: `createRemoteJWKSet` holds the cache, so a fresh one
+ * on every sign-in re-fetches the keys on every sign-in.
+ */
+let clerkJwks: { issuer: string; keys: ReturnType<typeof createRemoteJWKSet> } | null = null;
+
+function clerkKeys(issuer: string) {
+  if (clerkJwks?.issuer !== issuer) {
+    clerkJwks = { issuer, keys: createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks.json`)) };
+  }
+  return clerkJwks.keys;
+}
+
 export interface VerifiedIdentity {
   provider: Provider;
   subject: string;
@@ -126,6 +142,64 @@ async function verifyGoogle(token: string): Promise<VerifiedIdentity> {
   });
   if (!payload.sub) throw new AuthError('google_token_invalid', 'the Google token carried no subject');
   return { provider: 'google', subject: payload.sub, email: emailFrom(payload.email) };
+}
+
+/**
+ * Clerk, which is how the web signs in.
+ *
+ * Verified exactly as Apple and Google are and for the same reason: the token is
+ * a JWT, and the only thing that makes one trustworthy is a signature checked
+ * against the issuer's published keys. **No Clerk API key is involved**, which
+ * is worth noticing rather than assuming — a session token can be validated
+ * offline, so this server holds no Clerk credential at all and a leak of its
+ * environment gives nobody the ability to act as our Clerk application.
+ *
+ * The subject is Clerk's user id (`user_...`), which is stable for the life of
+ * the account and cannot be changed by its owner. Never the email: Clerk lets a
+ * user add, remove and re-primary addresses freely, so an identity keyed on one
+ * is an identity that silently becomes somebody else's.
+ *
+ * `azp` is checked only if the deployment pinned a list. Clerk session tokens
+ * carry no `aud` by default, and the authorised party is the origin the token
+ * was minted for — worth pinning in production, but the issuer and the signature
+ * are what establish the token is ours.
+ */
+async function verifyClerk(token: string, claimed: string | null): Promise<VerifiedIdentity> {
+  const issuer = env.auth.clerkIssuer;
+  if (!issuer) {
+    throw new AuthError('clerk_unconfigured', 'this deployment has no CLERK_ISSUER configured', 503);
+  }
+  const { payload } = await jwtVerify(token, clerkKeys(issuer), { issuer }).catch(() => {
+    throw new AuthError('clerk_token_invalid', 'that sign-in could not be verified');
+  });
+  if (!payload.sub) throw new AuthError('clerk_token_invalid', 'the Clerk token carried no subject');
+
+  const parties = env.auth.clerkParties;
+  if (parties.length && typeof payload.azp === 'string' && !parties.includes(payload.azp)) {
+    throw new AuthError('clerk_token_invalid', 'that sign-in came from an unrecognised origin');
+  }
+
+  // Clerk puts the primary address in whichever claim the deployment's JWT
+  // template names, and **the default template carries none at all** — so the
+  // client's own reading of it is accepted as a last resort.
+  //
+  // That is safe for a reason worth stating rather than assuming: the email is
+  // never the identity here. The identity is `sub`, which is signed, and
+  // `upsertAccount` looks up on `(provider, subject)` and never on an address —
+  // so a client that lied about its email would be lying about the *label on its
+  // own account* and could not reach anybody else's. It is the same distinction
+  // `accounts.ts` already draws for Apple's private relay: a believed email is a
+  // label, a verified subject is an identity.
+  //
+  // The signed claims are still preferred, so a deployment that adds a JWT
+  // template stops depending on the client without any change here.
+  const email =
+    emailFrom(payload.email) ??
+    emailFrom((payload as Record<string, unknown>).email_address) ??
+    emailFrom((payload as Record<string, unknown>).primary_email_address) ??
+    emailFrom(claimed);
+
+  return { provider: 'clerk', subject: payload.sub, email };
 }
 
 const emailFrom = (value: unknown): string | null =>
@@ -218,6 +292,7 @@ export interface SignInRequest {
 export async function verifyIdentity(request: SignInRequest): Promise<VerifiedIdentity> {
   if (request.provider === 'apple') return verifyApple(request.token);
   if (request.provider === 'google') return verifyGoogle(request.token);
+  if (request.provider === 'clerk') return verifyClerk(request.token, request.email ?? null);
 
   const email = normaliseEmail(request.email);
   if (!email) throw new AuthError('invalid_email', 'that does not look like an email address', 400);

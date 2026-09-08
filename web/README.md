@@ -59,6 +59,7 @@ phone, including the parts that look like they would need work:
 | Watching | `GET /v1/previews/:id` | Polled every 2s while a job is open |
 | Collecting | `POST /v1/previews/:id/collected` | Called **after** the download. This is the delete |
 | Sharing | `POST /v1/shares`, `POST /v1/events` | A link names a hairstyle, never an image |
+| Buying | `POST /v1/checkout/session` → Stripe's own page → `POST /v1/checkout/confirm` | Hosted checkout; no card details reach this app |
 
 **Authentication is the device header**, `Authorization: Device <secret>`, and it
 works unchanged in a browser: 32 random bytes minted on first use. The one honest
@@ -227,19 +228,90 @@ start lands on people who have twenty.
 
 **Every degraded outcome is reported.** The footer says whether the catalogue
 came from the API or from this browser's offline copy; the packs on `/account` say
-checkout is not open; the account page says sign-in is not built. That is the
-same rule `catalogSource()`, `generationSource()` and `shareSource()` follow in
-the app.
+checkout is not open; a deployment that cannot mail a sign-in code says so in the
+dialog rather than failing silently. That is the same rule `catalogSource()`,
+`generationSource()` and `shareSource()` follow in the app.
+
+---
+
+## Sign-in
+
+An email address and a six-digit code — `components/SignInDialog.tsx`, raised
+from the header and from `/account`, opening over the page rather than at a
+route. There is no separate sign-up: the code creates the account if the address
+is new, and a first sign-in carries the welcome credit.
+
+It needs one thing on the **API** side, not here:
+
+| Server setting | What happens |
+| --- | --- |
+| `RESEND_API_KEY` (+ `EMAIL_FROM`) | The code is emailed. This is production. |
+| `EMAIL_DEV_ECHO=true` | The code comes back in the API response, prefilled in the dialog and labelled as a development setting. Refused whenever `RESEND_API_KEY` is set. `npm run sandbox` turns it on, so a local checkout signs in with no key at all. |
+| Neither | `/v1/account/email-code` answers 503 and the dialog says sign-in email is not working on this deployment. |
+
+There is no `NEXT_PUBLIC_*` flag for sign-in and there should not be one:
+`hasApi` is the whole condition, and a second flag is only a way for the two to
+disagree.
+
+---
+
+## Buying previews
+
+Stripe, and **hosted checkout** — the visitor leaves for Stripe's own page and
+comes back. The consequence for this app is that there is nothing to configure
+here at all: no card field, no Stripe.js, no publishable key, no
+`NEXT_PUBLIC_STRIPE_*`. Every Stripe credential in the system is a secret on the
+API.
+
+It needs two things on the **API** side, not here:
+
+| Server setting | What happens |
+| --- | --- |
+| `STRIPE_SECRET_KEY` | Checkout is open. `/v1/credits` answers `checkout: true`, packs are priced from their Stripe Price, and Buy works. |
+| `STRIPE_WEBHOOK_SECRET` | The webhook is accepted. Without it every delivery is refused — an endpoint that grants credits with no signature check grants them to whoever finds it. |
+| Neither | The packs are still listed with their credit counts, priced `null`, and `<Pricing>` says buying is not open on this deployment. This is what a fresh clone does. |
+
+Plus one command, once per Stripe account, which creates the Prices and writes
+the pointers into `credit_products.stripe_price_id`:
+
+```bash
+npm --prefix server run stripe:setup           # create the missing ones
+npm --prefix server run stripe:setup -- --list # what is pointed where
+```
+
+**Where the price comes from.** `credit_products` has a credit count and no
+amount; the API reads the Stripe Price each pack points at and sends
+`price: { amount, currency }`. `lib/pricing.ts` — three indicative figures under
+a disabled button — is deleted, and `lib/money.ts` replaced it with formatting
+and no numbers. There is no price written down anywhere in this repository.
+
+**Where the visitor comes back to.** The page they bought from. `<Pricing>` sends
+the current path, the server resolves it against its own origin (a *path*, never
+a url — `success_url` is followed from Stripe's domain seconds after card entry,
+so an open redirect there is a real phishing vector), and `<CheckoutBanner>` in
+the root layout says what happened. Most purchases start in `<TopUpDialog>` over
+a haircut, which is why the receipt cannot live on `/account`.
+
+**Why there is a confirm call as well as a webhook.** The webhook is the
+authority. It is also occasionally two seconds slower than the redirect, and
+showing somebody who has just paid their old balance is the worst moment to look
+broken. `POST /v1/checkout/confirm` reads the session from Stripe — it does not
+trust this app — and both paths key the purchase row on the PaymentIntent, so
+one of them is always a no-op.
+
+**Locally, with no Stripe account.** `npm run sandbox` serves a miniature Stripe
+from its own process: Buy opens a stand-in checkout page, pressing Pay delivers a
+correctly signed `checkout.session.completed` to the deployment's own webhook,
+and the redirect comes back here. `POST /__sandbox/stripe/refund` does the other
+half.
 
 ---
 
 ## Not built yet
 
-- **Clerk.** `lib/state/AccountContext.tsx` is the seam and its header describes
-  the intended shape: exchange a Clerk session for `POST /v1/account/sign-in`,
-  which adopts this browser's device rather than issuing a second token.
-- **Stripe.** `lib/pricing.ts` holds indicative prices and is deleted when a
-  Price lookup replaces it. The packs themselves are already real rows from
-  `/v1/credits`.
+- **Clerk**, as a *second provider* rather than as sign-in itself — a Google
+  button is one tap where a code is a trip to an inbox. The server already
+  verifies Clerk tokens (`CLERK_ISSUER` is the only setting it needs) and
+  `AccountContext.signIn` is where a token from somewhere else would go.
 - **Favourites on an account.** Currently `localStorage`. They are the one piece
   of state here that should follow a person; saved looks should not.

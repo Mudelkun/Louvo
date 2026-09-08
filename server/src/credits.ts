@@ -57,6 +57,19 @@ import { env } from './env.js';
 /** Which pot a generation came out of. */
 export type ChargeSource = 'free' | 'paid';
 
+/**
+ * What a ledger row is about, which is one value wider than what a generation
+ * can be paid with.
+ *
+ * A sign-in bonus is neither the free allowance nor money taken, and recording
+ * it as either makes the ledger lie the first time anybody sums it: as `free` it
+ * inflates the allowance the anchors actually granted, and as `paid` it is
+ * revenue that was never received. Nothing can be *spent* from `bonus` — the
+ * credits land in the same balance as a purchase — so `ChargeSource` stays two
+ * values and this one is only ever written.
+ */
+export type LedgerSource = ChargeSource | 'bonus';
+
 export interface Charge {
   source: ChargeSource;
   userId: string | null;
@@ -300,6 +313,7 @@ export interface Grant {
   purchaseId?: string;
   reason: string;
   kind?: string;
+  source?: LedgerSource;
 }
 
 /**
@@ -309,14 +323,62 @@ export interface Grant {
  * balance row, and making sign-up write an empty one would mean a purchase could
  * land against an account whose row a failed sign-up never created.
  */
-export async function grant({ userId, credits, purchaseId, reason, kind = 'purchase' }: Grant, db: Queryer = query) {
+export async function grant(
+  { userId, credits, purchaseId, reason, kind = 'purchase', source = 'paid' }: Grant,
+  db: Queryer = query,
+) {
   await db(
     `insert into credit_balances (user_id, balance) values ($1, $2)
      on conflict (user_id) do update
         set balance = credit_balances.balance + $2, updated_at = now()`,
     [userId, credits],
   );
-  await record(db, { userId, anchorId: null, deviceId: null, kind, source: 'paid', delta: credits, purchaseId, reason });
+  await record(db, { userId, anchorId: null, deviceId: null, kind, source, delta: credits, purchaseId, reason });
+}
+
+/**
+ * The credits somebody gets for signing in, granted exactly once per account.
+ *
+ * The point of it is a funnel rather than a giveaway: a browser gets one preview
+ * with no account at all, so by the time this is granted the person has already
+ * seen what the product does to their own photograph. Asking for an email before
+ * that is asking somebody to pay in personal data for something they have not
+ * been shown.
+ *
+ * Two things about the implementation are load-bearing.
+ *
+ * **It is a balance grant, not an install anchor.** `allowanceFor()` takes the
+ * *minimum* across a device's anchors, deliberately, so that linking an identity
+ * can only ever reduce what a device is owed — which means an anchor could never
+ * be used to reward anything. The balance is the only pot that goes up.
+ *
+ * **It is a compare-and-set on `users.signup_bonus_granted_at`**, the same shape
+ * `settle()` uses on `charge_settled`: zero rows back means somebody else got
+ * there first and there is nothing to do. Signing in is a route anybody can call
+ * repeatedly — a double-tapped button, two tabs, a retried request after a
+ * dropped response — and a flag that is read and then written would hand out a
+ * credit for each of them.
+ *
+ * Returns whether it actually granted, so the caller can say "1 credit added"
+ * rather than saying it every time somebody signs in.
+ */
+export async function grantSignupBonus(userId: string, db: Queryer = query): Promise<boolean> {
+  const credits = env.credits.signupBonus;
+  if (credits <= 0) return false;
+
+  const claimed = await db<{ id: string }>(
+    `update users set signup_bonus_granted_at = now(), updated_at = now()
+      where id = $1 and signup_bonus_granted_at is null
+      returning id`,
+    [userId],
+  );
+  if (!claimed.length) return false;
+
+  await grant(
+    { userId, credits, kind: 'grant', source: 'bonus', reason: 'welcome credit for creating an account' },
+    db,
+  );
+  return true;
 }
 
 /**
@@ -331,8 +393,20 @@ export async function grant({ userId, credits, purchaseId, reason, kind = 'purch
  */
 export async function revoke(userId: string, credits: number, reason: string, db: Queryer = query): Promise<void> {
   await db(
+    /**
+     * `$2::int` rather than `$2`, and the cast is not decoration.
+     *
+     * Postgres infers the type of an untyped parameter from where it is used, so
+     * this reads as integer arithmetic there either way. `pg-mem` does not — it
+     * treats the parameter as text, compares `'21' > '10'` as strings and then
+     * subtracts a string, which lands the balance somewhere that trips
+     * `credit_balances_bounds`. Without the cast the refund branch cannot be
+     * executed in the check or in the sandbox at all, and an untestable refund is
+     * how a refund quietly stops working. The cast costs nothing in production
+     * and makes both engines agree.
+     */
     `update credit_balances
-        set balance = case when balance > $2 then balance - $2 else 0 end, updated_at = now()
+        set balance = case when balance > $2::int then balance - $2::int else 0 end, updated_at = now()
       where user_id = $1`,
     [userId, credits],
   );
@@ -356,7 +430,7 @@ interface LedgerRow {
   anchorId: string | null;
   deviceId: string | null;
   kind: string;
-  source: ChargeSource;
+  source: LedgerSource;
   delta: number;
   jobId?: string;
   purchaseId?: string;

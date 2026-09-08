@@ -28,13 +28,20 @@ import {
   type Provider,
 } from './accounts.js';
 import { anchorsFrom, registerAnchors } from './anchors.js';
-import { creditState, history, userForDevice } from './credits.js';
-import { deviceIdFor, deviceSecretFrom, touchDevice } from './devices.js';
+import { creditState, grantSignupBonus, history, userForDevice } from './credits.js';
+import { deviceIdFor, deviceKindFor, deviceSecretFrom, touchDevice } from './devices.js';
 import { env } from './env.js';
-import { applyWebhookEvent, creditProducts } from './purchases.js';
+import { sendMail } from './mail.js';
+import { applyWebhookEvent, creditProducts, purchaseHistory } from './purchases.js';
+import { stripeConfigured } from './stripe.js';
 
 /**
  * The device behind a request, with its anchors registered.
+ *
+ * Exported because `checkout.ts` needs the same three lines and a third copy of
+ * them would be a third place to forget the anchor registration below. It stays
+ * here rather than moving to `devices.ts` because registering anchors is a
+ * *credit* concern, and `devices.ts` knows nothing about allowances.
  *
  * Registering the anchors *here* rather than in a dedicated call is what removes
  * an ordering bug: a freshly reinstalled Android phone would otherwise have to
@@ -42,7 +49,7 @@ import { applyWebhookEvent, creditProducts } from './purchases.js';
  * forgot would hand out two more free previews. Every request that carries the
  * header registers what it carries.
  */
-async function requireDevice(request: FastifyRequest, reply: FastifyReply): Promise<string | null> {
+export async function requireDevice(request: FastifyRequest, reply: FastifyReply): Promise<string | null> {
   const secret = deviceSecretFrom(request.headers.authorization);
   if (!secret) {
     reply.code(401).send({ error: 'device_required', message: 'send Authorization: Device <secret>' });
@@ -50,7 +57,8 @@ async function requireDevice(request: FastifyRequest, reply: FastifyReply): Prom
   }
   const deviceId = deviceIdFor(secret);
   await touchDevice(deviceId);
-  await registerAnchors(deviceId, anchorsFrom(deviceId, request.headers['x-install-anchor']));
+  const kind = deviceKindFor(request.headers.origin, request.headers['x-luvo-client']);
+  await registerAnchors(deviceId, anchorsFrom(deviceId, request.headers['x-install-anchor'], kind));
   return deviceId;
 }
 
@@ -96,7 +104,21 @@ export async function accountRoutes(app: FastifyInstance): Promise<void> {
     const deviceId = await requireDevice(request, reply);
     if (!deviceId) return;
     reply.header('Cache-Control', 'no-store');
-    return { credits: await creditState(deviceId), products: await creditProducts() };
+    return {
+      credits: await creditState(deviceId),
+      products: await creditProducts(),
+      /**
+       * Whether this deployment can take money, reported rather than inferred.
+       *
+       * The web used to decide this from a `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+       * in its own build, which was a guess about a *server* setting made by a
+       * different program — the same mistake `hasClerk` was deleted for. It is
+       * one boolean from the process that actually holds the key, in the same
+       * shape `/health` reports `previews`, and a build that says "coming soon"
+       * now says it because the server said so.
+       */
+      checkout: stripeConfigured(),
+    };
   });
 
   /**
@@ -132,8 +154,19 @@ export async function accountRoutes(app: FastifyInstance): Promise<void> {
         typeof body.displayName === 'string' ? body.displayName.slice(0, 80) : null,
       );
       await adoptDevice(deviceId, userId);
+      /**
+       * The welcome credit, granted once per account and never per sign-in.
+       *
+       * Deliberately after `adoptDevice` rather than inside `upsertAccount`: the
+       * grant belongs to the account existing, not to the account being created,
+       * so somebody whose first sign-in failed half-way through still gets it on
+       * the second. `grantSignupBonus` is idempotent by compare-and-set, so
+       * calling it on every sign-in is correct rather than merely harmless — see
+       * its header.
+       */
+      const bonus = await grantSignupBonus(userId);
       reply.code(created ? 201 : 200);
-      return state(deviceId);
+      return { ...(await state(deviceId)), bonusGranted: bonus };
     } catch (error) {
       return authFailure(reply, error);
     }
@@ -256,6 +289,29 @@ export async function accountRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /**
+   * What this account has paid for, and what it came to.
+   *
+   * Beside `/v1/credits/history` rather than inside it, because the two answer
+   * different questions and only one of them is money. The ledger is every
+   * movement of a credit — held, spent, released, granted — which is a support
+   * tool; this is the list of transactions somebody would expect to find under
+   * *payments*, one row per completed checkout, with a total.
+   *
+   * A device with no account answers with an empty history rather than a 401,
+   * exactly as the ledger does: purchases live on an account, so "signed out"
+   * genuinely means "no payments to show here", and a refusal would make the
+   * page draw an error over a state that is simply empty.
+   */
+  app.get('/v1/purchases', async (request, reply) => {
+    const deviceId = await requireDevice(request, reply);
+    if (!deviceId) return;
+    const userId = await userForDevice(deviceId);
+    reply.header('Cache-Control', 'no-store');
+    if (!userId) return { purchases: [], spent: [], credits: 0, unpriced: 0 };
+    return purchaseHistory(userId);
+  });
+
+  /**
    * RevenueCat's webhook. The only thing in this service that adds a credit.
    *
    * Answers 200 to everything it understands *and* to everything it has decided
@@ -300,32 +356,19 @@ function authFailure(reply: FastifyReply, error: unknown) {
 }
 
 /**
- * Sends the sign-in code through Resend.
+ * Sends the sign-in code.
  *
- * Plain `fetch` rather than the SDK: it is one POST, and a dependency whose only
- * job is to build one JSON body is a dependency to keep updated for no reason.
- * Returns false rather than throwing — a mail provider being down is a 502 to
- * the user, not a 500 in our logs.
+ * The Resend call itself moved to `mail.ts` when the abuse alert became a second
+ * caller; what is left here is the wording, which is the part that belongs to
+ * sign-in. Returns false rather than throwing — a mail provider being down is a
+ * 502 to the person waiting for a code, not a 500 in our logs.
  */
 async function sendCode(email: string, code: string): Promise<boolean> {
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${env.auth.resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: env.auth.emailFrom,
-        to: [email],
-        subject: `${code} is your Luvo code`,
-        text: `Your Luvo sign-in code is ${code}.\n\nIt expires in ${Math.round(
-          env.auth.emailCodeTtlSeconds / 60,
-        )} minutes. If you did not ask for it, you can ignore this email.`,
-      }),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
+  return sendMail({
+    to: email,
+    subject: `${code} is your Luvo code`,
+    text: `Your Luvo sign-in code is ${code}.\n\nIt expires in ${Math.round(
+      env.auth.emailCodeTtlSeconds / 60,
+    )} minutes. If you did not ask for it, you can ignore this email.`,
+  });
 }
