@@ -59,7 +59,7 @@ import { useAdoptedAnswers, useSession } from '../lib/state/SessionContext';
 import { BeforeAfter } from './BeforeAfter';
 import { ShareButton } from './ShareButton';
 import { StyleCardSkeleton } from './StyleCard';
-import { SuggestionShelf } from './SuggestionShelf';
+import { SUGGESTION_COUNT, SuggestionShelf } from './SuggestionShelf';
 import { Button, ButtonLink, Notice, Overline, Skeleton } from './ui';
 
 /**
@@ -110,7 +110,7 @@ export function LookView({ id }: { id: string }) {
    * grid.
    */
   const related = useMemo(
-    () => (found ? relatedTo(hairstyles, found.hairstyleId, found.gender, found.hairType, 4) : []),
+    () => (found ? relatedTo(hairstyles, found.hairstyleId, found.gender, found.hairType, SUGGESTION_COUNT) : []),
     [hairstyles, found],
   );
 
@@ -344,15 +344,15 @@ export function LookView({ id }: { id: string }) {
 
           {/*
             The catalogue's own "and then?", drawn by the same `<SuggestionShelf>`
-            the style page uses — one heading, one rail, one drifting row, so the
-            two places the site offers a next haircut are visibly one feature.
+            the style page uses — one heading, one rail, drifting at every width,
+            so the two places the site offers a next haircut are visibly one
+            feature.
             This page owns the frame: where it sits in the column order, and the
             sentence under the heading, which only makes sense here.
           */}
           {related.length || catalogLoading ? (
             <SuggestionShelf
               className="order-5 lg:mt-10"
-              gridClassName="sm:grid-cols-4 lg:grid-cols-2"
               title="Try one of these next"
               /* Honest about what the next one actually costs the visitor. The
                  photograph lives in memory for the length of the tab, so a

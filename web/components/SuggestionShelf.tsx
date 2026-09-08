@@ -14,14 +14,22 @@
  * the right-hand column and orders it against the picture, the style page rules
  * it off below the fold. Everything inside is here.
  *
- * ## From `sm` it is a grid; below `sm` it drifts
+ * ## It drifts at every width, left to right
  *
- * From `sm` all four cards are on screen at once and a moving row would be
- * motion for its own sake. Below it they are not: four cards two-up is two rows
- * and the second is under the fold, which is where a suggestion goes unread. So
- * on a phone the row drifts. One card is always arriving, which is what makes it
- * read as a row of *more* rather than as the two the page happened to fit, and
- * it costs no height at all.
+ * It was a static four-card grid from `sm` and a drifting row only below it, on
+ * the argument that four cards a laptop can already see whole have nothing to
+ * gain from moving. That was true about the *cards* and wrong about the
+ * *catalogue*: four is a sample, and a row of exactly four reads as the four
+ * this page has rather than as the shelf it is standing on — the same mistake
+ * the front page's twelve stationary plates made before they became the whole
+ * catalogue, moving. So it is one rail now, at every width, showing ten and
+ * always with one more arriving, and it drifts the way the front page's women's
+ * shelf does: left to right, the same keyframes run backwards.
+ *
+ * A grid is also what made this page tall. Four cards across the foot of a
+ * laptop is a row as deep as a card, under a plate as tall as the column; the
+ * rail is the same height and does not have to be reached by scrolling past the
+ * picture, which is what the plate's own height cap on that page is for.
  *
  * It stops the instant a finger or a cursor is on it (`.marquee` in
  * `globals.css`): every card is a link, and a link that moves out from under the
@@ -31,7 +39,7 @@
  */
 
 import Link from 'next/link';
-import { Fragment, useMemo, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 
 import type {
   Gender,
@@ -56,15 +64,41 @@ const SECONDS_PER_CARD = 3.2;
 /**
  * Below this the row is repeated until it fills the rail.
  *
- * Four suggestions at 150px are wider than any phone, so this almost never
- * bites; it is here for the cut whose catalogue neighbours have been retired,
- * where a track narrower than the screen would leave a hole at the loop point
- * and read as the row having run out.
+ * The track is two copies travelling half its own width, so one copy has to be
+ * at least as wide as the rail or the loop point leaves a hole and the row reads
+ * as having run out. Eight cards at 180px clear the widest the site ever draws
+ * one (the style page's 1216px container); `SUGGESTION_COUNT` normally supplies
+ * more than that, so this bites only for the cut whose catalogue neighbours have
+ * been retired.
  */
-const MIN_CARDS = 6;
+const MIN_CARDS = 8;
 
 /** How many cards the placeholder draws — a fact about the row, not about the data. */
-const PLACEHOLDERS = 4;
+const PLACEHOLDERS = 8;
+
+/**
+ * How many cuts each surface asks for.
+ *
+ * The shelf's own number rather than each page's, because it is a fact about the
+ * rail: four filled a grid and visibly repeats in a drifting one, where a laptop
+ * has six on screen at once. Ten is enough that the row is a catalogue rather
+ * than a loop, and the repetition below `MIN_CARDS` is there for the cut whose
+ * neighbours have been retired.
+ */
+export const SUGGESTION_COUNT = 10;
+
+/** One card's width, which sets how many are on screen and how fast they cross it. */
+const CARD_WIDTH = 'w-[150px] sm:w-[168px] lg:w-[180px]';
+
+/**
+ * The gutter bleed is the phone's and only the phone's.
+ *
+ * On a phone the rail runs to both edges of the screen, so it has to escape the
+ * page's own 20px padding. From `sm` it does not: the preview page draws it
+ * inside a 430px column, and a rail bleeding out of that column would run under
+ * the picture beside it.
+ */
+const BLEED = '-mx-5 px-5 sm:mx-0 sm:px-0';
 
 export interface SuggestionShelfProps {
   /** The heading. Each surface names the offer in its own words. */
@@ -88,8 +122,6 @@ export interface SuggestionShelfProps {
   query?: string;
   /** Placeholders instead of cards, for a surface drawn before its catalogue lands. */
   loading?: boolean;
-  /** The grid from `sm` — the one thing a column width changes. */
-  gridClassName?: string;
   /** The frame's own classes: order, spacing, whatever the page around it needs. */
   className?: string;
 }
@@ -105,7 +137,6 @@ export function SuggestionShelf({
   color,
   query,
   loading,
-  gridClassName = 'sm:grid-cols-4',
   className,
 }: SuggestionShelfProps) {
   /** The suggestions, repeated until they fill a phone's width — see `MIN_CARDS`. */
@@ -124,9 +155,9 @@ export function SuggestionShelf({
   if (!pending && styles.length === 0) return null;
 
   /**
-   * One suggestion. Written once because it is drawn twice — as a static grid
-   * from `sm`, and as a drifting row below it — and two copies of eight props is
-   * two chances for the phone and the laptop to suggest different things.
+   * One suggestion. Written once because it is drawn three times — drifting,
+   * still under reduced motion, and as the second copy of the track — and three
+   * copies of eight props is three chances for them to disagree.
    */
   const suggestion = (entry: Hairstyle, inert?: boolean) =>
     manifest ? (
@@ -158,18 +189,12 @@ export function SuggestionShelf({
 
       {note ? <p className="mt-2 text-[13px] text-muted">{note}</p> : null}
 
-      <div className={`mt-6 hidden grid-cols-2 gap-4 sm:grid sm:gap-5 ${gridClassName}`}>
-        {pending
-          ? // How many cards is a fact about this row; which cuts they are is not
-            // known until the catalogue lands.
-            Array.from({ length: PLACEHOLDERS }, (_, index) => <StyleCardSkeleton key={index} />)
-          : styles.map((entry) => <Fragment key={entry.id}>{suggestion(entry)}</Fragment>)}
-      </div>
-
       {pending ? (
-        <div className="no-scrollbar -mx-5 mt-5 flex gap-4 overflow-x-auto px-5 sm:hidden">
+        // How many cards is a fact about this row; which cuts they are is not
+        // known until the catalogue lands.
+        <div className={`no-scrollbar mt-6 flex overflow-x-auto ${BLEED}`}>
           {Array.from({ length: PLACEHOLDERS }, (_, index) => (
-            <div key={index} className="w-[150px] shrink-0">
+            <div key={index} className={`me-3 shrink-0 ${CARD_WIDTH}`}>
               <StyleCardSkeleton />
             </div>
           ))}
@@ -178,17 +203,20 @@ export function SuggestionShelf({
         /* Not the marquee paused: a paused marquee is a row nobody can reach the
            end of. It becomes what it would have been if it had never moved — one
            copy of the row, scrolled by hand. */
-        <div className="no-scrollbar -mx-5 mt-5 flex overflow-x-auto px-5 sm:hidden">
+        <div className={`no-scrollbar mt-6 flex overflow-x-auto ${BLEED}`}>
           {styles.map((entry) => (
-            <div key={entry.id} className="me-3 w-[150px] shrink-0">
+            <div key={entry.id} className={`me-3 shrink-0 ${CARD_WIDTH}`}>
               {suggestion(entry)}
             </div>
           ))}
         </div>
       ) : (
-        <div className="marquee -mx-5 mt-5 overflow-hidden px-5 sm:hidden">
+        <div className={`marquee mt-6 overflow-hidden ${BLEED}`}>
           <div
             className="marquee-track"
+            /* Left to right, which is the front page's women's shelf: the same
+               keyframes run backwards rather than a second animation. */
+            data-direction="reverse"
             style={{ animationDuration: `${(shelf.length * SECONDS_PER_CARD).toFixed(1)}s` }}
           >
             {/* Two copies travelling half the track's own width, which lands the
@@ -197,7 +225,10 @@ export function SuggestionShelf({
             {[0, 1].map((copy) => (
               <div key={copy} className="flex" aria-hidden={copy === 1 ? true : undefined}>
                 {shelf.map((entry, index) => (
-                  <div key={`${copy}-${index}-${entry.id}`} className="me-3 w-[150px] shrink-0">
+                  <div
+                    key={`${copy}-${index}-${entry.id}`}
+                    className={`me-3 shrink-0 ${CARD_WIDTH}`}
+                  >
                     {suggestion(entry, copy === 1)}
                   </div>
                 ))}

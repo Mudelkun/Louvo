@@ -266,10 +266,22 @@ export function Notice({
   title: string;
   body?: string;
   action?: ReactNode;
-  tone?: 'neutral' | 'warn' | 'error';
+  /**
+   * `good` was added for one message and is worth keeping to one: a payment that
+   * went through. Everything else this component says is either neutral or a
+   * warning, and a palette of four tones invites decorating ordinary states with
+   * a colour that then means nothing when it is needed.
+   */
+  tone?: 'neutral' | 'good' | 'warn' | 'error';
 }) {
   const ring =
-    tone === 'error' ? 'ring-danger/35' : tone === 'warn' ? 'ring-amber/35' : 'ring-line';
+    tone === 'error'
+      ? 'ring-danger/35'
+      : tone === 'warn'
+        ? 'ring-amber/35'
+        : tone === 'good'
+          ? 'ring-jade/35'
+          : 'ring-line';
   return (
     <div className={`rounded-[20px] bg-surface/70 px-6 py-8 text-center ring-1 ring-inset ${ring}`}>
       <p className="font-display text-[22px] leading-tight text-ink">{title}</p>

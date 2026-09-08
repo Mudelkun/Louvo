@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Luvo API — the hairstyle catalog, and the preview generation queue behind it.",
+  "description": "Luvo API \u2014 the hairstyle catalog, and the preview generation queue behind it.",
   "engines": {
     "node": ">=20"
   },
@@ -16,10 +16,11 @@
     "publish": "node scripts/publish-catalog.mjs",
     "publish:dry": "node scripts/publish-catalog.mjs --dry-run",
     "publish:metadata": "node scripts/publish-catalog.mjs --metadata-only",
-    "check": "node scripts/sync-shared.mjs --check && node scripts/check-roundtrip.mjs && node scripts/check-previews.mjs && node scripts/check-credits.mjs && node scripts/check-shares.mjs && node scripts/check-signing.mjs",
+    "check": "node scripts/sync-shared.mjs --check && node scripts/check-roundtrip.mjs && node scripts/check-previews.mjs && node scripts/check-credits.mjs && node scripts/check-stripe.mjs && node scripts/check-anon.mjs && node scripts/check-shares.mjs && node scripts/check-signing.mjs",
     "dev:worker": "tsx watch --env-file-if-exists=.env --env-file-if-exists=../.env.local src/worker.ts",
     "start:worker": "node dist/worker.js",
     "sync:shared": "node scripts/sync-shared.mjs",
+    "stripe:setup": "node --env-file-if-exists=.env --env-file-if-exists=../.env.local scripts/stripe-setup.mjs",
     "previews:cors": "node --env-file-if-exists=.env --env-file-if-exists=../.env.local scripts/preview-cors.mjs",
     "prebuild": "node scripts/sync-shared.mjs",
     "sandbox": "npm run build --silent && node scripts/sandbox.mjs",

@@ -235,6 +235,40 @@ stores localise, run regional pricing and change VAT without telling us.
 Adding a pack is therefore a row plus a store listing, not a release — the same argument the
 catalog makes in `docs/catalog-architecture.md`.
 
+### Stripe is the web's till, and it is the same ledger
+
+`server/src/stripe.ts` and `server/src/checkout.ts`. The design of the browser
+half is in `docs/web.md`; what matters here is that **nothing about the ledger
+changed to accommodate it.** A Stripe purchase is a row in `purchases` with
+`store = 'stripe'` and the PaymentIntent as its transaction id, granted through
+the same `grant()`, revoked through the same `revoke()`, caught by the same two
+unique indexes. That was not an economy — two payment providers with two grant
+paths are two chances to disagree about what a pack is worth.
+
+Three things are genuinely new:
+
+- **A pointer, not a price.** `007_stripe.sql` adds `credit_products.stripe_price_id`.
+  The rule above is unchanged: there is still no price column, the API still
+  never invents an amount, and the Stripe Price object is what the till reads.
+  What the API *does* send on the web is the amount it read back from that Price
+  — a label, per request, cached for a minute, never stored.
+  `server/scripts/stripe-setup.mjs` creates the Prices and writes the pointers,
+  and it is a script rather than a migration because test and live are two Stripe
+  accounts with two sets of Price ids behind one schema.
+- **Two ways in, which race on every purchase.** The webhook is the authority.
+  `POST /v1/checkout/confirm` exists because Stripe redirects the payer back
+  before the delivery lands — it reads the session from Stripe rather than
+  trusting the browser, and writes the same PaymentIntent, so the second arrival
+  grants nothing. This is `awaitCredit()`'s problem solved by asking instead of
+  waiting, and it is strictly better: polling cannot tell "the webhook has not
+  arrived" from "the payment failed".
+- **The signature is the whole security model.** A public endpoint that adds
+  credits is worth exactly its HMAC check: raw bytes, constant-time compare, and
+  a five-minute timestamp window so a captured delivery cannot be replayed.
+  `server/scripts/check-stripe.mjs` asserts all four refusals, both replays, that
+  the credit count comes from `credit_products` rather than from the session's
+  own metadata, and that a refund clamps at zero.
+
 ### A refund clamps at zero
 
 A user who buys ten, generates ten and then charges back is left at zero, not at −10. A hidden
@@ -296,7 +330,11 @@ Everything is in `server/.env.example`. The three worth knowing before a deploy:
   not enough to iterate on a prompt. A production deployment with it off is giving previews away.
 - **`ANCHOR_SALT`** — set once, keep it. Rotating it resets every free allowance.
 - **`REVENUECAT_WEBHOOK_SECRET`** — without it the webhook refuses everything, which is correct.
-  It is the only thing in the service that adds a credit.
+  It is what adds a credit on a phone.
+- **`STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`** — the same pair for the web, and the second
+  has the same property: without it every delivery is refused. `CHECKOUT_RETURN_URL` should point
+  at the *website* rather than at the API, or a finished checkout returns to the wrong origin.
+  `npm --prefix server run stripe:setup` is the once-per-account step that creates the Prices.
 
 ## Not done yet
 

@@ -16,6 +16,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 
 import { accountRoutes } from './account.js';
+import { checkoutRoutes, stripeWebhookRoutes } from './checkout.js';
 import { currentRevision, getCatalog, invalidateCatalog } from './catalog.js';
 import { env } from './env.js';
 import { LEGAL_DOCUMENTS } from './generated/legal.js';
@@ -23,6 +24,7 @@ import { legalPage } from './legal.js';
 import { previewRoutes } from './previews.js';
 import { shareRoutes } from './shares.js';
 import { storage } from './storage.js';
+import { stripeConfigured } from './stripe.js';
 import { filterHairstyles, recommendationsFor, SORT_IDS, type HairstyleQuery, type SortId } from './hairstyles.js';
 import { HAIR_TYPE_IDS, type Gender, type HairTypeId } from './types.js';
 
@@ -101,6 +103,19 @@ export async function routes(app: FastifyInstance): Promise<void> {
   await app.register(accountRoutes);
 
   /**
+   * Buying credits on the web, and Stripe telling us that somebody did.
+   *
+   * Two registrations rather than one, and the split is mechanical: the webhook
+   * needs its body as raw bytes to verify a signature over them, and a
+   * content-type parser applies to the plugin scope it is declared in. Putting
+   * the webhook in with the JSON routes would parse the body before the
+   * signature could be checked against it — which fails closed, loudly, on the
+   * first delivery, but only after a deploy.
+   */
+  await app.register(checkoutRoutes);
+  await app.register(stripeWebhookRoutes);
+
+  /**
    * Sharing, the referral links it mints and the landing page they open.
    *
    * Registered here for the same reason the previews are: it is the same small
@@ -160,7 +175,20 @@ export async function routes(app: FastifyInstance): Promise<void> {
       // Reported rather than asserted: a deployment with no bucket and no
       // generator key is a perfectly healthy catalog API, and the app already
       // knows how to fall back from `previews_unconfigured`.
-      return { status: 'ok', revision, previews: !!(storage && env.previews.falKey) };
+      //
+      // `checkout` is here for the same reason and was added after it cost an
+      // hour. `env.ts` reads `process.env` once at module load, so a
+      // `STRIPE_SECRET_KEY` added to a `.env` under a running server is not
+      // picked up — and the only symptom was the website saying "checkout is not
+      // open on this deployment", which is indistinguishable from a key that was
+      // never set. `/v1/credits` knows the answer but needs a device header;
+      // this is the same fact reachable with one unauthenticated curl.
+      return {
+        status: 'ok',
+        revision,
+        previews: !!(storage && env.previews.falKey),
+        checkout: stripeConfigured(),
+      };
     } catch (error) {
       reply.code(503);
       return { status: 'unavailable', error: error instanceof Error ? error.message : 'database unreachable' };

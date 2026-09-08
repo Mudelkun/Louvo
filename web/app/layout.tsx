@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Instrument_Serif, Inter } from 'next/font/google';
 
+import { CheckoutBanner } from '../components/CheckoutBanner';
 import { SiteFooter } from '../components/SiteFooter';
 import { SiteHeader } from '../components/SiteHeader';
 import { SITE_URL } from '../lib/config';
@@ -82,6 +83,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <div className="flex min-h-dvh flex-col">
             <SiteHeader />
+            {/* Above the page rather than inside it, because a purchase can be
+                started from any page and comes back to that same page — the
+                return path is where the visitor was, not `/account`. Renders
+                nothing at all except on a load that came back from Stripe. */}
+            <CheckoutBanner />
             <main id="main" className="flex-1">
               {children}
             </main>

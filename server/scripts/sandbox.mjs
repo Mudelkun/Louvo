@@ -113,6 +113,24 @@ process.env.ANCHOR_SALT = 'sandbox';
 // that can be completed without a provider's live signing keys.
 process.env.EMAIL_DEV_ECHO = 'true';
 process.env.REVENUECAT_WEBHOOK_SECRET = 'sandbox-webhook-secret';
+/**
+ * Stripe, served by this process from `/__stripe`.
+ *
+ * `STRIPE_API_BASE` is the one environment variable in the whole service that
+ * exists for testing, and this is what it is for: the server's real checkout
+ * code — the form encoding, the session read-back, the signature check — runs
+ * unchanged against a Stripe that lives in a Map twenty lines down. A complete
+ * purchase can therefore be walked with no Stripe account, no key and no
+ * network, which is the same thing the fake worker does for fal.
+ *
+ * `CHECKOUT_RETURN_URL` is where the finished checkout sends the browser back
+ * to, and it is the *website's* origin rather than this API's. `--web` overrides
+ * it for a dev server on another port.
+ */
+process.env.STRIPE_SECRET_KEY = 'sk_sandbox_not_a_real_key';
+process.env.STRIPE_WEBHOOK_SECRET = 'whsec_sandbox';
+process.env.STRIPE_API_BASE = `${ORIGIN}/__stripe`;
+process.env.CHECKOUT_RETURN_URL = flag('web', 'http://localhost:3000');
 process.env.LOG_LEVEL = has('verbose') ? 'info' : 'warn';
 process.env.CORS_ORIGIN = '*';
 
@@ -170,9 +188,21 @@ const authored = await loadCatalog({ root: REPO_ROOT });
 await writeReferenceTables(client, authored);
 for (const style of authored.hairstyles) await writeHairstyle(client, style);
 
+/**
+ * A Price id per pack, which a real deployment gets from
+ * `scripts/stripe-setup.mjs` against a real Stripe account.
+ *
+ * Derived from the credit count so the fake Stripe below can answer for any pack
+ * the catalog grows, including one added by hand while the sandbox is running.
+ */
+for (const pack of await sql('select id, credits from credit_products')) {
+  await sql('update credit_products set stripe_price_id = $2 where id = $1', [pack.id, `price_sbx_${pack.credits}`]);
+}
+
 const jobs = await import('../dist/jobs.js');
 const credits = await import('../dist/credits.js');
 const { applyWebhookEvent } = await import('../dist/purchases.js');
+const { signWebhookPayload } = await import('../dist/stripe.js');
 const { deviceIdFor } = await import('../dist/devices.js');
 const { anchorIdFor } = await import('../dist/anchors.js');
 const { routes } = await import('../dist/routes.js');
@@ -214,7 +244,259 @@ app.addContentTypeParser(
   (_request, body, done) => done(null, body),
 );
 
+/**
+ * Stripe posts form bodies, and Fastify parses JSON.
+ *
+ * Only the `/__stripe` routes below need this — it is the shape the server's own
+ * `formEncode` produces on the way out. Keys arrive flat and bracketed
+ * (`metadata[userId]`), which is exactly how they are read back, so nothing here
+ * un-nests them.
+ */
+app.addContentTypeParser(
+  'application/x-www-form-urlencoded',
+  { parseAs: 'string' },
+  (_request, body, done) => {
+    const parsed = {};
+    for (const [key, value] of new URLSearchParams(body)) parsed[key] = value;
+    done(null, parsed);
+  },
+);
+
 await app.register(routes);
+
+// ---------------------------------------------------------------------------
+// A Stripe, in a Map
+// ---------------------------------------------------------------------------
+
+/**
+ * Enough of Stripe for one purchase, and deliberately not one line more.
+ *
+ * **Real here:** the request the server builds, the session it gets back, the
+ * read-back on confirmation, the HMAC on the webhook and both idempotency
+ * indexes behind it. The `/__stripe/pay/:id` page is a stand-in for Stripe
+ * Checkout, and pressing Pay does what Stripe does — marks the session paid,
+ * delivers a signed `checkout.session.completed`, and redirects to `success_url`.
+ *
+ * **Not real:** the card, the money, the signature on the outgoing session, and
+ * Stripe's own idea of what a Price costs. The amounts below match the seeds in
+ * `scripts/stripe-setup.mjs` so a sandbox page reads like the real one.
+ *
+ * The webhook is delivered through `app.inject` rather than over the network,
+ * because a delivery to `127.0.0.1` from a process bound to a LAN address is one
+ * more thing that can be wrong on somebody's laptop for reasons unrelated to
+ * what is being tested. It is the same Fastify instance, the same route and the
+ * same signature check either way.
+ */
+const stripeSessions = new Map();
+const SANDBOX_AMOUNTS = { 5: 499, 10: 999, 20: 1499 };
+
+app.get('/__stripe/v1/prices/:id', async (request, reply) => {
+  const credits = Number(String(request.params.id).replace('price_sbx_', ''));
+  const amount = SANDBOX_AMOUNTS[credits] ?? credits * 100;
+  if (!Number.isFinite(credits) || !credits) return reply.code(404).send({ error: { message: 'no such price' } });
+  return { id: request.params.id, object: 'price', unit_amount: amount, currency: 'usd', active: true };
+});
+
+app.post('/__stripe/v1/checkout/sessions', async (request) => {
+  const body = request.body ?? {};
+  const id = `cs_sbx_${randomUUID().replace(/-/g, '')}`;
+  const credits = Number(body['metadata[credits]'] ?? 0);
+  const session = {
+    id,
+    object: 'checkout.session',
+    url: `${ORIGIN}/__stripe/pay/${id}`,
+    status: 'open',
+    payment_status: 'unpaid',
+    payment_intent: null,
+    client_reference_id: body.client_reference_id ?? null,
+    metadata: {
+      userId: body['metadata[userId]'] ?? '',
+      productId: body['metadata[productId]'] ?? '',
+      credits: String(credits),
+    },
+    amount_total: SANDBOX_AMOUNTS[credits] ?? credits * 100,
+    currency: 'usd',
+    // Carried so the stand-in shows what the real page prefills. Stripe holds
+    // this read-only once it is set, and a sandbox that dropped it would make
+    // the one difference between the two tills invisible.
+    customer_email: body.customer_email ?? null,
+    success_url: body.success_url ?? '',
+    cancel_url: body.cancel_url ?? '',
+  };
+  stripeSessions.set(id, session);
+  return session;
+});
+
+/**
+ * The payment behind a paid session, and the invoice for it.
+ *
+ * `paymentDocument` asks Stripe for the PaymentIntent with its charge expanded,
+ * then for the invoice named on that charge. Both are answered here so the
+ * account page's Invoice button is a working button in the sandbox rather than
+ * the one control that needs a real key — which is the same argument the Pay
+ * button makes. The document it opens is a stand-in and says so on its face.
+ */
+const stripeIntents = new Map();
+const stripeInvoices = new Map();
+
+app.get('/__stripe/v1/payment_intents/:id', async (request, reply) => {
+  const intent = stripeIntents.get(request.params.id);
+  if (!intent) return reply.code(404).send({ error: { message: 'no such payment intent' } });
+  return intent;
+});
+
+app.get('/__stripe/v1/invoices/:id', async (request, reply) => {
+  const invoice = stripeInvoices.get(request.params.id);
+  if (!invoice) return reply.code(404).send({ error: { message: 'no such invoice' } });
+  return invoice;
+});
+
+app.get('/__stripe/invoice/:id', async (request, reply) => {
+  const invoice = stripeInvoices.get(request.params.id);
+  if (!invoice) return reply.code(404).type('text/html').send('<p>no such invoice</p>');
+  const amount = (invoice.amount_paid / 100).toFixed(2);
+  return reply.type('text/html; charset=utf-8').send(`<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invoice ${invoice.number}</title>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f6f5f8;color:#1a1626;
+       font:15px/1.6 system-ui,sans-serif}
+  .sheet{width:min(560px,92vw);background:#fff;border-radius:14px;padding:40px;
+         box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  h1{margin:0 0 2px;font-size:22px} .n{color:#6b6580;font-size:13px;margin:0 0 28px}
+  .row{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid #eceaf0}
+  .row.total{border-top:2px solid #1a1626;font-weight:700}
+  .note{margin-top:28px;color:#6b6580;font-size:12.5px}
+</style>
+<div class="sheet">
+  <h1>Invoice ${invoice.number}</h1>
+  <p class="n">${new Date(invoice.created * 1000).toDateString()} &middot; ${invoice.customer_email ?? 'no email on file'}</p>
+  <div class="row"><span>Luvo credits</span><span>$${amount}</span></div>
+  <div class="row total"><span>Paid</span><span>$${amount}</span></div>
+  <p class="note">A sandbox stand-in for the PDF Stripe issues. No money moved and this is
+     not a document anybody should file.</p>
+</div>`);
+});
+
+app.get('/__stripe/v1/checkout/sessions/:id', async (request, reply) => {
+  const session = stripeSessions.get(request.params.id);
+  if (!session) return reply.code(404).send({ error: { message: 'no such checkout session' } });
+  return session;
+});
+
+/** Stripe Checkout, as one button and no card field. */
+app.get('/__stripe/pay/:id', async (request, reply) => {
+  const session = stripeSessions.get(request.params.id);
+  if (!session) return reply.code(404).type('text/html').send('<p>no such session</p>');
+  const amount = (session.amount_total / 100).toFixed(2);
+  return reply.type('text/html; charset=utf-8').send(`<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sandbox checkout</title>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0a12;color:#efeaf7;
+       font:15px/1.5 system-ui,sans-serif}
+  .card{width:min(420px,92vw);background:#15121f;border:1px solid #2a2438;border-radius:20px;padding:28px}
+  h1{margin:0 0 4px;font-size:20px} p{margin:0 0 20px;color:#a79fba;font-size:13px}
+  .row{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid #2a2438;font-size:14px}
+  button{width:100%;height:44px;margin-top:20px;border:0;border-radius:999px;background:#a98cfb;color:#150e28;
+         font:600 14px system-ui;cursor:pointer}
+  a{display:block;margin-top:12px;text-align:center;color:#a79fba;font-size:12.5px}
+  code{color:#7e7692;font-size:11px}
+</style>
+<div class="card">
+  <h1>Sandbox checkout</h1>
+  <p>No card, no money, no Stripe. Pressing Pay delivers a signed
+     <code>checkout.session.completed</code> to this deployment's own webhook.</p>
+  <div class="row"><span>${session.metadata.credits} previews</span><b>$${amount}</b></div>
+  <div class="row"><span>Account</span><code>${session.client_reference_id ?? '—'}</code></div>
+  <div class="row"><span>Email</span><code>${session.customer_email ?? 'not on the account — Stripe would ask'}</code></div>
+  <form method="post" action="/__stripe/pay/${session.id}"><button type="submit">Pay $${amount}</button></form>
+  <a href="${session.cancel_url}">Cancel and go back</a>
+</div>`);
+});
+
+app.post('/__stripe/pay/:id', async (request, reply) => {
+  const session = stripeSessions.get(request.params.id);
+  if (!session) return reply.code(404).send({ error: 'no such session' });
+
+  session.payment_status = 'paid';
+  session.status = 'complete';
+  session.payment_intent = `pi_sbx_${randomUUID().replace(/-/g, '')}`;
+
+  // The invoice Checkout would have raised, and the charge that names it. Both
+  // are what `paymentDocument` walks on the way to the Invoice button's url.
+  const invoiceId = `in_sbx_${randomUUID().replace(/-/g, '').slice(0, 16)}`;
+  stripeInvoices.set(invoiceId, {
+    id: invoiceId,
+    object: 'invoice',
+    number: `LUVO-${invoiceId.slice(-6).toUpperCase()}`,
+    created: Math.floor(Date.now() / 1000),
+    amount_paid: session.amount_total,
+    currency: session.currency,
+    customer_email: session.customer_email ?? null,
+    invoice_pdf: `${ORIGIN}/__stripe/invoice/${invoiceId}`,
+    hosted_invoice_url: `${ORIGIN}/__stripe/invoice/${invoiceId}`,
+  });
+  stripeIntents.set(session.payment_intent, {
+    id: session.payment_intent,
+    object: 'payment_intent',
+    amount: session.amount_total,
+    currency: session.currency,
+    latest_charge: {
+      id: `ch_sbx_${randomUUID().replace(/-/g, '').slice(0, 16)}`,
+      object: 'charge',
+      invoice: invoiceId,
+      receipt_url: `${ORIGIN}/__stripe/invoice/${invoiceId}`,
+    },
+  });
+
+  const payload = JSON.stringify({
+    id: `evt_sbx_${randomUUID().replace(/-/g, '')}`,
+    type: 'checkout.session.completed',
+    data: { object: session },
+  });
+  const delivered = await app.inject({
+    method: 'POST',
+    url: '/v1/webhooks/stripe',
+    headers: {
+      'content-type': 'application/json',
+      'stripe-signature': signWebhookPayload(payload, process.env.STRIPE_WEBHOOK_SECRET),
+    },
+    payload,
+  });
+  console.log(`  [stripe] ${session.id} paid — webhook ${delivered.statusCode} ${delivered.body}`);
+
+  return reply.redirect(session.success_url.replace('{CHECKOUT_SESSION_ID}', session.id), 303);
+});
+
+/**
+ * A refund, which is the other half nobody can ask a real Stripe for on demand.
+ *
+ * Posts a genuine `charge.refunded` through the same signed path, so the revoke
+ * branch and its clamp-at-zero are exercised rather than assumed.
+ */
+app.post('/__sandbox/stripe/refund', async (request, reply) => {
+  const paymentIntent = request.body?.paymentIntent;
+  if (!paymentIntent) {
+    reply.code(400);
+    return { error: 'invalid_request', message: 'paymentIntent is required — a refund names a payment' };
+  }
+  const payload = JSON.stringify({
+    id: `evt_sbx_${randomUUID().replace(/-/g, '')}`,
+    type: 'charge.refunded',
+    data: { object: { object: 'charge', payment_intent: paymentIntent, refunded: true } },
+  });
+  const delivered = await app.inject({
+    method: 'POST',
+    url: '/v1/webhooks/stripe',
+    headers: {
+      'content-type': 'application/json',
+      'stripe-signature': signWebhookPayload(payload, process.env.STRIPE_WEBHOOK_SECRET),
+    },
+    payload,
+  });
+  return { status: delivered.statusCode, outcome: JSON.parse(delivered.body || '{}') };
+});
 
 // --- the in-process bucket -------------------------------------------------
 
@@ -528,6 +810,10 @@ console.log(`
     POST ${ORIGIN}/__sandbox/purchase  {"device":"<secret>"}  grant a pack, via the real webhook path
     POST ${ORIGIN}/__sandbox/reset-free {"device":"<secret>"} hand back the free two
     GET  ${ORIGIN}/__sandbox/state?device=<secret>
+
+  Buy a pack     sign in, then press Buy — checkout is served from
+                 ${ORIGIN}/__stripe with no key and no money
+  Refund one     POST ${ORIGIN}/__sandbox/stripe/refund {"paymentIntent":"pi_sbx_…"}
 
   Packs         ${products.map((p) => `${p.id} (${p.credits})`).join(', ')}
   Sign-in       email only — the code is returned in the response, not mailed.

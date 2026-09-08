@@ -49,6 +49,24 @@ This is also the easiest thing on the site to get subtly wrong.
   model having moved the head. Generate the *after* from the *before*, then
   export both at the same dimensions. Portrait, close to 4:5, is what the frame
   is shaped for; anything much wider is cropped hard at the sides.
+- **The head has to land in the same place, and matching dimensions do not
+  guarantee it.** gpt-image re-renders the whole frame rather than editing the
+  hair in place, so it returns the background where it found it and the head a
+  little to one side of it — `after-3-pixie` came back with the face 5% smaller
+  and `after-4-crop` with it 28px to the right, both at exactly the right pixel
+  dimensions. Under a wipe that is not read as a haircut, it is read as the face
+  moving, which is the one thing this frame exists to prove does not happen. It
+  is invisible in a side-by-side and obvious the moment the seam crosses a nose,
+  so check it by interleaving the pair in horizontal bands rather than by eye:
+  the features run straight through when the pair is aligned and step at every
+  band when it is not. A pair that fails is fixed by warping the *after* onto
+  the *before* — a smooth displacement field solved from feature matches, which
+  is ~zero in the background and carries the head, leaving the transition to
+  fall across the hair, the one part of the picture that is meant to differ. A
+  single scale-and-shift cannot do it: it fixes the face and breaks the
+  background by the same amount. `after-3-pixie` carries that correction;
+  `after-4-crop` was measured, left as the model returned it, and is the pair to
+  look at first if the hero ever reads as though a face moved.
 - **A haircut that is obviously different.** A subtle trim is invisible at hero
   size and makes the product look like it did nothing. A clear change of length
   or shape is the point.
