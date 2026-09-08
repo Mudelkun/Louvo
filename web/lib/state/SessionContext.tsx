@@ -30,12 +30,22 @@
  * The three answers are, in `localStorage`, because a visitor who comes back
  * tomorrow should not re-answer them.
  *
- * **The photograph is not.** It lives in memory as an object url for the length
- * of the tab and nowhere else. That is not a limitation to work around — it is
- * the promise in `docs/preview-generation.md` applied to the client: the only
- * copies of somebody's face are the one the model needs for forty seconds and
- * the finished look they chose to keep. A photograph parked in browser storage
- * on a shared laptop is a copy nobody asked for.
+ * **The photograph is not, in the sense that matters.** It is never in
+ * `localStorage`, never sent anywhere before there is a job to consume it, and
+ * never kept beyond the visit — the promise in `docs/preview-generation.md`
+ * applied to the client: the only copies of somebody's face are the one the
+ * model needs for forty seconds and the finished look they chose to keep.
+ *
+ * What it *is* is mirrored into IndexedDB for an hour while it is the
+ * photograph on screen, and that is a bug fix rather than a softening. An object
+ * url is a handle the **document** holds, so it dies on a full page load — and
+ * two of the site's own flows are full page loads: signing in through a provider
+ * that returns as a fresh document, and paying at Stripe. Both are entered from
+ * the generate button by somebody who has already chosen their picture, and both
+ * used to hand them back a page with it silently gone. `pendingPhoto.ts` has the
+ * bound this is kept inside; the short version is that it mirrors this state and
+ * nothing else, and that a *saved look* already stores the same photograph in
+ * the same database for ever.
  */
 
 import {
@@ -52,6 +62,7 @@ import {
 import type { Gender, HairTypeId } from '../contract/catalog';
 import { DEFAULT_HAIR_COLOR_ID } from '../colorGrade';
 import { parseHairType } from '../hairTypes';
+import { clearPendingPhoto, readPendingPhoto, savePendingPhoto } from '../pendingPhoto';
 import type { PreparedPhoto } from '../photo';
 
 const STORAGE_KEY = 'luvo.session.v1';
@@ -125,17 +136,62 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [state, hydrated]);
 
   /**
-   * Replacing the photo revokes the one it replaces.
+   * Replacing the photo revokes the one it replaces, and writes the new one
+   * through to storage.
    *
    * An object url pins its blob in memory until it is revoked, and a visitor who
    * tries four photographs would otherwise be holding four full-size images for
    * the life of the tab.
+   *
+   * The write-through is what survives a full page load — see the header and
+   * `pendingPhoto.ts`. It is fire-and-forget on purpose: a browser that refuses
+   * the write is a browser where the sign-in trip still costs the photograph,
+   * which is exactly where this started, and it is not a reason to fail the one
+   * thing the visitor actually asked for.
    */
   const setPhoto = useCallback((next: PreparedPhoto | null) => {
     setPhotoState((current) => {
       if (current && current.objectUrl !== next?.objectUrl) URL.revokeObjectURL(current.objectUrl);
       return next;
     });
+    // A photograph the visitor has taken off the page is one this browser stops
+    // holding, immediately rather than at the hour.
+    if (next) savePendingPhoto(next);
+    else clearPendingPhoto();
+  }, []);
+
+  /**
+   * The photograph from before the page load, adopted once.
+   *
+   * Two things make this safe to run against a state the visitor is also able to
+   * change. It only ever fills a **hole** — the functional update refuses if
+   * anything has been set in the meantime, so somebody who picks a new picture
+   * while the read is in flight keeps theirs — and the url it minted is revoked
+   * on that path rather than leaked, since nothing else has a handle on it.
+   *
+   * It is deliberately not merged into the `localStorage` effect above: that one
+   * is synchronous and must finish before the first paint sets `hydrated`, and
+   * this one is a database read that has no business holding that up.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    void readPendingPhoto().then((stored) => {
+      if (!stored) return;
+      if (cancelled) {
+        URL.revokeObjectURL(stored.objectUrl);
+        return;
+      }
+      setPhotoState((current) => {
+        if (current) {
+          URL.revokeObjectURL(stored.objectUrl);
+          return current;
+        }
+        return stored;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const value = useMemo<SessionValue>(

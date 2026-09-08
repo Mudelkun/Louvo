@@ -1,7 +1,14 @@
 'use client';
 
 /**
- * The paywall, raised by the button that was going to generate.
+ * The paywall, raised by the button that was going to generate — **once there is
+ * an account to spend against.**
+ *
+ * It is one of two readings of an empty balance and it is the second one. A
+ * visitor who has never signed in gets `<SignInWall>` instead: credits live on
+ * an account, so every Buy button in here would send them to `/sign-in` anyway,
+ * and a first sign-in grants a credit. See that file for the argument. This one
+ * is what somebody with an account and no previews is owed.
  *
  * The style page used to swap its primary button for a link to `/account` the
  * moment the balance hit zero — *Top up to keep going*. That is honest and it is
@@ -37,15 +44,13 @@
  * that belongs on `/account` — where somebody has gone deliberately to read
  * about their account rather than landed while trying to do something else.
  *
- * ## It is centred rather than dropped at the top
+ * ## The overlay is `<Dialog>`
  *
- * The overlay scrolled its content from the top edge, so on a desktop screen the
- * card sat in the upper half with a screenful of empty backdrop under it and
- * read as a panel that had not finished loading. The content is in a
- * `min-h-full` flex box instead: it centres while it fits and the scroller takes
- * over unchanged — from the top, padding intact — the moment the card is taller
- * than the viewport. That is the one arrangement that does not have to choose
- * between a short dialogue on a laptop and a tall one on a phone.
+ * The scroll lock, the Escape key, the reachable backdrop, the centring and the
+ * close control are all in that file now, because the sign-in wall raised by the
+ * same button needs every one of them and a second hand-rolled overlay is a
+ * second set of answers to how a card behaves on a phone. What is left here is
+ * what this dialogue *says*.
  *
  * Two things it deliberately does not do:
  *
@@ -65,128 +70,43 @@
  *   open.** Both are the API's answer, said by `<Pricing>` in both places it
  *   appears, rather than in a sentence here that could drift out of step.
  *
- * The balance is the one number it repeats, and it is read from `useAccount()`
- * at the moment it is drawn rather than assumed. The dialogue is only ever
- * raised at zero today, but a paywall that has *hardcoded* the number it is
- * complaining about is one refactor away from telling somebody with three
- * previews that they have none — and `ready: false` is not "no credits" here any
- * more than it is anywhere else, so an unread balance is a dash rather than a 0.
+ * The balance is the one number it repeats, in `<BalancePill>`, read from
+ * `useAccount()` at the moment it is drawn rather than assumed — see that
+ * component for why a paywall must not hardcode the number it is complaining
+ * about.
  */
 
-import { useEffect } from 'react';
-
 import { useAccount } from '../lib/state/AccountContext';
+import { BalancePill, Dialog } from './Dialog';
 import { Pricing } from './Pricing';
-import { PreviewIcon } from './PreviewIcon';
 
 export function TopUpDialog({ onClose }: { onClose: () => void }) {
   const { credits, ready } = useAccount();
 
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [onClose]);
-
-  const left = ready ? credits.total : null;
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="top-up-title"
-      className="fixed inset-0 z-50 overflow-y-auto bg-canvas/85 backdrop-blur-2xl"
-    >
-      {/* The backdrop as something focusable rather than a click handler on the
-          overlay — a way out only a pointer can reach is not a way out. */}
-      <button
-        type="button"
-        aria-label="Close"
-        tabIndex={-1}
-        onClick={onClose}
-        className="fixed inset-0 cursor-default"
-      />
+    <Dialog labelledBy="top-up-title" onClose={onClose}>
+      <div className="flex flex-col items-center text-center">
+        {/* What they have, first — the number the button was refused over. */}
+        <BalancePill left={ready ? credits.total : null} />
 
-      {/* `min-h-full` on a flex box inside the scroller is what centres a short
-          dialogue on a laptop without trapping a tall one on a phone: the box is
-          at least as tall as the viewport, so `items-center` centres it while it
-          fits and the scroller takes over the moment it does not. */}
-      <div className="relative flex min-h-full items-center justify-center p-4 sm:p-6">
-        <div
-          className={
-            'brand-gradient animate-rise w-full max-w-[820px] rounded-[26px] p-px ' +
-            'shadow-[0_50px_120px_-40px_rgb(0_0_0/0.95)]'
-          }
+        <span className="mt-5 text-[34px] leading-none" aria-hidden>
+          😔
+        </span>
+
+        <h2
+          id="top-up-title"
+          className="mt-3 font-display text-[clamp(1.5rem,4vw,2rem)] leading-tight text-ink"
         >
-          <div className="relative rounded-[25px] bg-canvas-raised p-5 pt-7 sm:p-8">
-            {/* The close, as the affordance rather than as a word, and out of
-                the flow: the message below is centred on the card, and a 40px
-                button sharing its first line would centre it on whatever width
-                was left beside one. */}
-            <button
-              type="button"
-              autoFocus
-              onClick={onClose}
-              aria-label="Close"
-              className={
-                'absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/6 ' +
-                'text-ink-soft ring-1 ring-inset ring-line transition-colors duration-200 ' +
-                'hover:bg-white/10 hover:text-ink sm:right-4 sm:top-4'
-              }
-            >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden focusable="false">
-                <path
-                  d="M6 6l12 12M18 6L6 18"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-
-            <div className="flex flex-col items-center text-center">
-              {/* What they have, first, in the header pill's own shape — the
-                  number the button was refused over, said where it is being
-                  complained about rather than only in the top bar. */}
-              <p
-                className={
-                  'inline-flex items-center gap-1.5 rounded-full bg-white/6 px-3 py-1.5 ' +
-                  'text-[12.5px] font-semibold text-ink ring-1 ring-inset ring-line'
-                }
-              >
-                <PreviewIcon className="h-[15px] w-[15px] text-violet" />
-                <span className="tnum">{left ?? '—'}</span>
-                <span className="text-muted">{left === 1 ? 'preview left' : 'previews left'}</span>
-              </p>
-
-              <span className="mt-5 text-[34px] leading-none" aria-hidden>
-                😔
-              </span>
-
-              <h2
-                id="top-up-title"
-                className="mt-3 font-display text-[clamp(1.5rem,4vw,2rem)] leading-tight text-ink"
-              >
-                Oops, no more previews.
-              </h2>
-              <p className="mt-2 max-w-[42ch] text-[13.5px] leading-relaxed text-muted">
-                Keep trying different hairstyles — pick up a pack and press Generate again.
-              </p>
-            </div>
-
-            <div className="mt-7">
-              <Pricing compact />
-            </div>
-          </div>
-        </div>
+          Oops, no more previews.
+        </h2>
+        <p className="mt-2 max-w-[42ch] text-[13.5px] leading-relaxed text-muted">
+          Keep trying different hairstyles — pick up a pack and press Generate again.
+        </p>
       </div>
-    </div>
+
+      <div className="mt-7">
+        <Pricing compact />
+      </div>
+    </Dialog>
   );
 }
