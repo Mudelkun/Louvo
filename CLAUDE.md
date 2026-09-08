@@ -365,6 +365,21 @@ re-deriving:
   generation happens when Generate is pressed again with a credit to spend, which is one tap and
   is the truth. The line under the button is where "none left" is said, so the dialogue is not a
   surprise.
+- **An empty balance is two states, though, and the packs are the wrong answer to one of them.**
+  Signed in and out of previews gets `<TopUpDialog>`. **Never signed in gets `<SignInWall>`** —
+  *Sign in to preview more hairstyles* — and that is not a softer paywall, it is the only one of
+  the two that is not a dead end: credits live on an account, so `<Pricing>` sends a signed-out
+  Buy to `/sign-in` anyway, and showing the packs first puts three prices in front of somebody
+  whose every next step is the page behind them. A first sign-in carries `grantSignupBonus`, so
+  the visitor who does what the wall asks can generate again without paying — and **the wall
+  never says so**. *Sign in and get a free preview* turns an account into a transaction, which is
+  the shape of a trick even when the offer is real, and it is a promise about
+  `SIGNUP_BONUS_CREDITS`, a server-side constant the browser cannot read and must not guess at.
+  The credit is a consequence of signing in, not the reason given for it. Both dialogues are
+  `<Dialog>`: one scroll lock, one Escape handler, one reachable backdrop, one answer to what a
+  card does when it is taller than the phone it is on. The app split the same way first, by a
+  different road — `app/credits.tsx` offers *Sign in or create an account* in place of the packs,
+  because a purchase there needs an account too.
 
 **Four programs now read the catalog, and the boundary rule is unchanged.** A *predicate* may
 be mirrored by hand and kept honest by running both copies; a *document* may not.
@@ -423,9 +438,17 @@ it was pressed on (`useReturnPath` in `components/AuthButtons.tsx`) and the visi
 on it — Clerk through `fallbackRedirectUrl`, the mailed code through its own confirmation, and
 `<Pricing>` additionally through `?buy=<pack>`, so a purchase interrupted by sign-in resumes on
 the way back. `safeNext` refuses anything not starting with a single `/`, the same rule
-`checkout.ts` applies to Stripe's return. The one thing that does not survive the trip is a
-photograph uploaded but not yet submitted: it is an object url in the tab's memory. The answers
-about it are in the session and do come back.
+`checkout.ts` applies to Stripe's return. **The photograph survives it too**, and that took a
+fix: an object url is a handle the *document* holds, so a provider that comes back as a fresh
+page load — and Stripe, which is a different origin entirely — used to take somebody's picture
+away as the price of the round trip we sent them on. `web/lib/pendingPhoto.ts` mirrors the bytes
+into IndexedDB while they are the photograph on screen and `SessionContext` adopts them back on
+mount, filling a hole only — a picture chosen while the read is in flight wins. It is one record
+that mirrors the session, deleted when the photograph is cleared and expiring after an hour, and
+it is a weaker version of what a *saved look* already does with the same photograph in the same
+database for ever. The alternative — uploading it early so it survives — was refused: the
+photograph reaches a bucket when there is a job to consume it and is deleted when that job
+settles.
 
 **The page is one centred column.** A second one beside the form — what Luvo is, in three
 points — was written and then removed: the copy that belongs there is still being decided, and
@@ -577,6 +600,18 @@ the *second* question; the first is "what do I look like", and only the whole pi
 it. `<BeforeAfter>` is used in both states, handed `before={null}` when it is not comparing,
 which is its own no-slider branch — swapping between two frames would move the picture by
 whatever the two disagreed about.
+
+**The primary action on that page is the next haircut, and for a signed-out browser it is an
+account.** The row under the preview was Download, Share, Delete — three things to do with the
+picture that already exists and nothing about the next one, which is the wrong answer to the
+moment the whole two-column layout is built around. So *Keep trying hairstyles* sits above that
+row while `credits.signedIn` is false, and Download drops to `secondary` beside Share for as long
+as it is drawn; nothing is removed. It offers **more hairstyles, never one more generation** —
+the `<SignInWall>` rule, for the same reason: naming `grantSignupBonus` turns an account into a
+transaction and is a promise about a server-side constant the browser cannot read. It is not
+gated on an empty balance, because it is an offer rather than a refusal; the refusal is
+`<SignInWall>` on the button that would have spent the credit. Drawn only once `ready` is true,
+since `ready: false` is not "signed out".
 
 **Every link out of a preview carries the answers it was generated with**, and
 `useAdoptedAnswers` in `SessionContext` is what reads them back in — once, and only after the

@@ -27,10 +27,7 @@
  */
 
 import type { Gender, HairLengthId, HairTypeId } from './contract/catalog';
-
-const DB_NAME = 'luvo';
-const DB_VERSION = 1;
-const STORE = 'looks';
+import { LOOKS_STORE, run as runOn } from './idb';
 
 export interface SavedLook {
   id: string;
@@ -49,41 +46,12 @@ export interface SavedLook {
 /** What a list needs, without pulling every image into memory. */
 export type LookSummary = Omit<SavedLook, 'result' | 'source'>;
 
-let opening: Promise<IDBDatabase | null> | null = null;
-
-function open(): Promise<IDBDatabase | null> {
-  if (typeof indexedDB === 'undefined') return Promise.resolve(null);
-  opening ??= new Promise<IDBDatabase | null>((resolve) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        const store = db.createObjectStore(STORE, { keyPath: 'id' });
-        store.createIndex('createdAt', 'createdAt');
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    // Resolved rather than rejected: a private window with storage disabled is
-    // a visitor who can still generate and still download, just not keep a
-    // gallery. Every caller treats null as "no saved looks", which is true.
-    request.onerror = () => resolve(null);
-    request.onblocked = () => resolve(null);
-  });
-  return opening;
-}
-
-function run<T>(mode: IDBTransactionMode, work: (store: IDBObjectStore) => IDBRequest<T>): Promise<T | null> {
-  return open().then(
-    (db) =>
-      new Promise<T | null>((resolve) => {
-        if (!db) return resolve(null);
-        const transaction = db.transaction(STORE, mode);
-        const request = work(transaction.objectStore(STORE));
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => resolve(null);
-      }),
-  );
-}
+/**
+ * This store's half of the shared connection — see `idb.ts` for why the database
+ * is opened in one place.
+ */
+const run = <T>(mode: IDBTransactionMode, work: (store: IDBObjectStore) => IDBRequest<T>) =>
+  runOn<T>(LOOKS_STORE, mode, work);
 
 export const saveLook = (look: SavedLook): Promise<unknown> =>
   run('readwrite', (store) => store.put(look));
