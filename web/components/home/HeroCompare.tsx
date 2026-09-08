@@ -557,9 +557,15 @@ export function HeroCompare({ images }: { images: HeroImages[] }) {
           an override rather than the way through — and pressing it *pins* the
           set, because a choice outranks a demonstration. Below the frame rather
           than over it: an overlay would cover the one thing the frame is for,
-          and would sit exactly where a cursor sweeps and a thumb comes down. */}
+          and would sit exactly where a cursor sweeps and a thumb comes down.
+
+          It has to survive the whole set: six 48px thumbs and their gaps are
+          wider than a 360px phone's column, and `shrink-0` turns that into a
+          page that scrolls sideways rather than a row that adapts. So the thumb
+          is 44px below `sm` — still a comfortable target — and the row may wrap
+          if the set ever grows past what one line can hold. */}
       {images.length > 1 ? (
-        <div className="mt-4 flex items-center justify-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
           {images.map((entry, entryIndex) => (
             <button
               key={entry.after}
@@ -580,7 +586,7 @@ export function HeroCompare({ images }: { images: HeroImages[] }) {
               aria-label={`Show example ${entryIndex + 1} of ${images.length}`}
               aria-pressed={entryIndex === index}
               className={
-                'h-12 w-12 shrink-0 overflow-hidden rounded-full bg-surface ' +
+                'h-11 w-11 shrink-0 overflow-hidden rounded-full bg-surface sm:h-12 sm:w-12 ' +
                 'transition duration-300 [transition-timing-function:var(--ease-out-quint)] ' +
                 (entryIndex === index
                   ? 'ring-2 ring-violet-ink ring-offset-2 ring-offset-canvas'
