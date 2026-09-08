@@ -2,9 +2,19 @@ import type { Metadata, Viewport } from 'next';
 import { Instrument_Serif, Inter } from 'next/font/google';
 
 import { CheckoutBanner } from '../components/CheckoutBanner';
+import { JsonLd } from '../components/seo/JsonLd';
 import { SiteFooter } from '../components/SiteFooter';
 import { SiteHeader } from '../components/SiteHeader';
 import { API_URL, SITE_URL } from '../lib/config';
+import {
+  applicationLd,
+  graph,
+  organizationLd,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  TAGLINE,
+  websiteLd,
+} from '../lib/seo';
 import { Providers } from './providers';
 import './globals.css';
 
@@ -33,23 +43,92 @@ const grotesk = Inter({
   variable: '--font-grotesk',
 });
 
+/**
+ * What every page inherits, and the two things it deliberately does not.
+ *
+ * **No `alternates.canonical` here.** Metadata is inherited, so a canonical on
+ * the layout would quietly claim `/` as the canonical of every page that had not
+ * thought to override it — which is the single most destructive thing a site can
+ * do to its own index. Each indexable route declares its own; `lib/seo.ts` says
+ * why that matters on a catalogue whose links carry answers in the query string.
+ *
+ * **No `keywords` here either.** Google has ignored the meta keywords tag since
+ * 2009. It is set per page where it is doing a different job — on a style page
+ * it is the cut's own tags, which cost nothing to emit and are read by the
+ * smaller engines and by the answer engines that are now a real share of this
+ * traffic.
+ *
+ * The title is the one change worth explaining. It was "Luvo — see the haircut
+ * before the chair", which is the brand line and is good writing, and is a
+ * phrase nobody has ever typed into a search box. A title tag has two audiences
+ * and the first is a query, so the category noun leads and the line follows it.
+ * Nothing was lost: it is still there, doing what it is good at, one clause
+ * later.
+ */
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Luvo — see the haircut before the chair',
-    template: '%s · Luvo',
+    default: `${SITE_NAME} — virtual hairstyle try-on: see the haircut before the chair`,
+    template: `%s · ${SITE_NAME}`,
   },
-  description:
-    'Upload one photo and see yourself in any cut in the Luvo catalogue — generated from studio references, not guessed from a name.',
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  category: 'lifestyle',
   openGraph: {
     type: 'website',
-    siteName: 'Luvo',
-    title: 'Luvo — see the haircut before the chair',
-    description:
-      'Upload one photo and see yourself in any cut in the Luvo catalogue.',
+    siteName: SITE_NAME,
+    locale: 'en',
+    url: SITE_URL,
+    title: `${SITE_NAME} — ${TAGLINE.toLowerCase()}`,
+    description: SITE_DESCRIPTION,
   },
-  twitter: { card: 'summary_large_image' },
-  robots: { index: true, follow: true },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${SITE_NAME} — ${TAGLINE.toLowerCase()}`,
+    description: SITE_DESCRIPTION,
+  },
+  /**
+   * `max-image-preview: large` is the one that matters on this site.
+   *
+   * The product is a picture of a haircut. Google's default is a thumbnail;
+   * `large` is what allows the render to be shown at full width in a result and
+   * in Discover, and it is the difference between a listing that demonstrates
+   * what Luvo does and one that describes it. The two snippet limits are set to
+   * unbounded for the same reason — there is nothing here we would rather have
+   * truncated.
+   */
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
+  /**
+   * Search Console's verification token, read from the environment rather than
+   * committed.
+   *
+   * A DNS record is the better proof and does not depend on a deploy; this is
+   * here because the html-tag method is the one somebody reaches for at 2am when
+   * a property will not verify, and having nowhere to put it is how a token ends
+   * up pasted into a component. Unset is the ordinary state and emits nothing.
+   */
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : undefined,
+  /**
+   * Telephone detection off.
+   *
+   * Safari turns anything that looks like a number into a `tel:` link, which on
+   * a catalogue full of lengths and type numbers ("Type 4", "2 free previews")
+   * produces blue underlined text nobody asked for, differing between the server
+   * render and the client one.
+   */
+  formatDetection: { telephone: false, address: false, email: false },
 };
 
 /**
@@ -109,6 +188,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${serif.variable} ${grotesk.variable}`}>
       <head>
         <ApiPreconnect />
+        {/*
+          The organisation, the site and the application, once, on every page.
+
+          Sitewide rather than per page because these three nodes are what every
+          other document on the site references by `@id` — a `CollectionPage`
+          saying `isPartOf: <site>` is describing a structure only if that site
+          node is somewhere in the same graph. Emitting them here costs about
+          nine hundred bytes and removes the alternative, which is thirty pages
+          each carrying an anonymous copy of the same publisher.
+        */}
+        <JsonLd data={graph(organizationLd(), websiteLd(), applicationLd())} />
       </head>
       <body className="min-h-dvh antialiased">
         <a
