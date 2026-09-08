@@ -43,19 +43,50 @@ let tick = 0;
 let timer: ReturnType<typeof setInterval> | null = null;
 const listeners = new Set<(value: number) => void>();
 
+/**
+ * The beat does not run in a tab nobody is looking at.
+ *
+ * Every subscriber is a card or a plate, and a beat re-renders all of them at
+ * once: the front page has around a hundred and fifty of them across its two
+ * shelves, the catalogue fifty-six. Dissolving between renders in a hidden tab
+ * is work with no viewer, and browsers throttle a 4.2-second interval late
+ * enough that a backgrounded page spends minutes doing it.
+ *
+ * Stopping the clock rather than skipping the notification is what makes it
+ * free — a paused interval costs nothing, where a firing one that returns early
+ * still wakes the page. The tick is *held* rather than reset, so a tab returned
+ * to carries on from the render it was showing instead of snapping back to the
+ * first one.
+ */
+function running(): boolean {
+  return typeof document === 'undefined' || !document.hidden;
+}
+
+function start(): void {
+  if (timer || listeners.size === 0 || !running()) return;
+  timer = setInterval(() => {
+    tick += 1;
+    for (const entry of listeners) entry(tick);
+  }, BEAT_MS);
+}
+
+function stop(): void {
+  if (!timer) return;
+  clearInterval(timer);
+  timer = null;
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => (running() ? start() : stop()));
+}
+
 function subscribe(listener: (value: number) => void): () => void {
   listeners.add(listener);
-  if (!timer) {
-    timer = setInterval(() => {
-      tick += 1;
-      for (const entry of listeners) entry(tick);
-    }, BEAT_MS);
-  }
+  start();
   return () => {
     listeners.delete(listener);
-    if (listeners.size === 0 && timer) {
-      clearInterval(timer);
-      timer = null;
+    if (listeners.size === 0) {
+      stop();
       // Reset so the next grid to mount opens on everybody's first render
       // rather than wherever the last one happened to leave off.
       tick = 0;

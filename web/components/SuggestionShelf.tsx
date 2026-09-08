@@ -49,6 +49,7 @@ import type {
   Hairstyle,
   RenderManifest,
 } from '../lib/contract/catalog';
+import { useOnScreen } from '../lib/useOnScreen';
 import { useReducedMotion } from '../lib/useReducedMotion';
 import { StyleCard, StyleCardSkeleton } from './StyleCard';
 
@@ -150,6 +151,13 @@ export function SuggestionShelf({
   /** Anybody who has asked for less motion gets the row still, and scrollable. */
   const still = useReducedMotion();
 
+  /**
+   * And it stops while it is scrolled away, which on the style page is most of
+   * the time — the rail sits below the plate and the whole page is built so the
+   * picture and its controls land on one screen. See `useOnScreen`.
+   */
+  const [rail, onScreen] = useOnScreen<HTMLDivElement>();
+
   const pending = loading || !manifest;
 
   if (!pending && styles.length === 0) return null;
@@ -211,7 +219,11 @@ export function SuggestionShelf({
           ))}
         </div>
       ) : (
-        <div className={`marquee mt-6 overflow-hidden ${BLEED}`}>
+        <div
+          ref={rail}
+          data-offscreen={onScreen ? undefined : ''}
+          className={`marquee mt-6 overflow-hidden ${BLEED}`}
+        >
           <div
             className="marquee-track"
             /* Left to right, which is the front page's women's shelf: the same

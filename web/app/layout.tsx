@@ -4,7 +4,7 @@ import { Instrument_Serif, Inter } from 'next/font/google';
 import { CheckoutBanner } from '../components/CheckoutBanner';
 import { SiteFooter } from '../components/SiteFooter';
 import { SiteHeader } from '../components/SiteHeader';
-import { SITE_URL } from '../lib/config';
+import { API_URL, SITE_URL } from '../lib/config';
 import { Providers } from './providers';
 import './globals.css';
 
@@ -67,9 +67,49 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+/**
+ * The API's origin, opened before anything asks it for anything.
+ *
+ * The very first thing this site does after hydrating is fetch `/v1/catalog`
+ * from another origin — Railway, where the site is on Vercel — and every plate
+ * on the page waits on it, because a render url only exists inside that
+ * document. A cross-origin fetch starts with a DNS lookup, a TCP handshake and a
+ * TLS negotiation, and all three happen *after* React has mounted and the effect
+ * in `<CatalogProvider>` has run. On a phone on mobile data that is comfortably
+ * a third of a second of nothing, spent before the request is even sent.
+ *
+ * `preconnect` moves all three into the head, where the browser can do them
+ * while it is still parsing and executing. The request itself is unchanged and
+ * so is the code that makes it — this only means the connection is already open
+ * when it arrives.
+ *
+ * `dns-prefetch` behind it is for the browsers that ignore `preconnect`; it is
+ * inert where `preconnect` is honoured. Both are skipped in a build with no API
+ * url, which is the state a fresh checkout starts in.
+ */
+function ApiPreconnect() {
+  if (!API_URL) return null;
+  let origin: string;
+  try {
+    origin = new URL(API_URL).origin;
+  } catch {
+    // A malformed url is the deployment's problem, not a reason to fail a page.
+    return null;
+  }
+  return (
+    <>
+      <link rel="preconnect" href={origin} crossOrigin="anonymous" />
+      <link rel="dns-prefetch" href={origin} />
+    </>
+  );
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${serif.variable} ${grotesk.variable}`}>
+      <head>
+        <ApiPreconnect />
+      </head>
       <body className="min-h-dvh antialiased">
         <a
           href="#main"
