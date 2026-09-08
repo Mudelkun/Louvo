@@ -56,8 +56,10 @@ pages is fifty-six entry points a binary does not have, and because Stripe takes
 stores take 15-30%. **Sign-in is real, and it is a page rather than a dialogue** — Clerk's card
 where there is a key for it and a mailed six-digit code where there is not — and
 **Stripe is real and is a hosted checkout** — the visitor leaves for Stripe's own page, so this
-build holds no publishable key and no card field. `docs/web.md` has the design and
-`web/README.md` the operational detail.
+build holds no publishable key and no card field. The catalogue is also **rendered for search**:
+the pages that matter serve their words and their links in html rather than after hydration, and
+the catalogue's own narrowings have real urls under `/hairstyles`. `docs/web.md` has the design,
+`docs/seo.md` the search architecture, and `web/README.md` the operational detail.
 
 Still simulated: favourites and saved looks (device-local).
 
@@ -386,6 +388,69 @@ re-deriving:
   card does when it is taller than the phone it is on. The app split the same way first, by a
   different road — `app/credits.tsx` offers *Sign in or create an account* in place of the packs,
   because a purchase there needs an account too.
+
+**The site is rendered for search now, and the defect it fixes was not a missing tag.**
+`docs/seo.md` is the design record. Every page that mattered was a client component reading a
+context, so the html a first-pass crawler received was a skeleton — no heading, no prose, and
+**no link from anywhere to any hairstyle**. Google renders JavaScript on a second pass, from a
+queue it prioritises by how much it already trusts a domain, which is the wrong deal for a new
+one and is not the deal at all for Bing, the social scrapers or the answer engines. Nothing
+moved out of the browser: `<StyleDetail>` still owns the plate, the deck and the button that
+spends a credit, and `<CatalogBrowser>` still filters against memory. What changed is that the
+route beside them fetches the same catalogue on the server (`web/lib/catalogServer.ts`, an hour's
+revalidation) and renders the words. Six things decide any change to it:
+
+- **Facets get pages; query strings get canonicals.** `/styles` narrows through React state, so
+  there is no url to rank — and where the answers do reach the url (`?gender=`, `?hairType=`,
+  `?length=`) they make a dozen near-identical documents compete for one query. So a fixed small
+  set of narrowings has real urls under **`/hairstyles/<slug>`** — a gender, a texture, a
+  category, or a gender with one of those — each with its own heading, its own copy composed from
+  the catalogue's own `tagline` and `description`, its own canonical and its own `ItemList`;
+  `web/lib/collections.ts` is the grammar and 34 exist today. Everything else canonicalises to
+  the bare path. `Disallow` on the parameters was rejected: it stops a *crawl* rather than a
+  duplicate, and a blocked url something links to is still indexable with no content, no way for
+  us to say what it copies, and its link equity thrown away. Canonicals consolidate; robots rules
+  discard. `MIN_STYLES` is the floor — a combination that cannot fill a page is not enumerated,
+  is not in the sitemap and 404s, because thirty auto-generated pages holding three items each
+  look exactly like what they are.
+- **The words go below the product, never in front of it.** The front page's shape is unchanged
+  and this did not reopen it — the upload box is still first, there is still no landing page, and
+  the two marketing pages are still deleted and redirected. `<HomeSeo>` sits *under* the flow,
+  the hero and the catalogue strip. The same argument settled the style page: `<StyleDetail>`
+  deliberately has no prose in it and that decision stands, because the argument was about
+  **position** — a paragraph between the picture and the controls that change it put the length
+  slider off the bottom of a phone. `<StyleAbout>` restores the description, the "Suits" line and
+  a linked specification *below the suggestion shelf*. Nothing above the fold moved.
+- **Every factual sentence in the FAQs describes this repository**, the rule `src/lib/legal.ts`
+  is written under, and the structured data quotes those answers verbatim — so a drift is a drift
+  between what we tell a person and what we tell a crawler. The photograph answer is the scrub in
+  `check-previews.mjs`, the free-previews answer is `install_anchors`, the texture answer is the
+  variant matrix. A change that makes one false edits the FAQ in the same commit. The same rule
+  forbids an `offers` node or an `aggregateRating` anywhere: the price is Stripe's and this build
+  never sees it, and there are no ratings. A hairstyle is a `CreativeWork` and not a `Product` —
+  no SKU, no availability, and what is sold is a preview.
+- **No hairstyle, category or hair type name is written down in any of it.** `web/lib/seo.ts`,
+  `web/lib/collections.ts` and `web/components/seo/` compose every title, intro, question and
+  list from catalog rows, so publishing a cut puts it in the sitemap, on a collection page, in an
+  `ItemList` and in its own FAQ with no release. The one exception is the six shelf links in
+  `<HomeSeo>` and the four in the footer, which are a *navigation* decision and are built from
+  genders and hair types — fixed dimensions of the data model, not rows anybody can publish.
+- **A canonical never goes on the layout.** Metadata is inherited, so one there would quietly
+  claim `/` as the canonical of every page that had not overridden it. For the same class of
+  reason `openGraph` is **replaced rather than merged** — a page declaring it to set a title
+  loses `siteName`, `locale` and the file-based image with it, silently, and the link posted into
+  a chat is a bare grey row. `og()` and `tw()` in `web/lib/seo.ts` exist so that cannot happen by
+  omission, and `app/opengraph-image.tsx` is the generated card behind them.
+- **The renders are in the sitemap and the AI crawlers are let in.** 103 urls and 64 image
+  entries: "what does a taper fade look like from the back" is answered by a picture, and an
+  image sitemap is the one thing that puts a render url in front of a crawler without waiting on
+  a render pass. `GPTBot` and the rest are admitted deliberately — a growing share of "which app
+  lets me try a haircut on my photo" is answered inside an assistant, everything they can reach
+  is mannequin renders and prose, and nothing behind the try-on is reachable at all.
+
+**`NEXT_PUBLIC_SITE_URL` is the one setting that can undo all of it.** Every canonical, every
+sitemap entry and every `@id` in the graph is built from it, so a deployment left on the Vercel
+default advertises canonicals on a domain nobody links to.
 
 **Four programs now read the catalog, and the boundary rule is unchanged.** A *predicate* may
 be mirrored by hand and kept honest by running both copies; a *document* may not.

@@ -63,7 +63,21 @@ export function CatalogBrowser() {
 
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [sort, setSort] = useState<SortId>('popular');
-  const [search, setSearch] = useState('');
+
+  /**
+   * The box is seeded from `?search=`, and that parameter has one job.
+   *
+   * It is the target of the `SearchAction` in the site's structured data — the
+   * thing a sitelinks searchbox submits to — so it has to be a url that really
+   * filters this grid. Declaring a search endpoint a site ignores is the kind of
+   * markup that describes a page which does not exist.
+   *
+   * Seeded rather than bound: after the first render the box owns its own value,
+   * so typing does not rewrite the url and the back button does not fight the
+   * filter. It is the same "adopt once" rule the two answers above follow, for
+   * the same reason.
+   */
+  const [search, setSearch] = useState(() => carried.get('search') ?? '');
 
   /**
    * The grid lags the search box by a frame, and the box never lags the typist.

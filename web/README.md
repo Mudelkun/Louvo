@@ -307,6 +307,34 @@ half.
 
 ---
 
+## Search
+
+`docs/seo.md` is the design record. Three things to know before touching a page:
+
+**Routes that render on the server.** `/hairstyles`, `/hairstyles/<slug>`, the text index at the
+foot of `/styles`, the breadcrumbs and `<StyleAbout>` all read the catalogue through
+`lib/catalogServer.ts` (a one-hour revalidation) rather than through `<CatalogProvider>`. That is
+so the html holds the words and the links, which is what a first-pass crawler gets. The
+interactive parts — the grid, the plate, the deck, the controls — are unchanged and still client
+components.
+
+**Every indexable page declares its own canonical, and none is declared on the layout.**
+Metadata is inherited, so a canonical on the layout would claim `/` as the canonical of any page
+that forgot to override it. The same class of trap applies to cards: `openGraph` is *replaced*
+rather than merged, so use `og()` and `tw()` from `lib/seo.ts` instead of writing the objects out
+— they carry `siteName`, `locale` and the default `og:image`, and a page that sets its own title
+inline loses all three silently.
+
+**Adding a hairstyle or a category still needs no code change here.** Titles, intros, questions
+and lists are composed from catalog rows; `npm run catalog:publish` puts a cut in the sitemap, on
+its collection page and in its own FAQ. If you find yourself typing a hairstyle name into
+`lib/seo.ts`, `lib/collections.ts` or `components/seo/`, that is the rule being broken.
+
+**In production, `NEXT_PUBLIC_SITE_URL` must be the real origin.** Every canonical, sitemap entry
+and structured-data `@id` is built from it.
+
+---
+
 ## Not built yet
 
 - **Clerk**, as a *second provider* rather than as sign-in itself — a Google

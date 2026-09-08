@@ -21,6 +21,21 @@ import { LEGAL_DOCUMENTS } from '../lib/contract/legal';
 import { useCatalog } from '../lib/state/CatalogContext';
 import { Logo } from './Logo';
 
+/**
+ * The footer's links, and the middle group is the site's internal linking.
+ *
+ * Everything on this site that narrows a catalogue was React state on `/styles`
+ * — instant for a visitor, invisible to a crawler and worth nothing as a url. The
+ * shelves under `/hairstyles` are those narrowings given real pages, and this is
+ * where every page on the site links to them: a sitewide link is how link equity
+ * reaches a page that is otherwise two clicks from the front door, and how a
+ * crawler finds one without walking the sitemap.
+ *
+ * Four shelves rather than the thirty that exist. A footer listing every
+ * collection is a link farm — it dilutes each link, and nobody reads it. These
+ * four are the widest doors: two genders and the two textures the rest of the
+ * industry serves worst.
+ */
 const GROUPS = [
   {
     heading: 'Try it on',
@@ -28,6 +43,16 @@ const GROUPS = [
       { href: '/', label: 'Upload a photo' },
       { href: '/styles', label: 'Browse the catalogue' },
       { href: '/looks', label: 'My looks' },
+    ],
+  },
+  {
+    heading: 'Hairstyles',
+    links: [
+      { href: '/hairstyles/men', label: "Men's hairstyles" },
+      { href: '/hairstyles/women', label: "Women's hairstyles" },
+      { href: '/hairstyles/curly-hair', label: 'Curly hairstyles' },
+      { href: '/hairstyles/coily-hair', label: 'Coily hairstyles' },
+      { href: '/hairstyles', label: 'Every shelf' },
     ],
   },
   {
@@ -71,7 +96,9 @@ export function SiteFooter() {
   return (
     <footer className="mt-24 border-t border-line bg-canvas-raised/60">
       <div className="mx-auto w-full max-w-[1240px] px-5 py-14 sm:px-8 lg:px-12">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Five tracks on a laptop: the brand takes two, and the three link
+            groups take one each. It was four when there were two groups. */}
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
             <Logo />
             <p className="mt-3 max-w-[36ch] text-[13.5px] leading-relaxed text-muted">
