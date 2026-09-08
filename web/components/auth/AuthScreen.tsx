@@ -22,11 +22,13 @@
  * pressed on** as `?next=`, and that is where the visitor is put back. See
  * `useReturnPath` in `components/AuthButtons.tsx`.
  *
- * One honest limit, because it is the part the modal genuinely did better: a
- * photograph that has been *uploaded but not yet submitted* lives in this tab's
- * memory as an object url, so it does not survive the trip. The two answers on
- * that page — the cut, the length, the texture — are in the session and do come
- * back.
+ * That used to come with one honest limit, and it was the part the modal
+ * genuinely did better: a photograph *chosen but not yet submitted* is an object
+ * url, which is a handle the document holds, so a provider that returns as a
+ * fresh page load lost it. It no longer does — the bytes are mirrored into
+ * IndexedDB while they are the photograph on screen (`lib/pendingPhoto.ts`) and
+ * the session adopts them back on the way in — so the cut, the length, the
+ * texture *and* the picture are all where they were left.
  *
  * ## One column, centred
  *

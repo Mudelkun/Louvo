@@ -91,6 +91,7 @@ import { HAIR_TYPE_SHORT, Plate } from './Plate';
 import { SUGGESTION_COUNT, SuggestionShelf } from './SuggestionShelf';
 import { ShareButton } from './ShareButton';
 import { FavouriteButton } from './FavouriteButton';
+import { SignInWall } from './SignInWall';
 import { TopUpDialog } from './TopUpDialog';
 import { Button, ButtonLink, Chip, Notice, Overline, Rule, Skeleton } from './ui';
 
@@ -1046,8 +1047,22 @@ function Loaded({
  * pointing at `/account`, which answers somebody's intention with a different
  * verb and a navigation — the cut, the length and the texture left behind, and
  * the way back is finding this page again. The label is the same at every
- * balance and the packs are raised over the page instead (`TopUpDialog`); the
- * line under the button is where "none left" is said.
+ * balance and the dialogue is raised over the page instead; the line under the
+ * button is where "none left" is said.
+ *
+ * ## An empty balance is two states, and they get two dialogues
+ *
+ * **Signed in and out of previews** is the packs (`<TopUpDialog>`). **Never
+ * signed in** is `<SignInWall>`, and it is not a softer paywall — it is the only
+ * one of the two that is not a dead end. Credits live on an account, so
+ * `<Pricing>` sends a signed-out Buy to `/sign-in` anyway: showing the packs
+ * first puts three prices in front of somebody whose every next step is the page
+ * behind them. And a first sign-in carries `grantSignupBonus`, so the visitor
+ * who does what that dialogue asks can generate again without paying — which is
+ * why the wall offers more hairstyles and never names the bonus. The condition
+ * is read at press time from the same account state the button is refused on, so
+ * a sign-in that happens in another tab is reflected the next time it is
+ * pressed.
  *
  * ## Coming back from sign-in with a pack still in hand
  *
@@ -1098,16 +1113,17 @@ function TryOnAction({
    * server component, so both renders agree and the dialogue is never drawn
    * shut for a frame first.
    */
-  const [toppingUp, setToppingUp] = useState(!!buy);
+  const [wall, setWall] = useState<'packs' | 'sign-in' | null>(buy ? 'packs' : null);
 
   const submit = async () => {
     if (!photo || !gender || notOffered) return;
     // The paywall is raised here rather than in the label. The button says what
     // it does at every balance, and with nothing to spend the first thing it
-    // does is ask for a pack — over this page, so the cut, the length and the
-    // texture survive the interruption.
+    // does is ask for whichever of the two things is actually missing — an
+    // account, or a pack — over this page, so the cut, the length and the
+    // texture survive the interruption. See the header.
     if (!canGenerate) {
-      setToppingUp(true);
+      setWall(credits.signedIn ? 'packs' : 'sign-in');
       return;
     }
     const id = await start({ hairstyle: style, gender, hairType, lengthId, photo });
@@ -1115,6 +1131,14 @@ function TryOnAction({
     // Re-read the balance, never decrement it — see the header.
     void refresh();
     router.push('/studio/generating');
+  };
+
+  // A pack bought in another tab, or credits granted by a sign-in that happened
+  // while this was open, land here — the client never adjusts a balance itself,
+  // so asking the server is the only way this button becomes live again.
+  const closeWall = () => {
+    setWall(null);
+    void refresh();
   };
 
   return (
@@ -1219,10 +1243,12 @@ function TryOnAction({
       ) : ready ? (
         /* The balance is empty, and the line under the button is where that is
            said — not on the button, which still names the thing being asked for.
-           Pressing it opens the packs, and this is the sentence that means the
-           dialogue is not a surprise. */
+           This is the sentence that means the dialogue is not a surprise, so it
+           has to name the dialogue that is actually coming: the packs for
+           somebody with an account, and sign-in for somebody without one. */
         <p className="mt-3 text-[12.5px] text-muted">
-          No previews left · Generate opens the packs
+          No previews left ·{' '}
+          {credits.signedIn ? 'Generate opens the packs' : 'sign in to keep generating'}
         </p>
       ) : null}
 
@@ -1238,16 +1264,10 @@ function TryOnAction({
         </p>
       ) : null}
 
-      {toppingUp ? (
-        <TopUpDialog
-          onClose={() => {
-            setToppingUp(false);
-            // A pack bought in another tab, or credits granted while this was
-            // open, land here — the client never adjusts a balance itself, so
-            // asking the server is the only way this button becomes live again.
-            void refresh();
-          }}
-        />
+      {wall === 'packs' ? (
+        <TopUpDialog onClose={closeWall} />
+      ) : wall === 'sign-in' ? (
+        <SignInWall onClose={closeWall} />
       ) : null}
     </>
   );

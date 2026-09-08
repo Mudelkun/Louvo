@@ -535,6 +535,35 @@ first is "what do I look like", and only the whole picture answers it. So a
 which is that component's own no-slider branch: swapping between two frames would
 move the picture by whatever the two disagreed about.
 
+**The primary action there is the next haircut, and it is an account.** The row
+under the preview was Download, Share, Delete — three things to do with the
+picture that already exists and nothing about the next one, which is the wrong
+answer to the moment the whole two-column layout is arranged around. So while
+this browser has never signed in, a solid *Keep trying hairstyles* sits above
+that row and Download steps down to `secondary` beside Share for as long as it
+is drawn: two solid buttons next to each other are two things asked for at once.
+Nothing is removed — the picture is still downloadable, shareable and deletable
+in the same row, one weight lighter.
+
+It offers **more hairstyles, never one more generation**, which is the rule
+`<SignInWall>` is written to and it is the same rule for the same reason: a
+first sign-in carries `grantSignupBonus`, and naming that turns an account into
+a transaction — an email for a preview — which is the shape of a trick even when
+the offer is real, and is a promise about `SIGNUP_BONUS_CREDITS`, a server-side
+constant no browser can read. The line under the button says only what is true
+of the free allowance either way, which is that it hangs off this browser; at
+zero it says that was the last one. It is deliberately not gated on an empty
+balance: a visitor with a preview left is being offered more haircuts rather
+than refused one, and the refusal, when it comes, is `<SignInWall>` on the
+button that would have spent it. Two moments, one offer, the same words.
+
+It is drawn only once `ready` is true, for the reason nothing else here reads a
+balance early: `ready: false` is not "signed out", and a primary button that
+appears and then turns out to have been about somebody who was signed in all
+along is the page guessing. The door carries `?next=` like every other one, so
+the visitor comes back to this preview — which is in this browser's IndexedDB
+and is still there after the round trip.
+
 **Both links out carry the answers the preview was generated with.**
 `?gender=…&hairType=…` on the cut, on every suggestion and on "All cuts", so
 a catalogue reached from a finished preview opens already narrowed to it. The
@@ -580,6 +609,39 @@ when somebody wants to leave it.
 optimistic increment on purchase — submitting triggers a *re-read*. And
 `ready: false` is not "no credits": `canGenerate` is true while loading, because
 a paywall that flashes on a cold start lands on people who have twenty.
+
+**An empty balance is two states, and the button raises two different
+dialogues.** Signed in and out of previews is the packs (`<TopUpDialog>`). Never
+signed in is `<SignInWall>` — *Sign in to preview more hairstyles* — and that is
+not a softer paywall, it is the only one of the two that is not a dead end.
+Credits live on an account, so `<Pricing>` already sends a signed-out Buy to
+`/sign-in` carrying the pack: showing the packs first puts three prices in front
+of somebody whose every next step is the page behind them. And a first sign-in
+carries `grantSignupBonus`, so the visitor who does what the wall asks can
+generate again without paying.
+
+**Creating an account is the primary button and signing in sits beside it**,
+which is the opposite weighting to the header's two doors. The header is asked by
+anybody; the wall is raised at a browser that has spent its free previews and has
+never signed in, which is overwhelmingly a first account rather than a forgotten
+one. Without Clerk there is one door, named for both things it does — *Sign in or
+create an account*, the wording `app/credits.tsx` already uses — because there is
+no separate sign-up route to send anybody to.
+
+**The wall never names the bonus**, and that is the decision in it rather than
+the copy. *Sign in and get a free preview* turns an account into a transaction —
+the shape of a trick even when the offer is real — and it is a promise about
+`SIGNUP_BONUS_CREDITS`, a server-side constant this component cannot read and
+must not guess at. Somebody who signs in and finds a preview waiting has been
+treated well; somebody promised one has been sold something. The line under the
+button matches: *No previews left · sign in to keep generating*, where a signed-in
+visitor still gets *Generate opens the packs*.
+
+Both dialogues are `<Dialog>` — one scroll lock, one Escape handler, one
+reachable backdrop, one answer to what a card does when it is taller than the
+phone it is on. The app reached the same split first and by a different road:
+`app/credits.tsx` branches on `signedIn` and offers *Sign in or create an
+account* in place of the packs, because there too a purchase needs an account.
 
 **Every degraded outcome is reported.** The footer says whether the catalogue
 came from the API or from this browser's offline copy; the packs on `/account` say
@@ -726,9 +788,26 @@ door into sign-in carries the path it was pressed on — `useReturnPath` in
 confirmation. The path is refused unless it starts with a single `/`, the same
 rule `server/src/checkout.ts` applies to Stripe's return, because a destination
 that arrives in a query string is attacker-controlled and `//evil.example` is a
-perfectly good url that leaves the site. One thing genuinely does not survive:
-a photograph *uploaded but not yet submitted* is an object url in the tab's
-memory. The two answers about it are in the session and do come back.
+perfectly good url that leaves the site.
+
+**The photograph survives it too, and that was a bug worth its own module.** A
+photograph *chosen but not yet submitted* is an object url — a handle the
+**document** holds — so it died on any trip that came back as a fresh page load:
+a Clerk round trip, and Stripe, which is a different origin entirely. Both are
+entered from the generate button by somebody who has already picked their
+picture, so the site was taking it away as the price of the errand it had just
+sent them on, at the moment they had agreed to make an account.
+`web/lib/pendingPhoto.ts` mirrors the bytes into IndexedDB while they are the
+photograph on screen and `SessionContext` adopts them back on mount. It fills a
+hole only — a picture chosen while that read is in flight wins — and it is one
+record that mirrors the session, replaced when the photograph is replaced,
+deleted when it is cleared, and expiring an hour after it was stored. That is a
+weaker version of what a *saved look* already does with the same photograph in
+the same database for ever. Uploading it early to survive the trip was the
+alternative and was refused: the photograph reaches a bucket when there is a job
+to consume it and is deleted when that job settles. `lib/idb.ts` now owns the
+connection and the version, because two modules opening one database with two
+version numbers is a `VersionError` waiting for whichever loads second.
 
 **One column, centred.** There was a second beside the form — what Luvo is, in
 three points — on the argument that a sign-in page is often the first page
