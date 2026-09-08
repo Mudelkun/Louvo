@@ -36,7 +36,7 @@
  * degraded path, close but for a slight tint on the jaw shadow.
  */
 
-import { useId, useMemo, useState } from 'react';
+import { memo, useId, useMemo, useState } from 'react';
 
 import { baseHairColor, hairGrade } from '../lib/colorGrade';
 import type { Gender, HairColor, HairShape, HairTypeId, VariantId, ViewAngle } from '../lib/contract/catalog';
@@ -312,7 +312,26 @@ function Drawing({
   );
 }
 
-export function Plate({
+/**
+ * Memoised, and this is the one that pays for the rest of the page.
+ *
+ * A plate is a leaf: it draws an `<img>` and, when the render's shot shade is
+ * not the shade on screen, a second layer carrying an `feColorMatrix` and a
+ * mask. Neither depends on anything above it, and both are expensive to
+ * reconcile — the front page mounts around 320 of them once the catalogue is
+ * fully published (two shelves, every texture a cut was shot in, twice for the
+ * marquee's second copy), and the catalogue grid another 120.
+ *
+ * Without this, the shared variant beat in `useVariantCycle` re-renders every
+ * one of them every 4.2 seconds, and a keystroke in the catalogue's search box
+ * re-renders all of them at once — in both cases to change nothing but the
+ * opacity of the `<div>` a plate is sitting in. Every prop here is either a
+ * primitive or an object the catalogue owns and does not rebuild (`shape` off
+ * the hairstyle, `color` off the provider's memo, `render` out of a memoised
+ * `renderedVariants`), so the default shallow compare is sound and the bail-out
+ * is total.
+ */
+export const Plate = memo(function Plate({
   render,
   shape,
   texture,
@@ -335,7 +354,7 @@ export function Plate({
       )}
     </div>
   );
-}
+});
 
 /**
  * The tier numbering, and *only* as a fallback.

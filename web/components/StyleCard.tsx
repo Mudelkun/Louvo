@@ -23,7 +23,7 @@
  */
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 import { useVariantCycle } from '../lib/useVariantCycle';
 import type { HairColor, HairType, HairTypeId, Hairstyle, RenderManifest } from '../lib/contract/catalog';
@@ -63,7 +63,22 @@ export interface StyleCardProps {
   tabIndex?: number;
 }
 
-export function StyleCard({
+/**
+ * Memoised, for the reason `<Plate>` is and one more of its own.
+ *
+ * A card is drawn 56 times in the catalogue grid and 20 more in every
+ * suggestion shelf (ten cuts, twice, for the marquee's second copy). Two things
+ * above it change often and change nothing here: the shared variant beat, which
+ * re-renders whichever cards are cycling, and the catalogue's search box, whose
+ * every keystroke re-runs `filterHairstyles` and hands the grid a fresh array —
+ * of the *same* hairstyle objects. The list identity moves; the cards do not.
+ *
+ * Every prop is a primitive or something the catalogue owns for the life of the
+ * document (`style`, `hairTypes`, `manifest`) or the provider memoises
+ * (`color`), so the default shallow compare holds and a keystroke re-renders
+ * only the cards that entered or left the result.
+ */
+export const StyleCard = memo(function StyleCard({
   style,
   hairTypes,
   manifest,
@@ -243,7 +258,7 @@ export function StyleCard({
       ) : null}
     </div>
   );
-}
+});
 
 /**
  * The card's placeholder, beside the card so a change to one is a change to the
