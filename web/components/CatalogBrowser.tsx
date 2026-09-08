@@ -32,7 +32,7 @@
  */
 
 import { useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 
 import { filterHairstyles, type SortId } from '../lib/hairTypes';
 import { useCatalog } from '../lib/state/CatalogContext';
@@ -65,12 +65,37 @@ export function CatalogBrowser() {
   const [sort, setSort] = useState<SortId>('popular');
   const [search, setSearch] = useState('');
 
+  /**
+   * The grid lags the search box by a frame, and the box never lags the typist.
+   *
+   * Typing is the one interaction here that changes the result set on every
+   * keystroke: `filterHairstyles` re-runs and hands the grid a new array, which
+   * before `<StyleCard>` was memoised meant re-rendering fifty-six cards and a
+   * hundred and twenty plates per character. Memoising the card fixed most of
+   * that, but the cards that genuinely enter and leave the result still have to
+   * mount and unmount, and on a mid-range phone that is enough to drop
+   * characters.
+   *
+   * `useDeferredValue` splits the two: `search` drives the input, so what
+   * somebody typed appears immediately, and the deferred copy drives the filter,
+   * so the grid is rebuilt at a lower priority and React abandons a half-done
+   * pass when the next keystroke arrives. Nothing is debounced — there is no
+   * fixed delay to tune and no window where the grid is stale on a settled
+   * input; the deferred value catches up as soon as there is a frame to do it
+   * in.
+   *
+   * Only the search is deferred. A category or a texture is one deliberate press
+   * with no follow-up keystroke to yield to, and deferring it would be latency
+   * bought for nothing.
+   */
+  const typed = useDeferredValue(search);
+
   const results = useMemo(
     () =>
       catalog
-        ? filterHairstyles(catalog.hairstyles, { gender, hairType, categoryId, sort, search })
+        ? filterHairstyles(catalog.hairstyles, { gender, hairType, categoryId, sort, search: typed })
         : [],
-    [catalog, gender, hairType, categoryId, sort, search],
+    [catalog, gender, hairType, categoryId, sort, typed],
   );
 
   // Carried into every style page so it opens on the view the grid was showing.

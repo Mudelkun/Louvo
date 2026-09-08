@@ -432,3 +432,18 @@
 .marquee:focus-within .marquee-track {
   animation-play-state: paused;
 }
+
+/**
+ * And it stops when nobody is looking at it.
+ *
+ * A CSS animation is not suspended by being scrolled past: the compositor keeps
+ * advancing the transform and every plate riding on it keeps being drawn. The
+ * front page carries around 320 of them across its two shelves once the
+ * catalogue is fully published, so a visitor reading the grid below is paying
+ * for a rail three screens up. `useOnScreen` sets the attribute; the row pauses
+ * where it is and resumes from there, which is what coming back to a marquee
+ * looks like anyway.
+ */
+.marquee[data-offscreen] .marquee-track {
+  animation-play-state: paused;
+}

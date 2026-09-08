@@ -55,13 +55,14 @@
  */
 
 import Link from 'next/link';
-import { useMemo, type ReactNode } from 'react';
+import { memo, useMemo, type ReactNode } from 'react';
 
 import type { Gender, HairColor, HairType, HairTypeId, Hairstyle } from '../../lib/contract/catalog';
 import { useCatalog } from '../../lib/state/CatalogContext';
 import { useSession } from '../../lib/state/SessionContext';
 import { typesForVariant, variantsOf } from '../../lib/hairTypes';
 import { HERO_ANGLE, renderedVariants, type ResolvedRender } from '../../lib/renders';
+import { useOnScreen } from '../../lib/useOnScreen';
 import { useReducedMotion } from '../../lib/useReducedMotion';
 import { useVariantCycle } from '../../lib/useVariantCycle';
 import { Plate } from '../Plate';
@@ -189,6 +190,13 @@ function StripRow({
   const still = useReducedMotion();
 
   /**
+   * The rail stops when it is scrolled away — see `useOnScreen` and the
+   * `[data-offscreen]` rule in `globals.css`. Nothing about it is visible: it
+   * pauses where it is and carries on from there.
+   */
+  const [rail, onScreen] = useOnScreen<HTMLDivElement>();
+
+  /**
    * One copy of the shelf, long enough to fill the rail on its own.
    *
    * The track holds this twice and travels half its own width, which lands the
@@ -230,7 +238,11 @@ function StripRow({
 
   return (
     <Shelf gender={row.gender}>
-      <div className="marquee -mx-5 overflow-hidden px-5 sm:-mx-8 sm:px-8">
+      <div
+        ref={rail}
+        data-offscreen={onScreen ? undefined : ''}
+        className="marquee -mx-5 overflow-hidden px-5 sm:-mx-8 sm:px-8"
+      >
         <div
           className="marquee-track"
           data-direction={DIRECTION[row.gender]}
@@ -279,7 +291,7 @@ function Shelf({ gender, children }: { gender: Gender; children: ReactNode }) {
  * changes together reads as the catalogue turning a page. Under reduced motion
  * the hook holds at the first render and nothing dissolves.
  */
-function StripPlate({
+const StripPlate = memo(function StripPlate({
   pick,
   gender,
   hairTypes,
@@ -378,7 +390,7 @@ function StripPlate({
       </p>
     </Link>
   );
-}
+});
 
 /** The rail's placeholder: the layout, and nothing about the data. */
 function StripSkeleton({ gender }: { gender: Gender }) {
