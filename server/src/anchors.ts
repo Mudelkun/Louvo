@@ -41,9 +41,33 @@ import { createHash } from 'node:crypto';
 import { placeholders, query, type Queryer } from './db.js';
 import { env } from './env.js';
 
-/** The device's own keystore secret, and Android's `ANDROID_ID`. */
-export const ANCHOR_KINDS = ['device', 'android_id'] as const;
+/**
+ * The device's own keystore secret, Android's `ANDROID_ID`, and a browser's.
+ *
+ * `web` is the same *kind of thing* as `device` — the hash of a secret the
+ * client minted and kept — recorded separately because it is not the same
+ * strength. A phone's secret is in the platform keystore; a browser's is in
+ * `localStorage`, which is cleared by a menu item and absent in a private
+ * window. Keeping them apart is what lets `grantedFor` hand a browser a smaller
+ * free allowance without anything downstream having to guess which it is looking
+ * at, and it is what makes "how many of these are browsers" a query rather than
+ * an estimate.
+ */
+export const ANCHOR_KINDS = ['device', 'android_id', 'web'] as const;
 export type AnchorKind = (typeof ANCHOR_KINDS)[number];
+
+/**
+ * The free allowance an anchor of this kind is created with.
+ *
+ * Read once, at the moment the row is inserted, and never again: `registerAnchors`
+ * upserts with `do nothing`, so an anchor keeps the number it was granted even
+ * if the configuration changes later. That is the property worth having —
+ * lowering the default must not retroactively take a generation away from
+ * somebody who already had it, and raising it must not hand a second one to
+ * every device that ever visited.
+ */
+export const grantedFor = (kind: AnchorKind): number =>
+  kind === 'web' ? env.credits.webFreeGenerations : env.credits.freeGenerations;
 
 export interface Anchor {
   kind: AnchorKind;
@@ -75,8 +99,12 @@ const ANDROID_ID = /^[0-9a-f]{16}$/i;
  * pre-existing behaviour; the consequence of failing the request is that a phone
  * with an unreadable `ANDROID_ID` cannot generate at all.
  */
-export function anchorsFrom(deviceId: string, header: string | string[] | undefined): Anchor[] {
-  const anchors: Anchor[] = [{ kind: 'device', value: deviceId }];
+export function anchorsFrom(
+  deviceId: string,
+  header: string | string[] | undefined,
+  deviceKind: 'device' | 'web' = 'device',
+): Anchor[] {
+  const anchors: Anchor[] = [{ kind: deviceKind, value: deviceId }];
   const raw = Array.isArray(header) ? header[0] : header;
   if (!raw) return anchors;
 
@@ -127,7 +155,7 @@ export async function registerAnchors(deviceId: string, anchors: Anchor[], db: Q
     await db(
       `insert into free_allowance (anchor_id, granted) values ($1, $2)
        on conflict (anchor_id) do nothing`,
-      [id, env.credits.freeGenerations],
+      [id, grantedFor(anchor.kind)],
     );
   }
 

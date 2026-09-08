@@ -322,6 +322,27 @@
   }
 }
 
+/**
+ * The balance taking the hit as the purchased previews land on it.
+ *
+ * Deliberately overshoots and settles rather than growing and returning: the
+ * chip has just arrived from across the page, and a number that swells smoothly
+ * reads as a hover state rather than as something having been caught. It runs
+ * once, on the count-up, and nothing else in the site uses it — see
+ * `lib/celebrate.ts` for what it is part of.
+ */
+@keyframes luvo-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.55);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 @keyframes luvo-spin {
   to {
     transform: rotate(360deg);

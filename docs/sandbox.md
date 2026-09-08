@@ -102,6 +102,10 @@ curl -X POST $BASE/__sandbox/purchase -H 'content-type: application/json' \
 curl -X POST $BASE/__sandbox/refund -H 'content-type: application/json' \
      -d '{"device":"<secret>","transactionId":"<from /__sandbox/purchases>"}'
 
+# Refund a Stripe purchase — the web's half, through the same signed webhook
+curl -X POST $BASE/__sandbox/stripe/refund -H 'content-type: application/json' \
+     -d '{"paymentIntent":"pi_sbx_..."}'   # from the sandbox log when you paid
+
 # Hand back the free two, so you can run the paywall walkthrough again
 curl -X POST $BASE/__sandbox/reset-free -H 'content-type: application/json' \
      -d '{"device":"<secret>"}'
@@ -116,6 +120,23 @@ npm run sandbox:drive fresh
 `device` is always the **secret**, never the id — the server hashes it. The two are
 indistinguishable by eye (32 random bytes as hex, and a sha256 of them as hex, are both 64 hex
 characters), which is a bug this file's own control endpoints shipped with for about ten minutes.
+
+### Buying a pack from the website, with no Stripe account
+
+The sandbox serves a **miniature Stripe** from its own process — that is what
+`STRIPE_API_BASE` exists for, and it is the only test hook in the service. Point
+the site at the sandbox (`NEXT_PUBLIC_API_URL`), sign in on `/account`, press
+Buy, and a stand-in checkout page opens; pressing Pay marks the session paid,
+delivers a **correctly signed** `checkout.session.completed` to the deployment's
+own webhook, and redirects back to the page the purchase started from.
+
+What that exercises is nearly all of it: the request the server builds, the form
+encoding, the session read back on confirmation, the HMAC check, both
+idempotency indexes, the ledger row and the redirect. What it does not exercise
+is the card, the money, and Stripe's own idea of what a Price costs.
+
+`--web <url>` sets where the checkout returns to, if the site is not on
+`http://localhost:3000`.
 
 ### Getting the app's device secret
 

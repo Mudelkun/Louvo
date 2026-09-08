@@ -18,10 +18,11 @@
 
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
+import { claimAnonymous, releaseAnonymous, reportIfSuspicious } from './abuse.js';
 import { anchorsFrom, registerAnchors } from './anchors.js';
 import { getCatalog } from './catalog.js';
-import { attachCharge, creditState, reserve } from './credits.js';
-import { deviceIdFor, deviceSecretFrom, sameDevice, setPushToken, touchDevice } from './devices.js';
+import { attachCharge, creditState, reserve, userForDevice } from './credits.js';
+import { deviceIdFor, deviceKindFor, deviceSecretFrom, sameDevice, setPushToken, touchDevice } from './devices.js';
 import { env } from './env.js';
 import { cancel as cancelGeneration } from './fal.js';
 import {
@@ -171,13 +172,24 @@ async function requireDevice(request: FastifyRequest, reply: FastifyReply): Prom
  * whose anchors had never been registered would look like it had none left and
  * be refused its very first free generation.
  */
+/**
+ * Which kind of client this is, for the anchor the device secret is filed under.
+ *
+ * Resolved through one helper so the submit route's two calls — registering the
+ * anchors and then reserving against them — cannot disagree. A device registered
+ * as `web` and reserved against as `device` would hold against an anchor that
+ * does not exist, which fails open.
+ */
+const kindOf = (request: FastifyRequest) =>
+  deviceKindFor(request.headers.origin, request.headers['x-luvo-client']);
+
 async function requireAnchoredDevice(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<string | null> {
   const deviceId = await requireDevice(request, reply);
   if (!deviceId) return null;
-  await registerAnchors(deviceId, anchorsFrom(deviceId, request.headers['x-install-anchor']));
+  await registerAnchors(deviceId, anchorsFrom(deviceId, request.headers['x-install-anchor'], kindOf(request)));
   return deviceId;
 }
 
@@ -265,6 +277,52 @@ export async function previewRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
+    /**
+     * The anonymous ceiling.
+     *
+     * Applied only to a signed-out browser, and both halves of that matter. A
+     * signed-in device has an account, and the account is the identity — rate
+     * limiting somebody who has told us who they are would be punishing the
+     * behaviour this whole design is trying to produce. A phone is exempt because
+     * its anchor is keystore-backed and already survives the thing this defends
+     * against; `abuse.ts` has the asymmetry in full.
+     *
+     * It is checked *before* the job exists and released if the charge below
+     * fails, so a lost race for the last credit does not also consume somebody's
+     * anonymous allowance for the day.
+     *
+     * The refusal is deliberately not `insufficient_credits`. Nothing here says
+     * the user is out of credits — it says this network has had its anonymous
+     * share — and the interface answers it with a sign-in, which is free and
+     * grants a credit. Conflating the two would put a paywall in front of
+     * somebody who has never been asked for an email.
+     */
+    let anonymous: Awaited<ReturnType<typeof claimAnonymous>> | null = null;
+    if (env.credits.enforced && kindOf(request) === 'web' && !(await userForDevice(deviceId))) {
+      anonymous = await claimAnonymous(
+        {
+          ip: request.ip,
+          userAgent: request.headers['user-agent'],
+          language: request.headers['accept-language'],
+        },
+        deviceId,
+      );
+      // Never awaited into the response and never allowed to throw: an alert
+      // that can fail a generation is worse than no alert. See its header.
+      void reportIfSuspicious(anonymous).catch((error) =>
+        request.log.warn({ err: error }, 'abuse alert failed'),
+      );
+
+      if (!anonymous.allowed) {
+        reply.code(429);
+        return {
+          error: 'anon_limit_reached',
+          message: 'sign in to keep generating — it is free, and it adds a credit',
+          credits: await creditState(deviceId),
+        };
+      }
+    }
+
     const id = newJobId();
     const key = photoKey(id);
     const job = await createJob({
@@ -292,12 +350,19 @@ export async function previewRoutes(app: FastifyInstance): Promise<void> {
      */
     let charged = job;
     if (job.id === id && env.credits.enforced) {
-      const charge = await reserve(deviceId, anchorsFrom(deviceId, request.headers['x-install-anchor']));
+      const charge = await reserve(
+        deviceId,
+        anchorsFrom(deviceId, request.headers['x-install-anchor'], kindOf(request)),
+      );
       if (!charge) {
         // Lost the race for the last credit between the check above and here.
         // Cancelling releases the (unwritten) charge as a no-op and leaves no
         // job for the app to poll.
         await markCancelled(job.id);
+        // And give back the anonymous claim, which paid for a generation that
+        // never happened. Without this, two racing submissions cost the bucket
+        // two of its daily three and produce one preview.
+        if (anonymous) await releaseAnonymous(anonymous.bucketId);
         reply.code(402);
         return {
           error: 'insufficient_credits',

@@ -52,7 +52,15 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 
 import type {
   Gender,
@@ -80,7 +88,7 @@ import { useAdoptedAnswers, useSession } from '../lib/state/SessionContext';
 import { usePhotoIntake } from '../lib/usePhotoIntake';
 import { useVariantCycle } from '../lib/useVariantCycle';
 import { HAIR_TYPE_SHORT, Plate } from './Plate';
-import { SuggestionShelf } from './SuggestionShelf';
+import { SUGGESTION_COUNT, SuggestionShelf } from './SuggestionShelf';
 import { ShareButton } from './ShareButton';
 import { FavouriteButton } from './FavouriteButton';
 import { TopUpDialog } from './TopUpDialog';
@@ -197,12 +205,15 @@ export function StyleDetail({
   length,
   gender: genderParam,
   hairType: hairTypeParam,
+  buy,
 }: {
   styleId: string;
   length?: string;
   /** The two answers the grid or the preview that linked here was drawn with. */
   gender?: string;
   hairType?: string;
+  /** A pack pressed here before signing in, coming back — see `TryOnAction`. */
+  buy?: string;
 }) {
   const { catalog, hairstyles, hairTypes, defaultColor, loading, error } = useCatalog();
   const { gender, hairType, hairTypeDeclared, setHairType, setGender } = useSession();
@@ -216,7 +227,32 @@ export function StyleDetail({
   // state rather than skeletoned in one and missing from the others — a page
   // that could not reach the catalogue is exactly when somebody wants to leave.
   return (
-    <>
+    /*
+      One measure for the whole page, and the plate's own width is what sets it.
+
+      The picture column was `1fr`, so capping the plate left the column at its
+      old 730px with the picture sitting in a third of it: a 370px hole down the
+      middle of the page, and a plate no longer aligned with anything. The fix is
+      to make the column *be* the plate — `--plate` is the track width and the
+      block inside it is `w-full` — and then to centre the two columns together
+      by giving everything above and below them the same width. The back link,
+      the rule and the shelf are all inside it, so one left edge runs the length
+      of the page and the page itself sits in the middle of the window.
+
+      It is a variable rather than a repeated `clamp` because four places need
+      the same number — the two grids, the measure, and `StyleDetailSkeleton`,
+      which is a descendant and inherits it — and four copies of one length is
+      four chances for the skeleton to draw a different page from the real one.
+    */
+    <div
+      style={
+        {
+          '--plate': 'clamp(280px, 38svh, 440px)',
+          '--measure': 'calc(var(--plate) + 3.5rem + 430px)',
+        } as CSSProperties
+      }
+      className="lg:mx-auto lg:max-w-[var(--measure)]"
+    >
       <BackToCatalogue />
       {loading ? (
         <StyleDetailSkeleton />
@@ -242,9 +278,10 @@ export function StyleDetail({
           hairTypeDeclared={hairTypeDeclared}
           setHairType={setHairType}
           setGender={setGender}
+          buy={buy}
         />
       )}
-    </>
+    </div>
   );
 }
 
@@ -262,6 +299,8 @@ interface LoadedProps {
   hairTypeDeclared: boolean;
   setHairType: (hairType: HairTypeId | null) => void;
   setGender: (gender: Gender | null) => void;
+  /** A pack pressed here before signing in, coming back — see `TryOnAction`. */
+  buy?: string;
 }
 
 function Loaded({
@@ -277,6 +316,7 @@ function Loaded({
   hairTypeDeclared,
   setHairType,
   setGender,
+  buy,
 }: LoadedProps) {
   // Read here only to know whether the action below is already asking for a
   // gender — everything else this component draws from is a prop.
@@ -445,7 +485,7 @@ function Loaded({
   };
 
   const related = useMemo(
-    () => relatedTo(hairstyles, style.id, gender, hairType, 4),
+    () => relatedTo(hairstyles, style.id, gender, hairType, SUGGESTION_COUNT),
     [hairstyles, style.id, gender, hairType],
   );
 
@@ -464,7 +504,8 @@ function Loaded({
       <div
         className={
           'flex flex-col gap-5 sm:gap-6 ' +
-          'lg:grid lg:gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,430px)]'
+          // The picture column is the plate's own width — see `--plate` above.
+          'lg:grid lg:gap-14 lg:grid-cols-[var(--plate)_minmax(0,430px)]'
         }
       >
         {/* ------------------------------------------------------------ */}
@@ -595,7 +636,25 @@ function Loaded({
             />
           </div>
 
-          {/* The laptop's plate, with the four angles under it as tiles. */}
+          {/*
+            The laptop's plate, with the four angles under it as tiles.
+
+            It fills its column and the *column* is capped by the window's
+            height, which is the whole reason this page fits on one screen. A
+            square plate across a 730px column is a 730px picture, and under it
+            four tiles, a rule and a heading — so the shelf of what to try next
+            began below the fold on every laptop, which is exactly where a
+            suggestion goes unread. Nothing is gained by the extra 300px: the
+            subject is one head on a white ground and it is already the largest
+            thing on the page by a wide margin at 38svh.
+
+            The cap is a `clamp` rather than a fraction so it degrades in both
+            directions — a floor for a short window, a ceiling so a tall desktop
+            does not go back to a picture that outruns the column beside it — and
+            it is the grid track rather than this block, so the tiles beneath
+            take the plate's width for free and the column has no width left over
+            to sit the picture in the middle of.
+          */}
           <div className="hidden lg:block">
             <div
               className={
@@ -806,7 +865,7 @@ function Loaded({
                 <div aria-hidden className="h-px w-full bg-line" />
                 <div className="p-5">
                   <div className="flex items-baseline justify-between gap-3">
-                    <h2 className="text-[14px] font-bold text-ink">Length</h2>
+                    <h2 className="text-[14px] font-bold text-ink">Hair Length</h2>
                     <span className="text-[12px] text-muted">Drag to try</span>
                   </div>
 
@@ -856,6 +915,7 @@ function Loaded({
               lengthId={lengthId}
               notOffered={!!notOfferedHere}
               setGender={setGender}
+              buy={buy}
               share={
                 <ShareButton
                   hairstyleId={style.id}
@@ -903,9 +963,9 @@ function Loaded({
       {/* -------------------------------------------------------------- */}
       {/*
         The same shelf the finished preview offers, and deliberately the same
-        object: `<SuggestionShelf>` draws the heading, the grid and — on a phone
-        — the drifting row, so the two places the catalogue says "and then?" say
-        it in one voice. This page owns only the frame: a rule, and the space to
+        object: `<SuggestionShelf>` draws the heading and the drifting row at
+        every width, so the two places the catalogue says "and then?" say it in
+        one voice. This page owns only the frame: a rule, and the space to
         put it below the fold. There is no sentence under the heading here
         because the button above it has already said what a preview costs.
 
@@ -916,10 +976,10 @@ function Loaded({
         the gap only has to say they are separate, not hide one from the other.
       */}
       {related.length ? (
-        <div className="mt-12 sm:mt-14">
+        <div className="mt-10 sm:mt-12 lg:mt-9">
           <Rule />
           <SuggestionShelf
-            className="mt-8 sm:mt-9"
+            className="mt-7 sm:mt-8 lg:mt-6"
             title="In the same direction"
             styles={related}
             hairTypes={hairTypes}
@@ -988,6 +1048,18 @@ function Loaded({
  * the way back is finding this page again. The label is the same at every
  * balance and the packs are raised over the page instead (`TopUpDialog`); the
  * line under the button is where "none left" is said.
+ *
+ * ## Coming back from sign-in with a pack still in hand
+ *
+ * Credits live on an account, so pressing Buy in that dialogue while signed out
+ * goes to `/sign-in` carrying the pack — `?buy=<product>` on the path handed
+ * over as `next` (see `<Pricing>`). What comes back is *this* page, and the
+ * dialogue that raised the question is not on it any more: `<Pricing>` owns the
+ * resume and `<Pricing>` is inside the dialogue, so with it closed the pack
+ * arrives at a page with nothing mounted to notice it. So `buy` opens the
+ * dialogue on the way in, over the cut the visitor was standing on, and
+ * `<Pricing>` picks up from there — one interruption, ending on Stripe's page
+ * with the pack that was pressed, rather than a second attempt.
  */
 function TryOnAction({
   style,
@@ -996,6 +1068,7 @@ function TryOnAction({
   lengthId,
   notOffered,
   setGender,
+  buy,
   share,
 }: {
   style: Hairstyle;
@@ -1004,6 +1077,8 @@ function TryOnAction({
   lengthId: HairLengthId;
   notOffered: boolean;
   setGender: (gender: Gender | null) => void;
+  /** A pack pressed here before signing in, coming back — see the header. */
+  buy?: string;
   share: ReactNode;
 }) {
   const router = useRouter();
@@ -1014,8 +1089,16 @@ function TryOnAction({
   /** The same intake the hero's drop box uses — see `usePhotoIntake`. */
   const { choose, busy, error: photoError, inputProps } = usePhotoIntake();
 
-  /** The packs, raised by the button rather than linked to. See `TopUpDialog`. */
-  const [toppingUp, setToppingUp] = useState(false);
+  /**
+   * The packs, raised by the button rather than linked to. See `TopUpDialog`.
+   *
+   * Open from the first render when a pack came back on the url, so the resume
+   * inside `<Pricing>` has something to run in — the header has the why. An
+   * initial state rather than an effect: the parameter is handed down by the
+   * server component, so both renders agree and the dialogue is never drawn
+   * shut for a frame first.
+   */
+  const [toppingUp, setToppingUp] = useState(!!buy);
 
   const submit = async () => {
     if (!photo || !gender || notOffered) return;
@@ -1172,7 +1255,10 @@ function TryOnAction({
 
 function StyleDetailSkeleton() {
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,430px)] lg:gap-14">
+    /* `--plate` is inherited from the page's own wrapper, so the placeholder is
+       laid out on exactly the measure the catalogue will land in and the page
+       does not jump by 300px when it does. */
+    <div className="grid gap-10 lg:grid-cols-[var(--plate)_minmax(0,430px)] lg:gap-14">
       <div>
         <Skeleton className="aspect-[4/5] w-full rounded-[24px] sm:aspect-[5/5]" />
         <div className="mt-4 grid grid-cols-4 gap-3">
