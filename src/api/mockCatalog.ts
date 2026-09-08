@@ -719,6 +719,143 @@ const hairstyles: Row[] = [
     shape: shape(0.45, 0.26, 0.12, 0.0, 'straight'),
   },
 
+  // ---- East Asian barbering ----------------------------------------------
+  // Named cuts, exactly like every row above: the mannequin does not change and
+  // must not — `BLANK_FACE` and `styleSheetPrompt` both forbid an ethnicity in
+  // the render, and that rule is what keeps the catalog one shelf. What is
+  // regional about these is the haircut and nothing else, so the tag carries it
+  // the way `french-crop` carries 'european'.
+  //
+  // The matrix rows lean type 1 and 2 because these cuts are cut and set for
+  // straight hair; where a cut genuinely does not exist on a coil the entry is
+  // `null` rather than a render that would be a wrong image. Several of the
+  // names are weak briefs on their own — the prompt sends `name` and nothing
+  // else — so they carry an entry in `scripts/mannequin-overrides.json`.
+  {
+    id: 'two-block-cut',
+    name: 'Two Block Cut',
+    categoryIds: ['short', 'trendy', 'medium'],
+    genders: ['male'],
+    tags: ['korean', 'undercut', 'disconnected'],
+    description: 'Heavy length left on top and through the fringe, sitting over sides and back clipped short and left disconnected rather than blended.',
+    maintenance: 'Medium',
+    bestFor: ['Oval', 'Round', 'Square'],
+    popularity: 88,
+    adjustments: ['length', 'color'],
+    // The disconnection is a clipper line and reads the same on any texture;
+    // the block left on top does not.
+    variants: v('straight', 'straight', 'curly', 'coily'),
+    shape: shape(0.4, 0.08, 0.1, 0.5, 'straight'),
+  },
+  {
+    id: 'comma-hair',
+    name: 'Comma Hair',
+    categoryIds: ['short', 'trendy'],
+    genders: ['male'],
+    tags: ['korean', 'fringe', 'blow dried'],
+    description: 'A fringe blow-dried forward and curled into comma-shaped strands over the forehead, with the sides kept short.',
+    maintenance: 'High',
+    bestFor: ['Oval', 'Long', 'Square'],
+    popularity: 79,
+    adjustments: ['length', 'fade', 'color'],
+    // The comma is a set made in straight hair; a wave changes how the strand
+    // hooks, and past type 2 the shape cannot be made at all.
+    variants: v('straight', 'wavy', null, null),
+    shape: shape(0.42, 0.16, 0.1, 0.6, 'straight'),
+  },
+  {
+    id: 'korean-perm',
+    name: 'Korean Perm',
+    categoryIds: ['medium', 'trendy'],
+    genders: ['male'],
+    tags: ['korean', 'perm', 'volume'],
+    description: 'A loose perm through the top and fringe for soft volume and movement, with the sides left short and flat.',
+    maintenance: 'Medium',
+    bestFor: ['Oval', 'Square', 'Diamond'],
+    popularity: 74,
+    adjustments: ['length', 'fade', 'color'],
+    // The perm is the texture — the same set whatever the base, which is the
+    // `sleek-straight` and `beach-waves` case.
+    variants: anyType(),
+    shape: shape(0.5, 0.2, 0.12, 0.55, 'wavy'),
+  },
+  {
+    id: 'mash-cut',
+    name: 'Mash Cut',
+    categoryIds: ['short', 'medium'],
+    genders: ['male'],
+    tags: ['japanese', 'rounded', 'fringe'],
+    description: 'A rounded shape kept full over the ears with a soft, straight fringe. Japanese salon standard, and the base most other cuts there are grown from.',
+    maintenance: 'Medium',
+    bestFor: ['Oval', 'Long', 'Heart'],
+    popularity: 68,
+    adjustments: ['length', 'color'],
+    // The round outline survives a curl but not a coil.
+    variants: v('straight', 'straight', 'curly', null),
+    shape: shape(0.3, 0.3, 0.25, 0.7, 'straight'),
+  },
+  {
+    id: 'hime-cut',
+    name: 'Hime Cut',
+    categoryIds: ['long', 'trendy'],
+    genders: ['female'],
+    tags: ['japanese', 'blunt', 'geometric'],
+    description: 'Long hair left uncut at the back with two blunt side panels cropped at the cheek and a blunt straight fringe. Three straight lines and nothing else.',
+    maintenance: 'Medium',
+    bestFor: ['Oval', 'Heart', 'Long'],
+    popularity: 66,
+    adjustments: ['length', 'color'],
+    // The whole cut is straight edges, which need a type 1 or 2 base to hold.
+    variants: v('straight', 'straight', null, null),
+    shape: shape(0.16, 0.55, 0.95, 0.72, 'straight', { part: 'middle' }),
+  },
+  {
+    id: 'hush-cut',
+    name: 'Hush Cut',
+    categoryIds: ['medium', 'trendy'],
+    genders: ['female'],
+    tags: ['korean', 'layered', 'airy'],
+    description: 'Light, airy layers cut around the face and through the length so the hair falls open and moves. Softer and less blunt than a bob.',
+    maintenance: 'Medium',
+    bestFor: ['Round', 'Square', 'Oval'],
+    popularity: 84,
+    adjustments: ['length', 'color'],
+    // Layers exaggerate whatever the texture is, up to the point the layering
+    // stops reading as separate pieces.
+    variants: v('straight', 'wavy', 'curly', null),
+    shape: shape(0.36, 0.75, 0.7, 0.5, 'wavy', { part: 'middle' }),
+  },
+  {
+    id: 'see-through-bangs',
+    name: 'See-Through Bangs',
+    categoryIds: ['medium', 'trendy'],
+    genders: ['female'],
+    tags: ['korean', 'fringe', 'wispy'],
+    description: 'A deliberately thin, wispy fringe that the forehead shows through, split into soft strands rather than cut as a solid block.',
+    maintenance: 'Medium',
+    bestFor: ['Long', 'Oval', 'Square'],
+    popularity: 87,
+    adjustments: ['length', 'color'],
+    // A sparse fringe only stays sparse while it lies flat.
+    variants: v('straight', 'straight', null, null),
+    shape: shape(0.25, 0.8, 0.8, 0.68, 'straight'),
+  },
+  {
+    id: 'c-curl-perm',
+    name: 'C-Curl Perm',
+    categoryIds: ['medium', 'long', 'trendy'],
+    genders: ['female'],
+    tags: ['korean', 'perm', 'ends'],
+    description: 'A perm that curves only the last few inches inward in a wide C, leaving the roots and the length straight.',
+    maintenance: 'Medium',
+    bestFor: ['Oval', 'Long', 'Heart'],
+    popularity: 76,
+    adjustments: ['length', 'color'],
+    // A set look: the ends are shaped by the rod, not by the base texture.
+    variants: anyType(),
+    shape: shape(0.3, 0.85, 0.8, 0.3, 'wavy', { part: 'middle' }),
+  },
+
   // ---- Braids: installed / protective ------------------------------------
   // Every row from here to the end of the locs is `anyType()`, and that is the
   // same judgement `box-braids` above already carries rather than a shortcut:
