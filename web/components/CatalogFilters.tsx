@@ -109,7 +109,18 @@ export function CatalogFilters({
       {/* The search takes the first row on a phone and sits inline from `sm`.
           First, because it is the shortest route to a cut somebody can already
           name — which is most of what a catalogue this size is asked for. */}
-      <label className="relative w-full min-w-0 sm:w-[190px] sm:shrink-0">
+      {/* The field grows on focus, and the growth is on the *label* rather than
+          on the input inside it. The label is the flex item, so widening it
+          moves the pills along; widening the input instead left the row still
+          measuring 190px and the input overflowing 50px to the right of it,
+          under the gender pill — a search bar with `Men's cuts` sitting on top
+          of its own right-hand end, every time somebody clicked into it. */}
+      <label
+        className={
+          'relative w-full min-w-0 transition-[width] duration-300 ' +
+          'sm:w-[190px] sm:shrink-0 sm:focus-within:w-[240px]'
+        }
+      >
         <span className="sr-only">Search the catalogue</span>
         <input
           type="search"
@@ -118,8 +129,8 @@ export function CatalogFilters({
           placeholder="Search cuts"
           className={
             'h-9 w-full rounded-full bg-white/5 pl-9 pr-3.5 text-[13px] text-ink ' +
-            'ring-1 ring-inset ring-line outline-none transition-[width,box-shadow] duration-300 ' +
-            'placeholder:text-faint focus:ring-violet/50 sm:focus:w-[240px]'
+            'ring-1 ring-inset ring-line outline-none transition-[box-shadow] duration-300 ' +
+            'placeholder:text-faint focus:ring-violet/50'
           }
         />
         <span

@@ -37,6 +37,36 @@
  * is a suggestion most people never see. The narrow layout keeps the old order,
  * because there is no "beside" on a phone.
  *
+ * ## The action here is the next haircut, not this picture
+ *
+ * The row under the preview was Download, Share, Delete — three things to do
+ * with the picture that already exists, and nothing at all about the next one.
+ * That is the wrong reading of the moment: somebody looking at a haircut on
+ * their own face is the most likely they will ever be to want a second one, and
+ * the page was answering that with a file save.
+ *
+ * So while this browser has never signed in, the primary button is the way to
+ * carry on — and Download steps down to `secondary` beside Share for as long as
+ * it is drawn, because two solid buttons next to each other are two things
+ * asked for at once. Nothing is removed: the picture is still downloadable,
+ * shareable and deletable in exactly the same row, one weight lighter.
+ *
+ * **It offers more hairstyles, never one more generation**, which is the same
+ * rule `<SignInWall>` is written to and for the same reason. A first sign-in
+ * carries `grantSignupBonus`, so the visitor who presses this can very likely
+ * generate again for nothing — and naming that turns an account into a
+ * transaction ("your email for a preview"), which is the shape of a trick even
+ * when the offer is real, and is a promise about `SIGNUP_BONUS_CREDITS`, a
+ * server-side constant this file cannot read. The credit is a consequence of
+ * signing in, not the reason given for it. The line under the button says only
+ * what is true of the *free* allowance either way: it hangs off this browser.
+ *
+ * It is not gated on an empty balance. A visitor with a free preview left is
+ * still being offered more haircuts rather than being refused one, and the
+ * refusal — when it comes — is `<SignInWall>` on the button that would have
+ * spent it. The two are the same offer at two moments, which is why they use
+ * the same words.
+ *
  * ## The look's answers become the session's
  *
  * A look records the gender and hair type answered *about the photograph in the
@@ -51,11 +81,14 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
+import { hasClerk } from '../lib/config';
 import { ANCHOR_LENGTH } from '../lib/renders';
 import { ALL_HAIR_TYPES, relatedTo } from '../lib/hairTypes';
 import { deleteLook, getLook, type SavedLook } from '../lib/looks';
+import { useAccount } from '../lib/state/AccountContext';
 import { useCatalog } from '../lib/state/CatalogContext';
 import { useAdoptedAnswers, useSession } from '../lib/state/SessionContext';
+import { authHref, useReturnPath } from './AuthButtons';
 import { BeforeAfter } from './BeforeAfter';
 import { ShareButton } from './ShareButton';
 import { StyleCardSkeleton } from './StyleCard';
@@ -80,6 +113,8 @@ export function LookView({ id }: { id: string }) {
     styleById,
   } = useCatalog();
   const { photo } = useSession();
+  const { credits, ready } = useAccount();
+  const next = useReturnPath();
   const [look, setLook] = useState<SavedLook | null | 'missing'>(null);
   const [urls, setUrls] = useState<{ after: string; before: string | null } | null>(null);
 
@@ -200,6 +235,15 @@ export function LookView({ id }: { id: string }) {
 
   const style = styleById(look.hairstyleId);
 
+  /**
+   * Whether to offer the account, and it is `signedIn` rather than a balance.
+   *
+   * `ready` first, always: `ready: false` is not "signed out", and a primary
+   * button that appears a beat late and turns out to have been aimed at
+   * somebody who was signed in all along is the page guessing.
+   */
+  const offerAccount = ready && !credits.signedIn;
+
   /** The generated cut, at the length it was generated at — see `query`. */
   const cutHref =
     `/styles/${look.hairstyleId}?${query}` +
@@ -283,28 +327,61 @@ export function LookView({ id }: { id: string }) {
             </div>
           ) : null}
 
-          {/* Download, share, delete — in falling order of what somebody came
-              here to do, and drawn in falling weight to match. Delete is a
-              ghost rather than a fourth solid button beside two benign ones:
-              it destroys the only copy of the picture that exists, so it
-              belongs in reach without being the same size as the action next
-              to it. The confirmation is what actually guards it. */}
-          <div className="order-4 flex flex-wrap items-center justify-center gap-3 lg:mt-6">
-            <Button size="lg" onClick={download}>
-              <DownloadIcon />
-              Download
-            </Button>
-            <ShareButton
-              hairstyleId={look.hairstyleId}
-              hairstyleName={look.hairstyleName}
-              gender={look.gender}
-              hairType={look.hairType}
-              lengthId={look.lengthId}
-            />
-            <Button variant="ghost" size="lg" onClick={() => setConfirming(true)}>
-              <TrashIcon />
-              Delete
-            </Button>
+          <div className="order-4 lg:mt-6">
+            {/* The next haircut, offered as the account it needs — see the
+                header. Drawn only once the balance has actually been read:
+                `ready` is false on a cold load and a primary button that
+                appears, then turns out to have been about somebody who was
+                signed in all along, is the page guessing. */}
+            {offerAccount ? (
+              <div className="mb-5 flex flex-col items-center gap-2.5">
+                <ButtonLink
+                  size="lg"
+                  href={authHref(hasClerk ? 'sign-up' : 'sign-in', next)}
+                  className="w-full sm:w-auto"
+                >
+                  <SparkIcon />
+                  Keep trying hairstyles
+                </ButtonLink>
+                <p className="max-w-[42ch] text-center text-[12px] leading-relaxed text-muted">
+                  {credits.total > 0
+                    ? 'Free previews are held against this browser. An account keeps them when you move to another.'
+                    : 'That was the last free preview on this browser. An account is how you carry on.'}
+                </p>
+              </div>
+            ) : null}
+
+            {/* Download, share, delete — in falling order of what somebody came
+                here to do, and drawn in falling weight to match. Delete is a
+                ghost rather than a fourth solid button beside two benign ones:
+                it destroys the only copy of the picture that exists, so it
+                belongs in reach without being the same size as the action next
+                to it. The confirmation is what actually guards it.
+
+                Download is the primary of the three and stops being the primary
+                of the *page* while the CTA above it is drawn: two solid buttons
+                side by side are two things asked for at once. */}
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Button
+                size="lg"
+                variant={offerAccount ? 'secondary' : 'primary'}
+                onClick={download}
+              >
+                <DownloadIcon />
+                Download
+              </Button>
+              <ShareButton
+                hairstyleId={look.hairstyleId}
+                hairstyleName={look.hairstyleName}
+                gender={look.gender}
+                hairType={look.hairType}
+                lengthId={look.lengthId}
+              />
+              <Button variant="ghost" size="lg" onClick={() => setConfirming(true)}>
+                <TrashIcon />
+                Delete
+              </Button>
+            </div>
           </div>
 
           <p className="order-6 mx-auto max-w-[46ch] text-center text-[12px] leading-relaxed text-faint lg:mt-5">
@@ -414,6 +491,25 @@ function DownloadIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+    </svg>
+  );
+}
+
+/**
+ * The mark on the one CTA here, and deliberately **not** `<PreviewIcon>`.
+ *
+ * The gem stands for a *countable token* — it appears beside a number, on a
+ * pack, over a balance. This button is not about a number and must not look
+ * like it is: it offers more haircuts, not one more generation. A spark is the
+ * generic mark for "make another one" and carries no arithmetic with it.
+ */
+function SparkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden focusable="false">
+      <g fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M13 3 11.4 8.6 6 10.2l5.4 1.6L13 17.4l1.6-5.6 5.4-1.6-5.4-1.6z" />
+        <path d="M6 16.4 5.4 18.6 3.2 19.2l2.2.6.6 2.2.6-2.2 2.2-.6-2.2-.6z" />
+      </g>
     </svg>
   );
 }
