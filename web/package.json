@@ -10,7 +10,7 @@
     "dev": "next dev -p 3000",
     "prebuild": "node scripts/sync-contract.mjs --check",
     "build": "next build",
-    "start": "next start -p 3000",
+    "start": "next start",
     "typecheck": "node scripts/sync-contract.mjs --check && tsc --noEmit"
   },
   "dependencies": {
