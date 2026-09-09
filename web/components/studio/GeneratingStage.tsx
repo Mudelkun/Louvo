@@ -105,13 +105,18 @@ function WordTicker({ stepIndex }: { stepIndex: number }) {
  * sweeps down the frame. Drawn as transforms on two wrappers rather than as
  * animated SVG attributes — rotating a box about its own centre *is* rotating a
  * blade about its screw, and a transform does not cost a re-render per frame.
+ *
+ * It carries no travel of its own: it is a child of the band, so the two share
+ * one animation and cannot drift apart. They used to run the same keyframes
+ * separately, which is not the same thing at all — `translateY` is a percentage
+ * of the *element*, so a 44px pair of scissors and a band 22% of the frame tall
+ * moved at wildly different speeds down the same picture.
  */
 function Scissors() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2"
-      style={{ animation: 'luvo-sweep 2.6s cubic-bezier(0.45,0,0.55,1) infinite' }}
+      className="pointer-events-none absolute left-1/2 top-[34%] -translate-x-1/2 -translate-y-1/2"
     >
       <svg viewBox="0 0 44 44" className="h-11 w-11 drop-shadow-[0_0_12px_rgb(var(--violet-rgb)/0.8)]">
         <g stroke="white" strokeWidth="1.7" strokeLinecap="round" fill="none" opacity="0.95">
@@ -189,17 +194,21 @@ export function GeneratingStage({ job }: { job: TrackedJob }) {
               style={{ opacity: 0.55 * (1 - job.progress) }}
             />
 
-            {/* The scan band and its scissors. Not a claim about progress. */}
+            {/* The scan band and its scissors. Not a claim about progress — and
+                one element on one animation, at a constant speed, fading through
+                the wrap rather than snapping back to the top. The pacing and the
+                travel are in `.luvo-scan`. */}
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
-              <div
-                className="absolute inset-x-0 h-[22%]"
-                style={{
-                  background:
-                    'linear-gradient(to bottom, transparent, rgb(var(--violet-rgb)/0.35), rgb(var(--pink-rgb)/0.22), transparent)',
-                  animation: 'luvo-sweep 2.6s cubic-bezier(0.45,0,0.55,1) infinite',
-                }}
-              />
-              <Scissors />
+              <div className="luvo-scan absolute inset-x-0 top-0 h-[22%]">
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(to bottom, transparent, rgb(var(--violet-rgb)/0.35), rgb(var(--pink-rgb)/0.22), transparent)',
+                  }}
+                />
+                <Scissors />
+              </div>
             </div>
           </div>
         </div>

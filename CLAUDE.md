@@ -661,8 +661,14 @@ next haircut in two different shapes read as two features rather than as the cat
 disagree. Each page owns only the frame: the result page its column order and the sentence
 about the photograph, the style page its rule and the space under the plate. There is no such
 sentence on the style page, because the button above it has already said what a preview costs.
-The preview is capped at `42svh` on a phone to make the room — still the largest thing on the
-page by a wide margin, just no longer the only thing on it.
+**The preview lands at the size it was generated at**, which is the same `58vh` cap the
+generating frame uses. It was capped shorter on a phone (`42svh`) to make room for the row
+below, and the cost of that was paid at the worst possible moment: the wait draws somebody's
+photograph at the full width of the column, and then the finished preview — the thing a credit
+was actually spent on — appeared a third smaller in the same place. A picture that shrinks at
+the payoff reads as the result being a lesser object than the placeholder that stood in for it.
+The scroll is what pays for the size instead; the suggestions are one flick down rather than
+invisible.
 
 **The preview is shown whole; the comparison is a button.** The page opened on the wipe at
 half — the first sight of what a credit had just bought was half of it, with an unchanged

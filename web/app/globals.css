@@ -313,13 +313,50 @@
   }
 }
 
-@keyframes luvo-sweep {
-  from {
-    transform: translateY(-110%);
+/**
+ * The scan travelling down the photograph, and three things about it are
+ * deliberate.
+ *
+ * **It is linear.** It was an ease-in-out, which on a loop means the band
+ * decelerates almost to a stop at the bottom and is then snapped back to the
+ * top at full speed — two stutters a cycle, which is what read as a jerk rather
+ * than as a sweep. A scan has no reason to accelerate: it is not a thing being
+ * thrown, it is a light being drawn across a picture at one speed.
+ *
+ * **It fades at both ends**, which is what makes the loop seamless. A band that
+ * is still visible when the cycle restarts jumps the height of the frame in one
+ * frame of animation; fading it out before the wrap and in after it means the
+ * discontinuity happens while there is nothing on screen to be discontinuous.
+ *
+ * **The travel is in the band's own height.** `translateY` percentages resolve
+ * against the element, not its container, so a band that is `22%` of the frame
+ * has to travel `455%` of *itself* to cross the frame once (`100 / 22`). At the
+ * old `210%` it stopped just past the middle of the picture and turned round —
+ * the bottom of the photograph was never scanned at all.
+ */
+@keyframes luvo-scan {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
   }
-  to {
-    transform: translateY(210%);
+  12% {
+    opacity: 1;
   }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(455%);
+    opacity: 0;
+  }
+}
+
+/** The band and its scissors are one element on one animation — see
+ *  `GeneratingStage.tsx`. Two animations with the same duration on elements of
+ *  different heights are two different speeds. */
+.luvo-scan {
+  animation: luvo-scan 3.4s linear infinite;
+  will-change: transform, opacity;
 }
 
 /**
