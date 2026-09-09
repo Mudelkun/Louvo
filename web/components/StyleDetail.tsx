@@ -350,6 +350,38 @@ function Loaded({
     [manifest, style.id, gender, angle, candidates, lengthId],
   );
 
+  /**
+   * The textures this cut can actually be *shown* in, for this gender.
+   *
+   * Not the same question as which textures it is offered in, and the row below
+   * now needs both. `style.variants[type]` says the cut exists for a texture —
+   * an afro is not a type 1 haircut, and that has always greyed the tile out.
+   * This says the picture exists as well: a declared type resolves to its
+   * variant exactly or falls through to the procedural drawing, so a tile whose
+   * variant has never been shot is a tile that answers a tap with a cartoon.
+   *
+   * Checked at `HERO_ANGLE` because that is the panel the tap changes, and with
+   * the current length because `resolveRender` already falls back to the anchor
+   * — the asymmetry the catalogue is built on, where a length degrades and a
+   * texture does not.
+   */
+  const shotTypes = useMemo(() => {
+    const found = new Set<string>();
+    for (const type of HAIR_TYPE_IDS) {
+      const variant = style.variants[type];
+      if (!variant) continue;
+      const ref = resolveRender(manifest, {
+        styleId: style.id,
+        gender,
+        angle: HERO_ANGLE,
+        variants: [variant],
+        length: lengthId,
+      });
+      if (ref) found.add(type);
+    }
+    return found;
+  }, [manifest, style.id, style.variants, gender, lengthId]);
+
   // The cycle runs only while nothing has been declared — a choice outranks a
   // demonstration, so pressing a hair type stops it.
   const cycleIndex = useVariantCycle(hairTypeDeclared && hairType ? 1 : hero.length);
@@ -498,9 +530,29 @@ function Loaded({
         Two columns on a laptop; on a phone one column whose pieces interleave.
 
         The wrappers dissolve into the parent (`contents`) below `lg` so
-        `order-*` can lift the cut's name above the plate and put the two
-        adjustments directly beneath it. One DOM, two arrangements, and no second
-        copy of a control to fall out of step with the first.
+        `order-*` can lift the cut's name above the plate and put the action
+        directly beneath it. One DOM, two arrangements, and no second copy of a
+        control to fall out of step with the first.
+
+        **The button that spends a credit is above the fold on a phone, and the
+        two adjustments are what moved to buy it.** The order was name, deck,
+        adjustments, action — and on a 414pt screen that put the action about
+        250pt below the bottom of the window, behind the hair-type card and the
+        length row. A page whose entire purpose is one button should not require
+        a scroll to discover that the button exists. So the phone order is now
+        name, deck, **action**, the gender line that qualifies it, and then the
+        adjustments; the card's top edge still shows under the button, which is
+        what says there is more.
+
+        Nothing is lost by the move. Hair type arrives declared from the setup
+        dialogue and length defaults to the anchor, so the controls refine a
+        request that is already complete rather than assembling one — which is
+        the difference between a control that must be seen and a control that
+        must be reachable.
+
+        `order-*` is inert above `lg`: the two column wrappers are `lg:block`,
+        and order does nothing to the children of a block container. So this is a
+        phone-only arrangement and the laptop page is exactly its source order.
       */}
       <div
         className={
@@ -777,7 +829,7 @@ function Loaded({
             picture and controls now land on one screen, so a tap on `Coily` is
             answered in view.
           */}
-          <div className="order-3 overflow-hidden rounded-[20px] bg-surface/60 ring-1 ring-inset ring-line lg:mt-7">
+          <div className="order-6 overflow-hidden rounded-[20px] bg-surface/60 ring-1 ring-inset ring-line lg:mt-7">
             <div className="p-5">
               <div className="flex items-baseline justify-between gap-3">
                 <h2 className="text-[14px] font-bold text-ink">Hair type</h2>
@@ -802,28 +854,37 @@ function Loaded({
               <div className="mt-3.5 grid grid-cols-4 gap-2">
                 {HAIR_TYPE_IDS.map((type) => {
                   const offeredHere = style.variants[type] != null;
+                  // Offered *and* shot. A tile that resolves to no render answers
+                  // a tap with the procedural drawing, which is a worse answer
+                  // than not offering the tap — so it is held in the same dimmed
+                  // slot a texture the cut does not come in gets. The two are
+                  // still distinguished in the tooltip, because they are two
+                  // different facts and only one of them is permanent.
+                  const pickable = offeredHere && shotTypes.has(type);
                   const active = hairTypeDeclared && hairType === type;
                   const entry = hairTypes.find((row) => row.id === type);
                   return (
                     <button
                       key={type}
                       type="button"
-                      disabled={!offeredHere}
+                      disabled={!pickable}
                       onClick={() => setHairType(type)}
                       aria-pressed={active}
                       className={
                         'rounded-[14px] px-1 py-1.5 transition-colors duration-200 ' +
                         'ring-1 ring-inset ' +
-                        (!offeredHere
+                        (!pickable
                           ? 'cursor-not-allowed border-dashed text-faint ring-line opacity-55'
                           : active
                             ? 'bg-violet/18 text-violet-ink ring-violet/45'
                             : 'bg-white/4 text-ink-soft ring-line hover:bg-white/8 hover:text-ink')
                       }
                       title={
-                        offeredHere
+                        pickable
                           ? entry?.description
-                          : `${style.name} is not offered for this texture`
+                          : offeredHere
+                            ? `${style.name} has not been shot in this texture yet`
+                            : `${style.name} is not offered for this texture`
                       }
                     >
                       <span className="block truncate text-[12.5px] font-semibold">
@@ -899,7 +960,7 @@ function Loaded({
           </div>
 
           {notOfferedHere ? (
-            <p className="order-4 rounded-[16px] bg-amber/10 px-4 py-3 text-[13px] leading-relaxed text-amber ring-1 ring-inset ring-amber/25 lg:mt-5">
+            <p className="order-5 rounded-[16px] bg-amber/10 px-4 py-3 text-[13px] leading-relaxed text-amber ring-1 ring-inset ring-amber/25 lg:mt-5">
               This cut is not offered for the texture you have selected, so what you are seeing
               is an illustration rather than a studio render.
             </p>
@@ -908,7 +969,7 @@ function Loaded({
           {/* ---------------------------------------------------------- */}
           {/* The action                                                  */}
           {/* ---------------------------------------------------------- */}
-          <div className="order-5 lg:contents">
+          <div className="order-3 lg:contents">
             <TryOnAction
               style={style}
               gender={gender}
@@ -936,7 +997,7 @@ function Loaded({
               inches apart, is the "two places to change one thing" the summary
               row on the home page was cut for. */}
           {!gender && !photo ? (
-            <p className="order-7 text-[12.5px] text-muted lg:mt-4">
+            <p className="order-4 text-[12.5px] text-muted lg:mt-4">
               Showing every version of this cut.{' '}
               <button
                 type="button"
@@ -1185,7 +1246,7 @@ function TryOnAction({
       <div className={(!photo ? 'mt-7' : !gender ? 'mt-3' : 'mt-4') + ' flex flex-wrap gap-3'}>
         {!photo ? (
           <Button size="lg" className="flex-1 sm:flex-none" loading={busy} onClick={choose}>
-            {busy ? 'Reading your photo…' : 'Add your photo to try this on'}
+            {busy ? 'Reading your photo…' : 'Try with your photo'}
           </Button>
         ) : !gender ? (
           /* Two equal answers, so neither of them is the primary button.
