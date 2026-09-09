@@ -609,6 +609,26 @@ function Loaded({
 
   const notOfferedHere = hairType && !style.variants[hairType];
 
+  /**
+   * The texture a share link is minted with, which is the one on screen.
+   *
+   * Not the session's answer. What unfurls in somebody else's chat is the
+   * catalogue's render of this cut resolved against the hair type the link
+   * carries (`heroImageFor` in `server/src/shares.ts`), so sending the
+   * session's null under *all textures* hands the recipient whichever variant
+   * the server happens to resolve first — a different picture from the one the
+   * sharer was looking at when they pressed the button. `current.variant` is
+   * the render actually drawn, cycling included, and `typesForVariant` names
+   * the types it stands for. Same rule as the app's `hairTypeId ?? shownAs` in
+   * `app/try/style/[id].tsx`: a declaration wins, and the picture answers when
+   * there is none.
+   */
+  const sharedType = useMemo<HairTypeId | null>(() => {
+    if (hairTypeDeclared && hairType) return hairType;
+    if (!current) return hairType;
+    return typesForVariant(style, current.variant)[0] ?? hairType;
+  }, [hairTypeDeclared, hairType, current, style]);
+
   return (
     <>
       {/*
@@ -1179,7 +1199,7 @@ function Loaded({
                   hairstyleId={style.id}
                   hairstyleName={style.name}
                   gender={gender}
-                  hairType={hairType}
+                  hairType={sharedType}
                   lengthId={lengthId}
                 />
               }

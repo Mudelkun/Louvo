@@ -82,14 +82,16 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import { hasClerk } from '../lib/config';
-import { ANCHOR_LENGTH } from '../lib/renders';
-import { ALL_HAIR_TYPES, relatedTo } from '../lib/hairTypes';
+import { ANCHOR_LENGTH, HERO_ANGLE, resolveRender } from '../lib/renders';
+import { displayVariants } from '../lib/displayVariants';
+import { ALL_HAIR_TYPES, relatedTo, textureFor } from '../lib/hairTypes';
 import { deleteLook, getLook, type SavedLook } from '../lib/looks';
 import { useAccount } from '../lib/state/AccountContext';
 import { useCatalog } from '../lib/state/CatalogContext';
 import { useAdoptedAnswers, useSession } from '../lib/state/SessionContext';
 import { authHref, useReturnPath } from './AuthButtons';
 import { BeforeAfter } from './BeforeAfter';
+import { Plate } from './Plate';
 import { ShareButton } from './ShareButton';
 import { StyleCardSkeleton } from './StyleCard';
 import { SUGGESTION_COUNT, SuggestionShelf } from './SuggestionShelf';
@@ -244,6 +246,38 @@ export function LookView({ id }: { id: string }) {
    */
   const offerAccount = ready && !credits.signedIn;
 
+  /**
+   * The catalogue's own plate of the cut in the picture, at thumbnail size.
+   *
+   * It is here to say the heading is a link, which a heading that is merely a
+   * different colour does not — nothing else on this page is pressable text,
+   * so there is no convention on screen to read it against. Small enough to be
+   * a marker rather than a second picture: the preview underneath is what the
+   * visitor is looking at, and a render competing with it would be answering a
+   * question nobody asked.
+   *
+   * Resolved against the answers recorded on **the look** rather than the ones
+   * in the session, for the reason the suggestion shelf is: those answers are
+   * facts about the photograph, and a session that has moved on to another face
+   * would draw the wrong texture beside the right name.
+   */
+  // Plainly rather than memoised: this sits below the two early returns above,
+  // where a hook would be a conditional one. `resolveRender` is a walk of one
+  // style's manifest entry, which is cheaper than the equality check would be.
+  const thumb =
+    style && catalog?.renders
+      ? resolveRender(catalog.renders, {
+          styleId: style.id,
+          gender: look.gender,
+          angle: HERO_ANGLE,
+          variants: displayVariants(catalog.renders, style, look.hairType, {
+            gender: look.gender,
+            angle: HERO_ANGLE,
+          }).variants,
+          length: look.lengthId ?? ANCHOR_LENGTH,
+        })
+      : null;
+
   /** The generated cut, at the length it was generated at — see `query`. */
   const cutHref =
     `/styles/${look.hairstyleId}?${query}` +
@@ -394,11 +428,50 @@ export function LookView({ id }: { id: string }) {
         {/* The cut, and the next one                                      */}
         {/* ------------------------------------------------------------- */}
         <div className="contents lg:block">
+          {/*
+            The name is the way back to the cut, and the plate beside it is what
+            says so.
+
+            "About this cut" already carried a link to the same page, but it is
+            below the picture, the actions and — on a phone — the whole
+            suggestion shelf, which is where a link goes unread. The heading is
+            where somebody looks when they want to know what this haircut *is*,
+            so that is where the link belongs; the card below keeps its own,
+            because a sentence about the cut wants a way to the cut under it.
+
+            The plate is deliberately tiny. It is a marker for the link rather
+            than a picture of anything — the preview two inches below is the
+            picture — and it is the catalogue's render of this cut in the
+            texture the look was generated in, so the thing it opens is visibly
+            the thing it names. `alt=""` because the heading beside it already
+            names the cut, and a screen reader announcing it twice inside one
+            link is noise; the `<Plate>` rule about alt text being real is about
+            plates that carry the information, and this one carries none.
+          */}
           <header className="order-1">
             <Overline>Your preview</Overline>
-            <h1 className="mt-3 font-display text-[clamp(2rem,4.2vw,2.7rem)] leading-[1.03] tracking-[-0.02em]">
-              {look.hairstyleName}
-            </h1>
+            <Link
+              href={cutHref}
+              className="group mt-3 flex items-center gap-3 no-underline"
+            >
+              {style ? (
+                <span className="h-9 w-9 shrink-0 overflow-hidden rounded-[10px] bg-plate ring-1 ring-inset ring-line sm:h-10 sm:w-10">
+                  <Plate
+                    render={thumb}
+                    shape={style.shape}
+                    texture={textureFor(style, look.hairType)}
+                    color={defaultColor}
+                    gender={look.gender}
+                    angle={HERO_ANGLE}
+                    alt=""
+                    className="h-full w-full"
+                  />
+                </span>
+              ) : null}
+              <h1 className="font-display text-[clamp(2rem,4.2vw,2.7rem)] leading-[1.03] tracking-[-0.02em] transition-colors group-hover:text-violet-ink">
+                {look.hairstyleName}
+              </h1>
+            </Link>
           </header>
 
           {/* "About this cut" stays above the suggestions, for the reason it
