@@ -17,7 +17,7 @@
  * The palette is the same hand-copied slice of the app's *light* scheme the
  * landing page uses, and it is light-only for the same reason: this is a
  * document somebody may print, save or send to a regulator, so what it looks
- * like is a fact about Luvo rather than about the browser opening it.
+ * like is a fact about Louvo rather than about the browser opening it.
  */
 
 import { OPERATOR } from './generated/legal.js';
@@ -68,12 +68,12 @@ export function legalPage(document: LegalDocument, canonicalUrl: string, otherUr
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>${escapeHtml(document.title)} — Luvo</title>
+<title>${escapeHtml(document.title)} — Louvo</title>
 <link rel="canonical" href="${escapeHtml(canonicalUrl)}">
 <meta name="description" content="${escapeHtml(document.summary)}">
 <meta property="og:type" content="article">
-<meta property="og:site_name" content="Luvo">
-<meta property="og:title" content="${escapeHtml(`${document.title} — Luvo`)}">
+<meta property="og:site_name" content="Louvo">
+<meta property="og:title" content="${escapeHtml(`${document.title} — Louvo`)}">
 <meta property="og:description" content="${escapeHtml(document.summary)}">
 <meta property="og:url" content="${escapeHtml(canonicalUrl)}">
 <style>
@@ -107,7 +107,7 @@ export function legalPage(document: LegalDocument, canonicalUrl: string, otherUr
 </head>
 <body>
   <main>
-    <a class="mark" href="${escapeHtml(OPERATOR.website)}">Luvo</a>
+    <a class="mark" href="${escapeHtml(OPERATOR.website)}">Louvo</a>
     <h1>${escapeHtml(document.title)}</h1>
     <p class="summary">${escapeHtml(document.summary)}</p>
     <p class="effective">Effective ${escapeHtml(document.effective)}</p>
@@ -119,7 +119,7 @@ ${document.sections
   )
   .join('\n')}
     <footer>
-      Also available inside the Luvo app, under Settings.
+      Also available inside the Louvo app, under Settings.
       See also our <a href="${escapeHtml(otherUrl)}">${escapeHtml(otherTitle)}</a>.
     </footer>
   </main>

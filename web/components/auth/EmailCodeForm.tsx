@@ -55,13 +55,13 @@ export interface Done {
 function messageFor(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.code === 'offline') {
-      return 'Luvo could not be reached. Check your connection and try again.';
+      return 'Louvo could not be reached. Check your connection and try again.';
     }
     if (error.code === 'email_unconfigured' || error.code === 'email_failed') {
       return 'Sign-in email is not working on this deployment. Nothing you did — try again shortly.';
     }
     if (error.code === 'device_required') {
-      return 'This browser is not keeping its Luvo key, so there is nothing to sign in. That is a private window, or site data turned off.';
+      return 'This browser is not keeping its Louvo key, so there is nothing to sign in. That is a private window, or site data turned off.';
     }
     return error.message;
   }

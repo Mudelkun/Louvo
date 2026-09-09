@@ -19,7 +19,7 @@
  * The one place that judgement would flip is Stripe Elements or any flow where
  * card data touches our code. It never does here. **Checkout is hosted**: the
  * visitor leaves for Stripe's own page, so no card number, no PAN, no CVC and no
- * publishable key ever exist in Luvo's browser bundle, and our PCI surface is
+ * publishable key ever exist in Louvo's browser bundle, and our PCI surface is
  * SAQ A. That is also why the web has no `NEXT_PUBLIC_STRIPE_*` key at all —
  * there is nothing on the client for it to configure.
  *

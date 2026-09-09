@@ -24,7 +24,7 @@
  * with corners that do not match. Re-cut it from that file if the artwork
  * changes; do not hand-export a second one.
  *
- * It is `alt=""` on purpose. The word "Luvo" is next to it in text, and both
+ * It is `alt=""` on purpose. The word "Louvo" is next to it in text, and both
  * call sites wrap this in a link that names itself — a mark that repeated the
  * name would be read out twice.
  */
@@ -43,7 +43,7 @@ export function Logo({ className = '' }: { className?: string }) {
         draggable={false}
       />
       <span className="font-display text-[26px] leading-none tracking-[-0.01em]">
-        <span className="text-gradient">Luvo</span>
+        <span className="text-gradient">Louvo</span>
       </span>
     </span>
   );

@@ -1,6 +1,6 @@
 # Builds
 
-Luvo is an Expo app and was, until now, an *Expo Go* app: `npm start`, scan a QR code, and
+Louvo is an Expo app and was, until now, an *Expo Go* app: `npm start`, scan a QR code, and
 the only native code on the phone was whatever Expo Go already shipped. That is over, and this
 document is about what replaces it and why.
 

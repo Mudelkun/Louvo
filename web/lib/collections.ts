@@ -139,14 +139,14 @@ function compose(
       : `${heading} — try a haircut on your own photo`;
 
   const intro = type
-    ? `Every cut in the Luvo catalogue offered for ${type.tier.toLowerCase()} hair — ${type.description.toLowerCase()} — ` +
+    ? `Every cut in the Louvo catalogue offered for ${type.tier.toLowerCase()} hair — ${type.description.toLowerCase()} — ` +
       `shown on ${type.name.toLowerCase()} hair rather than on straight hair with a note under it. ` +
       `Pick one, upload a photo, and see it on yourself.`
     : category
       ? `${category.tagline}. Every ${category.name.toLowerCase().replace(/s$/, '')} in the catalogue` +
         `${owner ? ` offered for ${plural}` : ''}, shot the same way: one neutral mannequin, one light, four angles. ` +
         `Pick one and try it on your own photo.`
-      : `Every haircut Luvo can put on ${plural === 'everyone' ? 'you' : plural}, ` +
+      : `Every haircut Louvo can put on ${plural === 'everyone' ? 'you' : plural}, ` +
         `shot the same way: one neutral mannequin, one light, four angles — and shown on ` +
         `${facets.hairTypes.length} hair textures rather than only on straight hair. ` +
         `Pick one, upload a photo, and see it on yourself before anybody picks up the scissors.`;

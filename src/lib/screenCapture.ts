@@ -61,7 +61,7 @@ export type ScreenCaptureSource = 'blocked' | 'unavailable';
  * of them lets go; naming ours means a future screen that wants to lift the
  * block for itself cannot lift this one by accident.
  */
-const GUARD_KEY = 'luvo.app';
+const GUARD_KEY = 'louvo.app';
 
 let source: ScreenCaptureSource = 'unavailable';
 

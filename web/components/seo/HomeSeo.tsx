@@ -10,7 +10,7 @@ import { Rule, Section } from '../ui';
  *
  * The site opened on a hero, three explanatory sections, a privacy essay and a
  * closing call to action, with the try-on one click away behind a button, and
- * all of it was deleted for a good reason: Luvo does not have to argue before it
+ * all of it was deleted for a good reason: Louvo does not have to argue before it
  * can demonstrate, so the upload box is the first thing on the page and the
  * argument for the product is the product. Nothing here changes that. The upload
  * box, the hero and the catalogue strip are untouched and still first; this
@@ -48,11 +48,11 @@ export const HOME_FAQ: Qa[] = [
     question: 'How do I see what a haircut looks like on me?',
     answer:
       'Upload one clear, front-facing photograph, answer two questions about the hair in it, and ' +
-      'pick a cut. Luvo generates a preview of you in that haircut in about a minute, and you can ' +
+      'pick a cut. Louvo generates a preview of you in that haircut in about a minute, and you can ' +
       'wipe between the before and the after.',
   },
   {
-    question: 'Is Luvo free?',
+    question: 'Is Louvo free?',
     answer:
       'The first two previews are free and need no card and no account. Browsing the catalogue is ' +
       'always free. After that a preview costs a credit, bought in packs — there is no subscription.',
@@ -99,7 +99,7 @@ export function HomeSeo() {
           </h2>
           <p className="mt-5 text-[15px] leading-relaxed text-ink-soft">
             Most hairstyle apps show you a haircut on somebody else and leave you to imagine the
-            rest. Luvo edits your photograph: you upload one picture, pick a cut from a catalogue
+            rest. Louvo edits your photograph: you upload one picture, pick a cut from a catalogue
             shot on a neutral mannequin at four angles, and get a preview of yourself wearing it —
             same face, same light, different hair. It takes about a minute, the first two are free,
             and there is nothing to install.

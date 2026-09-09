@@ -2,7 +2,7 @@
   "name": "luvo-web",
   "version": "0.1.0",
   "private": true,
-  "description": "Luvo on the web — the premium virtual hairstyle atelier.",
+  "description": "Louvo on the web — the premium virtual hairstyle atelier.",
   "scripts": {
     "sync": "node scripts/sync-contract.mjs",
     "sync:check": "node scripts/sync-contract.mjs --check",

@@ -49,7 +49,7 @@ export function useLookDownload(uri: string | null | undefined) {
       // Write-only: saving does not need read access to the whole library.
       const permission = await MediaLibrary.requestPermissionsAsync(true);
       if (!permission.granted) {
-        notify('Photo access needed', 'Allow Luvo to save photos to add this look to your camera roll.');
+        notify('Photo access needed', 'Allow Louvo to save photos to add this look to your camera roll.');
         setStatus('idle');
         return;
       }

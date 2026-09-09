@@ -12,7 +12,7 @@ import { abs, breadcrumbLd, graph, itemListLd, og, ORG_ID, SITE_ID, tw } from '.
 
 const TITLE = 'The hairstyle catalogue — every cut, on four textures';
 const DESCRIPTION =
-  'Every cut Luvo can put on you, shot the same way: one neutral mannequin, one light, four ' +
+  'Every cut Louvo can put on you, shot the same way: one neutral mannequin, one light, four ' +
   'angles. Filter by texture, length and upkeep — then try one on your own photo.';
 
 export const metadata: Metadata = {
@@ -71,7 +71,7 @@ export default async function StylesPage() {
             inLanguage: 'en',
           },
           breadcrumbLd(TRAIL),
-          styles.length ? itemListLd(styles, 'The Luvo hairstyle catalogue') : null,
+          styles.length ? itemListLd(styles, 'The Louvo hairstyle catalogue') : null,
         )}
       />
 
@@ -83,7 +83,7 @@ export default async function StylesPage() {
             The catalogue
           </h1>
           <p className="mt-3 text-[14.5px] leading-relaxed text-muted">
-            Every cut Luvo can put on you, shot the same way — one neutral mannequin, one light,
+            Every cut Louvo can put on you, shot the same way — one neutral mannequin, one light,
             four angles — and rendered for straight, wavy, curly and coily hair rather than for
             one of them.
           </p>

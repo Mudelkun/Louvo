@@ -1,4 +1,4 @@
-# Luvo API
+# Louvo API
 
 Two things, sharing a database and a deployment.
 
@@ -107,7 +107,7 @@ deployment has no bucket and no generator key, which is what a catalog-only depl
 
 Sharing is the third group, and it is the cheapest of the three: no bucket, no worker, no image
 bytes anywhere. A share link names a **hairstyle**, so the picture that unfurls in somebody
-else's group chat is the catalog's own mannequin render of that cut and never a Luvo user's
+else's group chat is the catalog's own mannequin render of that cut and never a Louvo user's
 face. See [`docs/sharing.md`](../docs/sharing.md).
 
 | | |

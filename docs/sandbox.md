@@ -204,14 +204,14 @@ enrol ──► Paid Apps agreement ──► App ID ──► app record ──
 - **Individual** is the fast path: an Apple ID with two-factor on, a payment card, and usually
   24–48 hours. Your legal name becomes the seller name on the store listing.
 - **Organization** needs a **D-U-N-S number** and can take one to two weeks. Only worth it if
-  Luvo must be sold by a company rather than by you.
+  Louvo must be sold by a company rather than by you.
 
 Nothing else on iOS can be created until this clears. It is the whole schedule.
 
 ### While you wait — three things that need no Apple account
 
 1. **Create the RevenueCat account** at <https://app.revenuecat.com>. Free. Make a project called
-   Luvo. You cannot add the iOS app until you have a bundle id registered, but the account and
+   Louvo. You cannot add the iOS app until you have a bundle id registered, but the account and
    project can exist.
 2. **Get the API publicly reachable.** RevenueCat's webhook is a server-to-server POST and it
    *cannot reach your laptop*. Either deploy this API to Railway (you already have a deployment),
@@ -235,7 +235,7 @@ must show **Active**:
 **Until this is Active, in-app purchase products do not load.** Not "cannot be sold" — they do not
 appear at all, in sandbox or anywhere. StoreKit returns an empty product list, RevenueCat returns
 an offering with no packages, and `fetchOffers` correctly drops what the store does not know, so
-Luvo shows a paywall with no packs on it. There is no error message anywhere in that chain
+Louvo shows a paywall with no packs on it. There is no error message anywhere in that chain
 saying "your agreement is not signed", which is what makes this worth an entire section.
 
 The free apps agreement is accepted for you at enrolment; this is a *different* one and nothing
@@ -267,9 +267,9 @@ Your app → **Monetization** → **In-App Purchases** → **+** → **Consumabl
 
 | Product ID | Reference name | Price |
 | --- | --- | --- |
-| `com.luvoai.luvo.credits.5` | Luvo 5 generations | $4.99 |
-| `com.luvoai.luvo.credits.10` | Luvo 10 generations | $9.99 |
-| `com.luvoai.luvo.credits.20` | Luvo 20 generations | $14.99 |
+| `com.luvoai.luvo.credits.5` | Louvo 5 generations | $4.99 |
+| `com.luvoai.luvo.credits.10` | Louvo 10 generations | $9.99 |
+| `com.luvoai.luvo.credits.20` | Louvo 20 generations | $14.99 |
 
 The product ids must match `credit_products` in `005_credits.sql` **exactly** — that table is
 what turns a product id into a number of credits, and a mismatch means the webhook arrives, finds

@@ -254,7 +254,7 @@ for (const row of rows) {
     continue;
   }
 
-  const name = `Luvo — ${row.credits} previews`;
+  const name = `Louvo — ${row.credits} previews`;
   if (dryRun) {
     console.log(`  would create  ${name.padEnd(28)} ${money(amount, currency)}  → ${row.id}`);
     created += 1;
@@ -271,7 +271,7 @@ for (const row of rows) {
    */
   const product = await stripe('/v1/products', {
     name,
-    description: `${row.credits} Luvo hairstyle previews. They do not expire and nothing renews.`,
+    description: `${row.credits} Louvo hairstyle previews. They do not expire and nothing renews.`,
     metadata: { luvo_product_id: row.id, luvo_credits: String(row.credits) },
   });
   const price = await stripe('/v1/prices', {

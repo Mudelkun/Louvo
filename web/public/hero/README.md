@@ -9,7 +9,7 @@ plates, which is a weaker hero on purpose — see below.
 
 ```
 public/hero/before-1.jpg   the original photograph
-public/hero/after-1.jpg    the same person, after a Luvo preview
+public/hero/after-1.jpg    the same person, after a Louvo preview
 public/hero/before-2.jpg   a second subject
 public/hero/after-2.jpg
 ...

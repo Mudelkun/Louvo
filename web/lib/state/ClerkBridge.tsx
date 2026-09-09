@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * The one place Clerk and Luvo's own account meet.
+ * The one place Clerk and Louvo's own account meet.
  *
  * Clerk answers *who is at this keyboard*. It does not know about device
  * secrets, free allowances or credits, and it must not: the ledger is the
@@ -9,14 +9,14 @@
  * signed in. So there are two facts in play — Clerk has a session, and the API
  * has adopted this device — and they can be out of step in both directions:
  *
- * - **Clerk signed in, Luvo not.** A fresh Google redirect, or a returning
- *   visitor whose Clerk cookie outlived their Luvo device secret. This adopts.
- * - **Clerk signed out, Luvo not.** Somebody signed out in another tab, or their
- *   Clerk session expired. This signs Luvo out to match, because a page offering
+ * - **Clerk signed in, Louvo not.** A fresh Google redirect, or a returning
+ *   visitor whose Clerk cookie outlived their Louvo device secret. This adopts.
+ * - **Clerk signed out, Louvo not.** Somebody signed out in another tab, or their
+ *   Clerk session expired. This signs Louvo out to match, because a page offering
  *   to sign out of something the sign-in button would immediately re-enter is
  *   lying about its own state.
  *
- * The *third* case is not reconciled here, it is prevented: Luvo signed out
+ * The *third* case is not reconciled here, it is prevented: Louvo signed out
  * while Clerk stays signed in. That one cannot be fixed by watching, because
  * both sides look settled — this app shows "Sign in", Clerk answers every
  * attempt with `session_exists`, and there is no signal saying which of the two
@@ -61,7 +61,7 @@ export function ClerkBridge() {
   const attemptedFor = useRef<string | null>(null);
 
   /**
-   * Ending the Clerk session is part of signing out of Luvo.
+   * Ending the Clerk session is part of signing out of Louvo.
    *
    * Registered rather than called directly from `AccountContext`, because that
    * provider also has to work in a build with no Clerk keys, where `useClerk()`

@@ -58,9 +58,9 @@ export async function generateMetadata({
 
   return {
     title: share.hairstyleName,
-    description: `${share.hairstyleName} on Luvo — see it on yourself before the chair.`,
+    description: `${share.hairstyleName} on Louvo — see it on yourself before the chair.`,
     openGraph: {
-      title: `${share.hairstyleName} · Luvo`,
+      title: `${share.hairstyleName} · Louvo`,
       description: 'See it on yourself before the chair.',
       ...(share.imageUrl ? { images: [{ url: share.imageUrl }] } : {}),
     },

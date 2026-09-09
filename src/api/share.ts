@@ -26,7 +26,7 @@
  * page it opens shows the catalog's mannequin render of that cut. The preview
  * itself is composed into a share card on the device (`src/lib/shareImage.ts`)
  * and handed to whichever app the user picked by the operating system — it never
- * passes through a Luvo server, which is what keeps the promise
+ * passes through a Louvo server, which is what keeps the promise
  * `docs/preview-generation.md` makes intact through a feature designed to show
  * the result to strangers.
  */
@@ -79,9 +79,9 @@ export interface ShareLink {
  * is the only version of this anybody sends twice.
  */
 export function captionFor(hairstyleName: string, url: string): string {
-  const opening = `Trying the ${hairstyleName} with Luvo ✂️`;
-  if (!url) return `${opening}\nWant to see how a haircut looks on you? Try Luvo.`;
-  return `${opening}\nWant to see how a haircut looks on you? Try Luvo: ${url}`;
+  const opening = `Trying the ${hairstyleName} with Louvo ✂️`;
+  if (!url) return `${opening}\nWant to see how a haircut looks on you? Try Louvo.`;
+  return `${opening}\nWant to see how a haircut looks on you? Try Louvo: ${url}`;
 }
 
 const TIMEOUT_MS = 8000;
@@ -104,7 +104,7 @@ export async function createShareLink(
   const local: ShareLink = {
     code: null,
     url: FALLBACK_SHARE_URL,
-    title: `See yourself with a ${look.hairstyleName} — Luvo`,
+    title: `See yourself with a ${look.hairstyleName} — Louvo`,
     caption: captionFor(look.hairstyleName, FALLBACK_SHARE_URL),
     source: 'local',
   };
