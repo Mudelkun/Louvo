@@ -58,10 +58,10 @@ export async function generateMetadata({
 
   return {
     title: share.hairstyleName,
-    description: `${share.hairstyleName} on Louvo — see it on yourself before the chair.`,
+    description: `${share.hairstyleName} on Louvo — try it on your own photo.`,
     openGraph: {
       title: `${share.hairstyleName} · Louvo`,
-      description: 'See it on yourself before the chair.',
+      description: 'Try it on your own photo.',
       ...(share.imageUrl ? { images: [{ url: share.imageUrl }] } : {}),
     },
     robots: { index: false, follow: true },

@@ -58,17 +58,19 @@ const grotesk = Inter({
  * smaller engines and by the answer engines that are now a real share of this
  * traffic.
  *
- * The title is the one change worth explaining. It was "Louvo — see the haircut
- * before the chair", which is the brand line and is good writing, and is a
- * phrase nobody has ever typed into a search box. A title tag has two audiences
- * and the first is a query, so the category noun leads and the line follows it.
- * Nothing was lost: it is still there, doing what it is good at, one clause
- * later.
+ * The title is the one worth explaining, and it has been cut twice. It was
+ * "Louvo — see the haircut before the chair", which is the brand line: good
+ * writing, and a phrase nobody has ever typed into a search box. The category
+ * noun was put in front of it and the line kept as a tail — and the tail is now
+ * gone as well, because a clause that is only ever *trailing* is a clause a
+ * search engine truncates, a chat card wraps and a reader never reaches. What
+ * replaces it is the promise the `<h1>` on `/` makes, so the title, the card and
+ * the page all open on the same sentence.
  */
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — virtual hairstyle try-on: see the haircut before the chair`,
+    default: `${SITE_NAME} — try any hairstyle on your own photo`,
     template: `%s · ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,

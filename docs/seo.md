@@ -34,6 +34,31 @@ the two controls and the button that spends a credit; `<CatalogBrowser>` still f
 memory with no round trip. What changed is that the route beside them fetches the same catalogue
 on the server and renders the *words* — which is what `lib/catalogServer.ts` is for.
 
+### The half of `/` that this missed
+
+The row above was fixed for the *prose* and not for the *heading*, and the difference showed up in
+a live result before anybody noticed it in the html. `<HomeSeo>` put five paragraphs and six
+questions into the served page — below the fold, which is where they belong — but the headline
+above it did not come with them. `<TryOnFlow>` reads `useSearchParams`, so `app/page.tsx` wraps it
+in a `<Suspense>`, and **what Next writes into static html for a bailed-out boundary is the
+fallback**. The fallback was five grey rectangles. So `/` shipped with no `<h1>` at all.
+
+What that produced was not a missing feature but a wrong one, and both halves of it were visible
+on the listing:
+
+| What Google showed | Why |
+| --- | --- |
+| the title starting mid-sentence, on a lowercase verb | no heading corroborated the title tag, so it was rewritten — and the em dash in it let the first half, the two words people actually type, be dropped as a separator |
+| a description scraped from the **footer** | with no prose near the top of the document, the description was composed from whatever text was findable |
+| a grey globe instead of the mark | `/favicon.ico` was a 404; the `<link rel="icon">` alone was not enough for the favicon crawl |
+
+The fixes are one component and two files. `<HeroHeading>` holds the overline, the `<h1>` and the
+sub-paragraph, and is rendered by **both** `<TryOnFlow>` and the fallback — one copy of the words,
+so a crawler and a visitor cannot be shown different ones. The home title's separator became a
+colon, which is punctuation inside a sentence rather than a boundary between two. And
+`npm run icons` now cuts `web/app/favicon.ico` at 16/32/48 from the same artwork as everything
+else, which is the well-known path the favicon crawl asks for.
+
 ## The four decisions
 
 ### 1. Facets get pages; query strings get canonicals
@@ -155,6 +180,36 @@ Every one of those links is in the html.
 - **`SearchAction` pointing at `/styles?search=`**, which is honest only because
   `<CatalogBrowser>` seeds its box from that parameter. Declaring a search endpoint the site
   ignores is markup describing a page that does not exist.
+
+## The card a link unfurls into
+
+`app/opengraph-image.tsx` is the picture that appears when somebody pastes a Louvo link into
+WhatsApp, Slack, a timeline or a message, and the same picture Google draws beside a result at
+about 92px. It was six lines of type on the brand's violet gradient: correct, on brand, and an
+advertisement for an entirely visual product carrying **no evidence that the product works**.
+
+The objection a reader has to Louvo is *this will not look like me*, and nothing written answers
+it. So the right of the card is a real before-and-after — one of the pairs the hero on `/` wipes
+between, joined down the middle of one face, with the seam drawn and the two halves labelled.
+Three things about it are worth not re-deriving:
+
+- **A face is the only thing that survives the reduction.** At the size a search result draws a
+  thumbnail, a headline is a grey smear and a photograph is still a photograph. The words on the
+  card are there for the chat-card size; the picture is there for both.
+- **satori cannot decode WebP.** The renderer behind `ImageResponse` does not warn or skip — the
+  whole render throws, which at build time is a failed deploy. The hero files *are* WebP, so
+  `heroSplit()` converts through `sharp` and hands satori a PNG. If the set is ever re-shot in
+  another format, that is the line that decides whether the card has a picture in it.
+- **The two halves are cut from one `cover` box, then butted together.** Composing the split
+  before it reaches the renderer is what puts the eyes on one line; two `<img>`s offset inside
+  overflow boxes is the same arithmetic done twice, in a renderer with no way to check its own
+  output. A missing pair or a missing `sharp` falls back to the words alone and says so in the
+  build log.
+
+The brand line went with it. "See the haircut before the chair" was on the card, in the sitewide
+title and in the share pages' descriptions; it is good writing and it is a phrase nobody has ever
+typed, so all three now open on the promise the `<h1>` makes instead. The title, the card and the
+page say the same sentence.
 
 ## The sitemap has the renders in it
 

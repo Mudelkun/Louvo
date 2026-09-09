@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { Suspense } from 'react';
 
 import type { HeroImages } from '../components/home/HeroCompare';
+import { HeroHeading } from '../components/home/HeroHeading';
 import { TryOnFlow } from '../components/home/TryOnFlow';
 import { HOME_FAQ, HomeSeo } from '../components/seo/HomeSeo';
 import { JsonLd } from '../components/seo/JsonLd';
@@ -18,8 +19,16 @@ import { abs, faqLd, graph, og, ORG_ID, SITE_DESCRIPTION, SITE_ID, tw } from '..
  * try on", "haircut simulator", "what haircut suits me" — so the category noun
  * leads, and the sentence that made the old title good is still the second half
  * of it.
+ *
+ * **The separator is a colon and it used to be an em dash, which cost the first
+ * half of the title.** Google treats ` - `, ` | ` and ` — ` as boundaries between
+ * a page's title and its site's, and it will drop whichever side it judges
+ * redundant — so the live listing read "see any haircut on your own photo",
+ * starting on a lowercase verb, with the two words somebody actually types
+ * thrown away. A colon is punctuation inside one sentence rather than a
+ * separator between two, and the whole line survives it.
  */
-const TITLE = 'Virtual hairstyle try-on — see any haircut on your own photo';
+const TITLE = 'Virtual hairstyle try-on: see any haircut on your own photo';
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -68,13 +77,13 @@ export default function HomePage() {
       {/*
         Below the product, never in front of it.
 
-        `<TryOnFlow>` is a client component, so until this block the html served
-        for `/` was a skeleton — the front door of a site meant to rank for
-        "virtual hairstyle try-on" contained no sentence a crawler could read
-        without executing JavaScript. This is that sentence, and the four others
-        worth having, placed after everything a visitor came for. The header of
-        `<HomeSeo>` has the whole argument, including why it is not the landing
-        page coming back.
+        `<TryOnFlow>` is a client component that reads the search params, so the
+        html served for `/` is `<FlowSkeleton>` plus this — the heading comes
+        from the fallback and the prose comes from here. Between them the front
+        door of a site meant to rank for "virtual hairstyle try-on" has a
+        heading, a paragraph and the questions people ask, without a crawler
+        having to execute anything. The header of `<HomeSeo>` has the whole
+        argument, including why it is not the landing page coming back.
       */}
       <HomeSeo />
     </>
@@ -135,22 +144,30 @@ function heroImages(): HeroImages[] {
 }
 
 /**
- * The upload state's layout, with nothing in it yet.
+ * The upload state's layout, with the heading real and the rest not yet there.
  *
- * `useSearchParams` forces the tree under it out of the static render, so this
- * is what is served until the client picks it up. It states the layout — words
- * and a drop box on the left, one frame on the right — and nothing about what
- * will be in them, which is the rule every placeholder on the site follows.
+ * `useSearchParams` forces the tree under `<TryOnFlow>` out of the static
+ * render, so **this is the html `/` actually serves** — to a first-pass crawler,
+ * to a scraper, and to anybody on a slow connection before hydration. It was
+ * five grey rectangles, which meant the front door of a site meant to rank for
+ * "virtual hairstyle try-on" shipped with no `<h1>` and no sentence above the
+ * fold. Google's answer to that was visible on the live listing: it rewrote the
+ * title and built the description out of the *footer*.
+ *
+ * `<HeroHeading>` is the fix and it is the same component `<TryOnFlow>` renders,
+ * so there is one copy of the words rather than a crawler-facing paraphrase.
+ * Everything below it is still a placeholder, because the rule this file follows
+ * has not changed: **a placeholder may state the layout, never the data.** The
+ * heading is not data — it is the same sentence on every visit — where the drop
+ * box, the photograph and the catalogue plates are all things that are not known
+ * until the client has run.
  */
 function FlowSkeleton() {
   return (
     <div className="mx-auto w-full max-w-[1240px] px-5 pb-16 pt-10 sm:px-8 lg:px-12 lg:pt-16">
       <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:gap-16">
         <div>
-          <Skeleton className="h-3 w-40" />
-          <Skeleton className="mt-5 h-12 w-full max-w-[460px]" />
-          <Skeleton className="mt-3 h-12 w-full max-w-[380px]" />
-          <Skeleton className="mt-6 h-16 w-full max-w-[520px]" />
+          <HeroHeading />
           <Skeleton className="mt-7 h-[132px] w-full rounded-[20px]" />
         </div>
         <Skeleton className="aspect-[4/5] w-full rounded-[24px]" />
