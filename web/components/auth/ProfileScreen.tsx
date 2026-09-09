@@ -5,7 +5,7 @@
  *
  * Two things it adds and neither is decoration. A **way back to `/account`**,
  * because this page is Clerk's model of an identity and the thing the visitor
- * came to Luvo for — the balance, the packs, the ledger — is not in it; and an
+ * came to Louvo for — the balance, the packs, the ledger — is not in it; and an
  * answer for a **deployment with no Clerk keys**, where there is no profile to
  * manage and the honest thing is to say so rather than to render nothing.
  *
@@ -47,7 +47,7 @@ export function ProfileScreen() {
           <Notice
             tone="warn"
             title="Nothing to manage here"
-            body="This deployment signs in with a mailed code against Luvo's own API rather than through an identity provider, so there is no profile screen. Signing out and signing in with a different address is the whole of it."
+            body="This deployment signs in with a mailed code against Louvo's own API rather than through an identity provider, so there is no profile screen. Signing out and signing in with a different address is the whole of it."
           />
         )}
       </div>

@@ -1,12 +1,12 @@
-# Luvo — Project Description
+# Louvo — Project Description
 
-**Luvo** is a mobile app that allows users to explore, customize, and virtually try different hairstyles before getting a haircut. Users upload a photo, select their gender and hairstyle category, browse available styles, customize options such as hair length, fade level, hair color, and volume, and then generate a realistic preview of themselves with the selected hairstyle.
+**Louvo** is a mobile app that allows users to explore, customize, and virtually try different hairstyles before getting a haircut. Users upload a photo, select their gender and hairstyle category, browse available styles, customize options such as hair length, fade level, hair color, and volume, and then generate a realistic preview of themselves with the selected hairstyle.
 
 The app will also allow users to **compare before-and-after results, save their favorite looks, share them, and discover additional hairstyle recommendations**.
 
 ## Core Experience
 
-A key part of Luvo is the hairstyle browsing experience. Instead of using photos of real people to represent each hairstyle, Luvo will use **neutral, faceless mannequin-style characters** similar to the reference image. These mannequins will have:
+A key part of Louvo is the hairstyle browsing experience. Instead of using photos of real people to represent each hairstyle, Louvo will use **neutral, faceless mannequin-style characters** similar to the reference image. These mannequins will have:
 
 * No facial features
 * No identifiable ethnicity
@@ -40,4 +40,4 @@ The system should be designed so that **new hairstyles and mannequin images can 
 
 ## Overall Goal
 
-The goal of Luvo is to make choosing a haircut **simple, visual, and low-risk** by allowing users to see what different hairstyles could look like on them before they visit a barber or hairstylist.
+The goal of Louvo is to make choosing a haircut **simple, visual, and low-risk** by allowing users to see what different hairstyles could look like on them before they visit a barber or hairstylist.

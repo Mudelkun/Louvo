@@ -36,10 +36,10 @@
 import { SITE_URL } from './config';
 import type { Category, HairType, Hairstyle } from './contract/catalog';
 
-export const SITE_NAME = 'Luvo';
+export const SITE_NAME = 'Louvo';
 
 /**
- * What Luvo is, in the words somebody would actually type.
+ * What Louvo is, in the words somebody would actually type.
  *
  * "See the haircut before the chair" is the brand line and it is good writing;
  * it is also a phrase nobody searches for. A title tag has two audiences and the
@@ -50,7 +50,7 @@ export const SITE_NAME = 'Luvo';
 export const TAGLINE = 'Virtual hairstyle try-on';
 
 export const SITE_DESCRIPTION =
-  'Try on hairstyles with one photo. Luvo generates a realistic preview of you in ' +
+  'Try on hairstyles with one photo. Louvo generates a realistic preview of you in ' +
   'any cut in the catalogue — each one from a studio render of that exact haircut, ' +
   'not guessed from its name.';
 
@@ -346,7 +346,7 @@ export function hairstyleLd(
             url: image.url,
             width: image.width,
             height: image.height,
-            caption: `${style.name} — Luvo studio render`,
+            caption: `${style.name} — Louvo studio render`,
           },
         }
       : {}),

@@ -35,7 +35,7 @@ export const metadata: Metadata = {
  * What used to be here was a landing page: a hero, three explanatory sections, a
  * privacy essay and a closing call to action, with the actual try-on one click
  * away behind a button. That is a shape borrowed from software that has to
- * *convince* somebody before it can show them anything. Luvo does not — the
+ * *convince* somebody before it can show them anything. Louvo does not — the
  * whole proposition is a forty-second demonstration, and a visitor is one photo
  * away from it. So the upload box is the first thing on the page, the one piece
  * of evidence beside it is a real before and after, and the argument for the

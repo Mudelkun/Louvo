@@ -3,7 +3,7 @@
 /**
  * The home page, which is the product rather than a page about it.
  *
- * Luvo is a hairstyle try-on. The thing somebody came here to do is see a
+ * Louvo is a hairstyle try-on. The thing somebody came here to do is see a
  * haircut on their own face, and every sentence between them and that is a
  * sentence spent asking them to take our word for something they could have
  * checked in forty seconds. So the front door is the upload box, and the page

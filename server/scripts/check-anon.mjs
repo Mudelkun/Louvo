@@ -101,7 +101,7 @@ const sql = (text, values = []) => client.query(text, values).then((r) => r.rows
 // The signal, first: a browser sets `Origin` and cannot suppress it; the app
 // does not send one. This is what decides which anchor kind is written, so if it
 // ever stops being true the allowance difference below silently disappears.
-assert.equal(deviceKindFor('https://luvo.app', undefined), 'web');
+assert.equal(deviceKindFor('https://louvo.app', undefined), 'web');
 assert.equal(deviceKindFor(undefined, 'web'), 'web', 'the explicit header works for a same-origin deployment');
 assert.equal(deviceKindFor(undefined, undefined), 'device', 'and a native client is the default');
 

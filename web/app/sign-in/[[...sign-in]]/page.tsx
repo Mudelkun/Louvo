@@ -17,9 +17,9 @@ import { AuthScreen, AuthScreenSkeleton } from '../../../components/auth/AuthScr
  * `robots.ts` disallows it as well. See the note there about doing both.
  */
 export const metadata: Metadata = {
-  title: 'Sign in — Luvo',
+  title: 'Sign in — Louvo',
   description:
-    'Sign in to Luvo so the previews you have paid for follow you between browsers and to the app.',
+    'Sign in to Louvo so the previews you have paid for follow you between browsers and to the app.',
   robots: { index: false, follow: false },
 };
 

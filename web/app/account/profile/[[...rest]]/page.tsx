@@ -11,11 +11,11 @@ import { ProfileScreen } from '../../../../components/auth/ProfileScreen';
  *
  * It is a page rather than `openUserProfile()` for the reason sign-in stopped
  * being a modal: one kind of surface for one kind of errand. The credit balance
- * is deliberately not in here — that is Luvo's and it is on `/account`, which is
+ * is deliberately not in here — that is Louvo's and it is on `/account`, which is
  * one link away at the top of this page.
  */
 export const metadata: Metadata = {
-  title: 'Your profile — Luvo',
+  title: 'Your profile — Louvo',
   robots: { index: false, follow: false },
 };
 

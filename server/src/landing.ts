@@ -78,7 +78,7 @@ const escapeJs = (value: string): string => JSON.stringify(value).replace(/</g, 
  * variable, and it is what makes the card in a group chat worth opening.
  */
 export const shareTitle = (hairstyleName: string): string =>
-  `See yourself with a ${hairstyleName} — Luvo`;
+  `See yourself with a ${hairstyleName} — Louvo`;
 
 export const shareDescription =
   'Upload one photo and see how any haircut looks on you before you sit in the chair.';
@@ -96,18 +96,18 @@ export function landingPage(content: LandingContent): string {
 <link rel="canonical" href="${escapeHtml(content.canonicalUrl)}">
 <meta name="description" content="${escapeHtml(shareDescription)}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Luvo">
+<meta property="og:site_name" content="Louvo">
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(shareDescription)}">
 <meta property="og:url" content="${escapeHtml(content.canonicalUrl)}">
 ${content.imageUrl ? `<meta property="og:image" content="${escapeHtml(content.imageUrl)}">
-<meta property="og:image:alt" content="${escapeHtml(`A ${content.hairstyleName}, shown on a Luvo mannequin`)}">` : ''}
+<meta property="og:image:alt" content="${escapeHtml(`A ${content.hairstyleName}, shown on a Louvo mannequin`)}">` : ''}
 <meta name="twitter:card" content="${content.imageUrl ? 'summary_large_image' : 'summary'}">
 ${content.iosAppId ? `<meta name="apple-itunes-app" content="app-id=${escapeHtml(content.iosAppId)}, app-argument=${escapeHtml(content.canonicalUrl)}">` : ''}
 <style>
   /* A hand-copied slice of the app's light palette (src/theme/tokens.ts), which
      this program may not import. Light only and on purpose, for the same reason
-     <ShareCard> is: this page is Luvo's face in somebody else's chat, so what it
+     <ShareCard> is: this page is Louvo's face in somebody else's chat, so what it
      looks like is a fact about the brand rather than about the device opening
      it. Every value here is the violet ramp measured off assets/Luvo-icon.png. */
   :root { color-scheme: light; }
@@ -140,7 +140,7 @@ ${content.iosAppId ? `<meta name="apple-itunes-app" content="app-id=${escapeHtml
 </head>
 <body>
   <main class="card">
-    <div class="mark">Luvo</div>
+    <div class="mark">Louvo</div>
     <div class="shot">${
       content.imageUrl
         ? `<img src="${escapeHtml(content.imageUrl)}" alt="${escapeHtml(`A ${content.hairstyleName}`)}" width="512" height="512">`
@@ -151,9 +151,9 @@ ${content.iosAppId ? `<meta name="apple-itunes-app" content="app-id=${escapeHtml
     ${
       store
         ? `<a class="cta" id="get" href="${escapeHtml(store)}">Try it on your photo</a>`
-        : `<a class="cta" id="get" href="${escapeHtml(content.deepLink)}">Open Luvo</a>`
+        : `<a class="cta" id="get" href="${escapeHtml(content.deepLink)}">Open Louvo</a>`
     }
-    <a class="secondary" href="${escapeHtml(content.deepLink)}">Already have Luvo? Open the app</a>
+    <a class="secondary" href="${escapeHtml(content.deepLink)}">Already have Louvo? Open the app</a>
     <div class="foot">Free to try. No account needed.<br>
       <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Use</a></div>
   </main>

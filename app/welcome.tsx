@@ -91,7 +91,7 @@ export default function WelcomeScreen() {
           <Text style={[type.label, { color: colors.onDarkMuted }]}>Skip</Text>
         </Pressable>
 
-        <Text style={[type.overline, { color: colors.onDarkMuted, marginBottom: spacing.md }]}>LUVO</Text>
+        <Text style={[type.overline, { color: colors.onDarkMuted, marginBottom: spacing.md }]}>LOUVO</Text>
         <Text style={[type.display, { color: colors.onDark, maxWidth: 300 }]}>
           See the haircut before you commit to it.
         </Text>

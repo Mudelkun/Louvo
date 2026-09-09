@@ -18,7 +18,7 @@ const trim = (value: string | undefined): string | null => {
 };
 
 /**
- * The Luvo API. Everything real comes from here: the catalog, the renders, the
+ * The Louvo API. Everything real comes from here: the catalog, the renders, the
  * generation queue, the credit ledger.
  *
  * A local checkout points it at the in-memory sandbox — `npm run sandbox` in the

@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /**
- * Luvo on the web.
+ * Louvo on the web.
  *
  * The palette is the app's, measured off `assets/Luvo-icon.png` and documented
  * at length in `src/theme/tokens.ts` — violet `#A98CFB`, pink `#FC73AC`, tile
@@ -13,7 +13,7 @@
  * The app follows the phone's setting because it is a tool somebody opens in a
  * queue at a barber's. This is a shopfront: it is looked at once, deliberately,
  * often on a large screen, and it has about four seconds to say what kind of
- * thing Luvo is. Near-black is what makes the one asset we actually sell — a
+ * thing Louvo is. Near-black is what makes the one asset we actually sell — a
  * white studio plate with a haircut on it — read as a lit object rather than as
  * a picture on a page. The plate does the work; the ground gets out of its way.
  *

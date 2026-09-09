@@ -107,9 +107,9 @@ Then, in the store consoles:
 - **Play Console** → Store listing → Privacy Policy: the same url. Data safety answers, likewise.
 - **Terms of Use (EULA)**: `https://<host>/terms`. Apple's standard EULA is the default if none is
   supplied, and it does not describe consumable credits, so the custom one is the right choice
-  here. The "If you downloaded Luvo from the App Store" section carries the minimum terms Apple
+  here. The "If you downloaded Louvo from the App Store" section carries the minimum terms Apple
   requires of a custom EULA — Apple as third-party beneficiary, the warranty refund, the
   export-control confirmation.
 
-`<host>` is whatever serves the API. Once `luvo.app` points at it, both urls are on the domain
+`<host>` is whatever serves the API. Once `louvo.app` points at it, both urls are on the domain
 already named in `app.json`'s associated domains.

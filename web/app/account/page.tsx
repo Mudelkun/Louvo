@@ -5,7 +5,7 @@ import { Section } from '../../components/ui';
 
 export const metadata: Metadata = {
   title: 'Account',
-  description: 'Credit packs for Luvo previews. One payment, nothing renews.',
+  description: 'Credit packs for Louvo previews. One payment, nothing renews.',
   robots: { index: false, follow: true },
 };
 

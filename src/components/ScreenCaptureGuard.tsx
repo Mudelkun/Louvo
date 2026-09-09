@@ -81,13 +81,13 @@ export function ScreenCaptureGuard() {
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Screenshots are turned off in Luvo. Use the share button to send your look. Dismiss."
+        accessibilityLabel="Screenshots are turned off in Louvo. Use the share button to send your look. Dismiss."
         onPress={() => setCaught(false)}
         style={styles.card}
       >
         <Ionicons name="eye-off-outline" size={18} color={colors.onDark} />
         <Text style={[type.caption, styles.text]}>
-          Screenshots come out blank in Luvo. Use <Text style={styles.strong}>Share</Text> to send your look —
+          Screenshots come out blank in Louvo. Use <Text style={styles.strong}>Share</Text> to send your look —
           it goes out as a proper picture.
         </Text>
       </Pressable>

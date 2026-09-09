@@ -217,8 +217,8 @@ const page = landingPage({
   deepLink: `luvo://s/${made.code}`,
   iosUrl: 'https://apps.apple.com/app/id123456789',
   androidUrl: `https://play.google.com/store/apps/details?id=com.luvoai.luvo&referrer=share%3D${made.code}`,
-  fallbackUrl: 'https://luvo.app',
-  canonicalUrl: `https://luvo.app/s/${made.code}`,
+  fallbackUrl: 'https://louvo.app',
+  canonicalUrl: `https://louvo.app/s/${made.code}`,
   iosAppId: '123456789',
 });
 
@@ -253,7 +253,7 @@ const injected = landingPage({
   iosUrl: null,
   androidUrl: null,
   fallbackUrl: null,
-  canonicalUrl: 'https://luvo.app/s/AbCdEfGhIj',
+  canonicalUrl: 'https://louvo.app/s/AbCdEfGhIj',
   iosAppId: null,
 });
 assert.equal(injected.includes('<script>alert(1)</script>'), false, 'the cut’s name cannot inject markup');
@@ -267,7 +267,7 @@ const dead = unknownLinkPage({
   iosUrl: 'https://apps.apple.com/app/id123456789',
   androidUrl: null,
   fallbackUrl: null,
-  canonicalUrl: 'https://luvo.app/s/AbCdEfGhIj',
+  canonicalUrl: 'https://louvo.app/s/AbCdEfGhIj',
   iosAppId: null,
 });
 assert.ok(dead.includes('apps.apple.com'), 'a dead link still offers the download — it is still a warm visitor');

@@ -1266,7 +1266,7 @@ async function writeContactSheet(options, manifest, catalog) {
 
   const html = `<!doctype html>
 <meta charset="utf-8">
-<title>Luvo mannequins</title>
+<title>Louvo mannequins</title>
 <style>
   body { font: 14px -apple-system, system-ui, sans-serif; background: #F6F3EE; color: #241C16; margin: 32px; }
   h1 { font-size: 20px; }
@@ -1281,7 +1281,7 @@ async function writeContactSheet(options, manifest, catalog) {
   .bald img { outline: 2px solid #C4462F; outline-offset: 2px; }
   .bald b { color: #C4462F; font-weight: 600; }
 </style>
-<h1>Luvo mannequin catalog</h1>
+<h1>Louvo mannequin catalog</h1>
 <p>Generated ${manifest.generatedAt ?? ''} · ${manifest.models?.edit ?? ''}</p>
 ${section('Base heads', baseRows)}
 ${styleSections}
