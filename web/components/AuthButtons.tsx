@@ -41,10 +41,19 @@
  *
  * The header's top bar carries the balance at every width now, and on a 390px
  * phone the logo, a pill, two 82px doors and a menu button do not fit on one
- * line. So `collapse` drops the *secondary* door — "Sign in" — below `sm`,
+ * line. So `collapse` drops the *secondary* door — "Sign in" — below `md`,
  * leaving the primary one in the bar. Nothing is lost: the menu behind the
  * hamburger draws this same component **uncollapsed**, so both doors are one tap
  * away at exactly the width where one of them left the bar.
+ *
+ * **`md` rather than `sm`, and the hamburger is what sets it.** This collapsed
+ * at `sm` first, which left a band — 640px to 768px, a small tablet or a phone
+ * turned sideways — where the bar drew the logo, the wordmark, the pill, *both*
+ * doors and the menu button, because the menu is `md:hidden` and appears below
+ * 768 rather than below 640. The doors were then squeezed narrower than their
+ * own labels and "Sign in" wrapped onto two lines inside a `h-9` pill. The two
+ * breakpoints have to be one breakpoint: whatever leaves the bar is caught by
+ * the menu, so it must leave exactly where the menu arrives.
  *
  * It collapses only when there are genuinely two. Without Clerk there is one
  * button and it is "Sign in", so collapsing would hide the only way in.
@@ -84,7 +93,7 @@ export function AuthButtons({ collapse = false }: { collapse?: boolean }) {
   const next = useReturnPath();
 
   // Only ever collapses a pair. See the header.
-  const hidden = collapse && hasClerk ? 'hidden sm:inline-flex' : '';
+  const hidden = collapse && hasClerk ? 'hidden md:inline-flex' : '';
 
   return (
     <>

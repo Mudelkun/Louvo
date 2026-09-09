@@ -18,7 +18,8 @@
  *   used to be `sm:` and up, with the menu behind the hamburger carrying it on a
  *   phone, which is the one width where somebody is most likely to be about to
  *   spend one. The room comes from `<AuthButtons collapse>`, which drops the
- *   secondary door below `sm`.
+ *   secondary door below `md` — the same width the hamburger appears at, so the
+ *   door lands in the menu the moment it leaves the bar.
  * - **A generation in flight is a live link back to it.** Leaving the wait
  *   costs the view, not the work, so there has to be a way back in from
  *   anywhere. Without it, navigating away reads as having lost the preview.
@@ -323,9 +324,11 @@ export function SiteHeader() {
               bar only had room for the words "3 previews" from `sm`; a number
               and a mark fit at every width, so the bar carries it always and a
               second copy in here would be one more thing to keep in step. */}
-          {/* The doors, uncollapsed — the bar drops "Sign in" below `sm` to make
-              room for the balance, and this is where it lands. Signed in there
-              is nothing to offer here: the account's own menu is in the bar. */}
+          {/* The doors, uncollapsed — the bar drops "Sign in" below `md` to make
+              room for the balance, and this is where it lands. That is the same
+              width this menu appears at, which is the point: the door is never
+              missing from both at once. Signed in there is nothing to offer
+              here: the account's own menu is in the bar. */}
           {offerSignIn && !account ? (
             <div className="flex items-center gap-2 pt-3">
               <AuthButtons />

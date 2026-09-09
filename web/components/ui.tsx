@@ -55,7 +55,7 @@ const SIZES: Record<Size, string> = {
 };
 
 const BASE =
-  'inline-flex select-none items-center justify-center gap-2 rounded-full font-semibold tracking-[-0.01em] ' +
+  'inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold tracking-[-0.01em] ' +
   'transition-[background-color,color,box-shadow,transform] duration-200 ' +
   'disabled:pointer-events-none disabled:opacity-45';
 
