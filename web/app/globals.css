@@ -377,7 +377,7 @@
 }
 
 /**
- * The catalogue shelves, drifting.
+ * The catalogue shelves, drifting — and pushable.
  *
  * The strip on the front page used to be twelve stationary plates. Twelve is
  * not a catalogue — it is a sample of one, and the visitor's question is *is my
@@ -387,20 +387,25 @@
  * opposite directions so the section reads as one thing rather than as two lists
  * that happen to be animated.
  *
- * The track holds exactly two copies of the shelf and travels half its own
- * width, which lands the second copy precisely where the first started — a loop
- * with no seam and no measurement. That exactness is why the items carry their
- * gap as a trailing margin rather than the track carrying `gap`: with `gap` the
- * track is `2n` items and `2n - 1` gaps, and half of that is not one copy.
+ * **All that is left here is the fade.** The motion was a `transform` animation
+ * on a track inside an `overflow-hidden` box, which drifts beautifully and
+ * cannot be touched: there is no scroller, so a finger on a rail did nothing
+ * and the only response the row had to being touched was to stop — the wrong
+ * answer to somebody asking to see more haircuts. The drift is now scroll
+ * position on a real `overflow-x: auto` rail, written a few tenths of a pixel
+ * at a time by `useDriftingRail`, so a drag is the platform's own scrolling
+ * with its momentum and its rubber-banding, and the loop wraps under a finger
+ * as well as under the animation. The keyframes, the play-state rules for
+ * hover, focus and off-screen, and the `data-direction` switch all went with
+ * the transform; every one of them lives in that hook now, where it can be
+ * expressed as "and the row is still scrollable while it is stopped".
+ *
+ * The track still holds exactly two copies of the shelf and the wrap is still
+ * half its own scroll width, which lands the second copy precisely where the
+ * first started. That exactness is why the items carry their gap as a trailing
+ * margin rather than the track carrying `gap`: with `gap` the track is `2n`
+ * items and `2n - 1` gaps, and half of that is not one copy.
  */
-@keyframes luvo-marquee {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
 
 /* The plates enter and leave rather than being clipped off at a hard edge —
    a cut sliced in half by the gutter reads as a layout fault. */
@@ -409,41 +414,3 @@
   mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
 }
 
-.marquee-track {
-  display: flex;
-  width: max-content;
-  animation: luvo-marquee linear infinite;
-  /* The duration is set per row, from the number of plates in it, so a short
-     shelf and a long one drift at the same speed. */
-}
-
-/* Women left to right, men right to left. Same keyframes, run backwards. */
-.marquee-track[data-direction='reverse'] {
-  animation-direction: reverse;
-}
-
-/**
- * It stops the instant the pointer is over it, and while anything inside it has
- * focus. Every plate is a link, and a link that moves out from under the cursor
- * is a link nobody can follow — the same rule the hero's sweep follows, where
- * the pointer takes the timeline over rather than fighting it.
- */
-.marquee:hover .marquee-track,
-.marquee:focus-within .marquee-track {
-  animation-play-state: paused;
-}
-
-/**
- * And it stops when nobody is looking at it.
- *
- * A CSS animation is not suspended by being scrolled past: the compositor keeps
- * advancing the transform and every plate riding on it keeps being drawn. The
- * front page carries around 320 of them across its two shelves once the
- * catalogue is fully published, so a visitor reading the grid below is paying
- * for a rail three screens up. `useOnScreen` sets the attribute; the row pauses
- * where it is and resumes from there, which is what coming back to a marquee
- * looks like anyway.
- */
-.marquee[data-offscreen] .marquee-track {
-  animation-play-state: paused;
-}

@@ -61,8 +61,41 @@ export interface PlateProps {
   alt: string;
   /** Passed to the `<img>`; `eager` for a hero, lazy for a grid. */
   priority?: boolean;
+  /**
+   * How the render sits in its box, and the reason this is a prop rather than a
+   * class the caller adds.
+   *
+   * `contain` is the default and is right nearly everywhere: a card, a tile and
+   * a square hero all give the render a box of roughly its own shape, and
+   * contain is the only fit that cannot cut anything off.
+   *
+   * `cover-top` is for a box much wider than it is tall — the phone deck on the
+   * style page, which is whatever height the window has left. Contained there,
+   * a square render is drawn at the box's *height* and the picture is a small
+   * head between two white margins; covered, it is drawn at the box's *width*
+   * and the crop comes off the bottom, which on these renders is the display
+   * base and the lower neck rather than any of the haircut. Measured: the
+   * subject fills 95% of a render's height and 76% of its width, so there is no
+   * top margin to spend and the only safe crop is downward from the crown.
+   *
+   * It has to be a prop because the base `<img>` and the SVG that carries the
+   * colour grade are two elements fitted independently, and a grade fitted
+   * `meet` over an image fitted `slice` is a recoloured hairline sitting an inch
+   * from the hair. `object-top` and `xMidYMin slice` are the same rule written
+   * twice, which is exactly why neither may be set without the other.
+   */
+  fit?: PlateFit;
   className?: string;
 }
+
+/** See `fit` on `<Plate>`. */
+export type PlateFit = 'contain' | 'cover-top';
+
+/** The two halves of one fit, so they cannot be set apart. */
+const FIT: Record<PlateFit, { img: string; svg: string }> = {
+  contain: { img: 'object-contain', svg: 'xMidYMid meet' },
+  'cover-top': { img: 'object-cover object-top', svg: 'xMidYMin slice' },
+};
 
 /**
  * One graded render: the original, plus a recoloured copy held to the hair.
@@ -101,11 +134,13 @@ function GradedRender({
   target,
   alt,
   priority,
+  fit,
 }: {
   resolved: ResolvedRender;
   target: string | null;
   alt: string;
   priority?: boolean;
+  fit: PlateFit;
 }) {
   const base = baseHairColor(resolved.variant as VariantId);
   const matrix = useMemo(() => hairGrade(target, base), [target, base]);
@@ -147,13 +182,14 @@ function GradedRender({
         decoding="async"
         draggable={false}
         onLoad={() => setLoaded(true)}
-        className="absolute inset-0 h-full w-full object-contain"
+        className={`absolute inset-0 h-full w-full ${FIT[fit].img}`}
       />
 
       {matrix && loaded ? (
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          preserveAspectRatio="xMidYMid meet"
+          // The other half of `fit`. See the prop.
+          preserveAspectRatio={FIT[fit].svg}
           className="pointer-events-none absolute inset-0 h-full w-full"
           aria-hidden
           focusable="false"
@@ -205,7 +241,9 @@ function Drawing({
   gender,
   angle = 'front',
   length,
+  fit,
 }: {
+  fit: PlateFit;
   shape: HairShape;
   texture?: HairShape['texture'];
   color: HairColor | null;
@@ -238,6 +276,7 @@ function Drawing({
   return (
     <svg
       viewBox={`0 0 ${viewBox.width} ${viewBox.height}`}
+      preserveAspectRatio={FIT[fit].svg}
       className="absolute inset-0 h-full w-full"
       aria-hidden
       focusable="false"
@@ -340,15 +379,22 @@ export const Plate = memo(function Plate({
   angle = 'half',
   alt,
   priority,
+  fit = 'contain',
   className = '',
 }: PlateProps) {
   return (
     <div className={`relative isolate overflow-hidden bg-plate ${className}`}>
       {render ? (
-        <GradedRender resolved={render} target={color?.hex ?? null} alt={alt} priority={priority} />
+        <GradedRender
+          resolved={render}
+          target={color?.hex ?? null}
+          alt={alt}
+          priority={priority}
+          fit={fit}
+        />
       ) : (
         <>
-          <Drawing shape={shape} texture={texture} color={color} gender={gender} angle={angle} />
+          <Drawing shape={shape} texture={texture} color={color} gender={gender} angle={angle} fit={fit} />
           <span className="sr-only">{alt}</span>
         </>
       )}

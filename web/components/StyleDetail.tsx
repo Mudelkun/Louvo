@@ -157,6 +157,12 @@ function AngleTiles({
               gender={gender}
               angle={panel.angle}
               alt=""
+              /* The same fit the deck uses, and on the laptop's square tile it
+                 is not a change at all: the renders are square, so cover and
+                 contain resolve to the same picture in a square box. On the
+                 phone's landscape tile it is the difference between a head and
+                 a head with two white margins beside it. */
+              fit="cover-top"
               className="h-full w-full"
             />
           </div>
@@ -256,23 +262,31 @@ export function StyleDetail({
         {
           '--plate': 'clamp(280px, 38svh, 440px)',
           '--measure': 'calc(var(--plate) + 3.5rem + 430px)',
-          /*
-            What stands above the phone's one-window column, so the column can
-            be `100svh` minus it: the sticky site header (68), the section's own
-            top padding (12), the breadcrumb and its margin (34), and this
-            page's back link (30). Only these four, because everything below is
-            inside the column and CSS measures it there — the deck is `flex-1`,
-            so a three-line footnote or a length row takes its space out of the
-            picture rather than off the bottom of the window.
-
-            Four numbers rather than a `calc` of tokens because that is what
-            they are: three of them belong to layouts this component cannot see.
-            A change to the site header's height is a change to this line.
-          */
-          '--above-fold': '144px',
         } as CSSProperties
       }
-      className="lg:mx-auto lg:max-w-[var(--measure)]"
+      className={
+        /*
+          What stands above the phone's one-window column, so the column can be
+          `100svh` minus it. Below `sm`: the sticky site header (68), the
+          section's own top padding (12), and this page's back link (30) — the
+          breadcrumb is not in it because it is not drawn at that width (see
+          `app/styles/[id]/page.tsx`). From `sm` the section's padding grows,
+          the breadcrumb returns and both margins widen, which is the 206.
+
+          These are numbers rather than a `calc` of tokens because that is what
+          they are: they belong to layouts this component cannot see. **A change
+          to `<SiteHeader>`'s height, to the section's padding, or to whether
+          the breadcrumb is drawn is a change to this line.** Everything *below*
+          it is inside the column and measured by the browser — the deck is
+          `flex-1`, so a wrapped footnote or a length row takes its space out of
+          the picture rather than off the bottom of the window.
+
+          Over-estimating is the safe direction: it costs the picture a few
+          points. Under-estimating pushes the button off the screen.
+        */
+        '[--above-fold:110px] sm:[--above-fold:206px] ' +
+        'lg:mx-auto lg:max-w-[var(--measure)]'
+      }
     >
       <BackToCatalogue />
       {loading ? (
@@ -643,6 +657,18 @@ function Loaded({
             the control, and the gesture is the one every photograph on the
             device already answers to.
 
+            **It is drawn `cover-top`, and that is where the picture's size
+            actually comes from.** The box is the window's remainder, so it is
+            far wider than it is tall — and a square render contained in it is
+            drawn at the box's *height*, which is a small head sitting between
+            two white margins the width of the phone. Covered from the top it is
+            drawn at the box's *width* instead and the crop comes off the
+            bottom, which on these renders is the display base and the lower
+            neck. Measured, not assumed: the subject fills 95% of a render's
+            height and 76% of its width, so there is no margin at the crown to
+            spend and downward is the only safe direction to crop. See `fit` on
+            `<Plate>` for why it is a prop and not a class.
+
             Scroll snapping rather than a hand-written pan: it is the browser's
             own paging, so momentum, rubber-banding and the platform's pointer
             behaviour come for free, and it keeps working with a trackpad and
@@ -650,7 +676,16 @@ function Loaded({
             they say there are four, which a deck on its own cannot, and they are
             how somebody reaches the back view without four swipes.
           */}
-          <div className="order-2 flex min-h-0 flex-1 flex-col lg:hidden">
+          {/* No `min-h-0` on this, and that is the fix for a real bug rather
+              than a preference. `flex-1` sets `flex-basis: 0`, and `min-h-0`
+              additionally licenses the box to shrink below its own content — so
+              on a window too short for the fixed rows, this collapsed to zero
+              and the deck and its tiles carried on drawing *over* the hair-type
+              card underneath, captions and all. `min-height: auto` is the flex
+              default and it is what floors the box at its content, which means
+              a window that cannot fit everything overflows the page (and
+              scrolls, honestly) instead of overlapping it. */}
+          <div className="order-2 flex flex-1 flex-col lg:hidden">
             <div
               className={
                 'relative overflow-hidden rounded-[24px] bg-plate ring-1 ring-inset ring-white/10 ' +
@@ -661,7 +696,7 @@ function Loaded({
                 // reads, where a column that overflows it costs the button —
                 // and the render is `object-contain`, so a short box letterboxes
                 // the plate rather than cropping the top of somebody's head.
-                'min-h-[120px] flex-1'
+                'min-h-[168px] flex-1'
               }
             >
               <div
@@ -701,6 +736,7 @@ function Loaded({
                             angle={panel.angle}
                             alt={`${style.name}, ${ANGLE_LABELS[panel.angle].toLowerCase()}`}
                             priority={panel.angle === HERO_ANGLE && index === 0}
+                            fit="cover-top"
                             className="h-full w-full"
                           />
                         </div>
@@ -715,6 +751,7 @@ function Loaded({
                         angle={panel.angle}
                         alt={`${style.name}, ${ANGLE_LABELS[panel.angle].toLowerCase()}`}
                         priority={panel.angle === HERO_ANGLE}
+                        fit="cover-top"
                         className="h-full w-full"
                       />
                     )}
@@ -793,7 +830,7 @@ function Loaded({
                 // reads, where a column that overflows it costs the button —
                 // and the render is `object-contain`, so a short box letterboxes
                 // the plate rather than cropping the top of somebody's head.
-                'min-h-[120px] flex-1'
+                'min-h-[168px] flex-1'
               }
             >
               <div className="relative aspect-[4/5] w-full sm:aspect-[5/5]">

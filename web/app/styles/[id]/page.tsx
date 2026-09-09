@@ -202,7 +202,14 @@ export default async function StylePage({
           landed here from a search result both get a way back before anything
           hydrates. `<StyleDetail>` keeps its own "All cuts" link — this is the
           trail the `BreadcrumbList` describes. */}
-      {trail.length ? <Breadcrumbs trail={trail} className="mb-4 sm:mb-6" /> : null}
+      {/* Drawn from `sm`. On a phone it is a second way back sitting directly
+          above the first — `<StyleDetail>`'s own "All cuts" link — and the row
+          it costs is a row the picture, both selectors and the button are all
+          competing for in a window that has none to spare. The `BreadcrumbList`
+          in the JSON-LD above is untouched and is what a crawler reads, so
+          nothing about how this page is understood changes with the width.
+          `--above-fold` in `<StyleDetail>` is measured against this. */}
+      {trail.length ? <Breadcrumbs trail={trail} className="hidden sm:mb-6 sm:block" /> : null}
 
       <StyleDetail
         styleId={id}
