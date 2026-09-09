@@ -7,6 +7,14 @@ import { StyleDetail } from '../../../components/StyleDetail';
 import { Section } from '../../../components/ui';
 import { heroRender, loadCatalog, loadStyle } from '../../../lib/catalogServer';
 import {
+  GENDERS,
+  HAIR_LENGTH_IDS,
+  HAIR_TYPE_IDS,
+  type Gender,
+  type HairLengthId,
+  type HairTypeId,
+} from '../../../lib/contract/catalog';
+import {
   abs,
   breadcrumbLd,
   faqLd,
@@ -50,12 +58,49 @@ import {
  */
 export const revalidate = 3600;
 
+/**
+ * The query, narrowed to values the catalogue actually has.
+ *
+ * A search parameter is whatever somebody typed, so each of these answers
+ * `null` rather than passing a string through to a manifest lookup. They live
+ * up here because `generateMetadata` needs them as much as the page does — the
+ * card and the screen have to agree about which render this url is showing.
+ */
+const one = (value: string | string[] | undefined): string | undefined =>
+  typeof value === 'string' ? value : undefined;
+
+const genderParam = (value: string | undefined): Gender | null =>
+  GENDERS.includes(value as Gender) ? (value as Gender) : null;
+
+const hairTypeParam = (value: string | undefined): HairTypeId | null =>
+  HAIR_TYPE_IDS.includes(value as HairTypeId) ? (value as HairTypeId) : null;
+
+const lengthParam = (value: string | undefined): HairLengthId | null =>
+  HAIR_LENGTH_IDS.includes(value as HairLengthId) ? (value as HairLengthId) : null;
+
+/**
+ * The card, and **the answers on the url decide its picture**.
+ *
+ * This is where a shared link actually ends up. `/s/<code>` resolves the code
+ * and redirects here with the sharer's answers on the query, and a scraper
+ * follows that redirect and reads *this* page's metadata rather than the one it
+ * asked for — which is how a Low Taper Fade shared at coily unfurled as the
+ * straight render even though the `/s/` page's own `og:image` was correct. A
+ * card is the only thing most people ever see of a share, so it has to be the
+ * picture the sharer was looking at.
+ *
+ * The canonical is still the bare path, so none of this mints a competing url:
+ * the parameters change the *card*, never the address.
+ */
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<Metadata> {
   const { id } = await params;
+  const asked = await searchParams;
   const data = await loadStyle(id);
   const path = `/styles/${id}`;
   if (!data) {
@@ -63,7 +108,15 @@ export async function generateMetadata({
   }
 
   const { hairstyle } = data;
-  const image = heroRender(data.renders);
+  // The hair type names a *variant* through the style's own row rather than
+  // directly: three types sharing one render is the whole economy of the
+  // matrix, and `heroRender` is keyed on the render.
+  const askedType = hairTypeParam(one(asked.hairType));
+  const image = heroRender(data.renders, {
+    gender: genderParam(one(asked.gender)),
+    variant: askedType ? ((hairstyle.variants[askedType] as HairTypeId | null) ?? null) : null,
+    length: lengthParam(one(asked.length)),
+  });
   const title = styleTitle(hairstyle);
   const description = styleDescription(hairstyle);
 
@@ -129,8 +182,6 @@ export async function generateMetadata({
  * A server component is already handed its search params, which costs no hook,
  * no Suspense boundary and no second render.
  */
-const one = (value: string | string[] | undefined): string | undefined =>
-  typeof value === 'string' ? value : undefined;
 
 export default async function StylePage({
   params,

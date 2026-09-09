@@ -42,6 +42,7 @@ import { API_URL } from './config';
 import type {
   CatalogResponse,
   Gender,
+  HairLengthId,
   HairTypeId,
   Hairstyle,
   RenderManifest,
@@ -108,7 +109,18 @@ export async function loadStyle(id: string): Promise<StyleBundle | null> {
  */
 export function heroRender(
   renders: RenderManifest[string] | undefined,
-  options: { gender?: Gender | null; variant?: HairTypeId | null } = {},
+  options: {
+    gender?: Gender | null;
+    variant?: HairTypeId | null;
+    /**
+     * The length to prefer, and it is a *preference* rather than a filter.
+     *
+     * Same asymmetry the catalogue is built on: an unshot length falls back to
+     * the anchor, where a declared texture would not. Most cuts have no length
+     * row at all, so the anchor is very often the only row there is.
+     */
+    length?: HairLengthId | null;
+  } = {},
 ): RenderRef | null {
   if (!renders) return null;
 
@@ -128,10 +140,19 @@ export function heroRender(
     'coily',
   ];
 
+  // The asked-for length first, then the anchor, then the rest — see the note
+  // on the option.
+  const lengths: HairLengthId[] = [
+    ...(options.length && options.length !== 'medium' ? [options.length] : []),
+    'medium',
+    'short',
+    'long',
+  ].filter((entry, at, all) => all.indexOf(entry) === at) as HairLengthId[];
+
   for (const variant of variants) {
     const byLength = renders[variant as keyof typeof renders];
     if (!byLength) continue;
-    for (const length of ['medium', 'short', 'long'] as const) {
+    for (const length of lengths) {
       const byGender = byLength[length];
       if (!byGender) continue;
       for (const gender of genders) {
