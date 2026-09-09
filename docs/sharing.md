@@ -189,6 +189,18 @@ friend's chat. It is a wrong image rather than a partial one, which is why `chec
 asserts the variant and the length in the resolved url rather than asserting the row that
 stores them — the row was always right.
 
+**And on the website the card is not built from that page at all, which is the part that
+wastes an afternoon.** `web/app/s/[code]/page.tsx` resolves the code and **redirects** to the
+hairstyle, because on the web there is nothing to install and the honest destination is the cut
+itself. A scraper follows that redirect and reads `/styles/[id]`'s metadata: the `og:image` on
+the `/s/` route is correct and is never the one anybody sees. The symptom is a card whose
+*description* is the style page's rather than the share page's, which is how it was identified.
+
+So the answers have to survive the hop (`gender`, `hairType`, `length` on the redirect) and
+`generateMetadata` on the style page has to read them, mapping the hair type through the style's
+own `variants` row because three types sharing one render is the whole economy of the matrix.
+The canonical stays the bare path: the parameters change the *card*, never the address.
+
 **A person.** Who either has the app, in which case the page's job is to get out of the way, or
 does not, in which case it is to be a small clear advertisement with one button.
 

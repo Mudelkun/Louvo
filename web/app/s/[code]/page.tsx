@@ -77,8 +77,19 @@ export default async function SharePage({ params }: { params: Promise<{ code: st
   // is our problem rather than theirs.
   if (!share) redirect('/styles');
 
+  /**
+   * Every answer the link carries goes on the url, the length included.
+   *
+   * Two things depend on that and both are invisible when it is wrong. The
+   * visitor opens the cut as the sharer had it set up rather than at its anchor
+   * length — and a scraper **follows this redirect** and builds its card from
+   * `/styles/[id]`'s metadata rather than from the tags above, so the answers
+   * have to survive the hop or the card is a different haircut with the right
+   * name on it.
+   */
   const query = new URLSearchParams({ ref: code });
   if (share.gender) query.set('gender', share.gender);
   if (share.hairType) query.set('hairType', share.hairType);
+  if (share.lengthId) query.set('length', share.lengthId);
   redirect(`/styles/${share.hairstyleId}?${query.toString()}`);
 }
