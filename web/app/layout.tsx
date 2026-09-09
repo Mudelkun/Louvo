@@ -185,7 +185,24 @@ function ApiPreconnect() {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${serif.variable} ${grotesk.variable}`}>
+    /*
+      `data-scroll-behavior` is not decoration, and its absence was a bug.
+
+      `globals.css` sets `scroll-behavior: smooth` on this element, which is
+      what makes an in-page anchor glide. The router's scroll-to-top on a
+      navigation inherits it — so pressing a hairstyle scrolled the catalogue
+      slowly back to the top and *then* swapped in the style page, which reads
+      as the site doing something odd before answering the tap. Next disables
+      smooth scrolling around its own route-transition scroll, but only for a
+      document that declares it here: without this attribute it cannot know the
+      rule came from a stylesheet rather than from something it would be wrong
+      to override. Anchors keep their glide; route changes are instant.
+    */
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      className={`${serif.variable} ${grotesk.variable}`}
+    >
       <head>
         <ApiPreconnect />
         {/*

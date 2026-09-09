@@ -1,53 +1,62 @@
 'use client';
 
 /**
- * Where the catalogue was left, so coming back is not scrolling down again.
+ * Where the catalogue was left, so coming back is continuing rather than
+ * arriving.
  *
- * The catalogue is a long grid and the assumption behind browsing it is that
- * the right haircut has *not* been found yet: somebody scrolls, opens a cut,
- * decides against it, and comes back to carry on from there. The back arrow on
- * the style page is a `<Link href="/styles">` rather than the browser's own
- * Back — deliberately, because a search result and a shared link both land on
- * that page with nothing behind them — and a link is a forward navigation, so
- * the router puts the window at the top of the catalogue every time. Forty
- * cards down, that is the whole browse thrown away on the one gesture that
- * means "not this one, show me the others".
+ * The assumption behind browsing a long grid is that the right haircut has
+ * *not* been found yet: somebody scrolls, opens a cut, decides against it, and
+ * comes back to carry on from there. The style page's back arrow is a
+ * `<Link href="/styles">` rather than the browser's own Back — deliberately,
+ * because a search result and a shared link both land on that page with nothing
+ * behind them — and a link is a forward navigation, so the router put the
+ * window at the top of the catalogue every time. Forty cards down, that is the
+ * whole browse thrown away on the one gesture that means "not this one".
  *
- * So the position is remembered here instead. Four things about it are
- * deliberate.
+ * Four things decide any change to this.
  *
- * **It is `sessionStorage`, and that is the right lifetime.** A remembered
- * scroll offset is a fact about one visit in one tab, not about this browser
- * for ever: a new tab is a new browse and deserves the top of the catalogue.
- * It is also the one storage this file could fail to reach — a private window,
- * a browser with site data off — so every read and write is wrapped and losing
- * the position is the entire cost of failing.
+ * **It is invisible, and that is the requirement rather than a nicety.** The
+ * window is put back in a *layout* effect, before the browser paints, and with
+ * `scroll-behavior` forced to `auto` for the one statement that moves it — the
+ * document is `smooth`, so a plain `scrollTo` would animate down the page and
+ * show the visitor a journey they had already made. Nothing about coming back
+ * should be watchable: the catalogue is simply where it was.
+ *
+ * **It only fires when somebody asked to come back.** `resumeScroll()` is
+ * called by the control that means "back to the grid", and the flag it leaves
+ * is consumed by the next mount. Restoring on *every* arrival would put a
+ * visitor who deliberately opened the catalogue from the menu into the middle
+ * of a browse they had finished with. Coming back and going there are two
+ * different intentions and only one of them is this.
  *
  * **A position is only restored against the grid it was taken on.** The offset
  * is stored with a signature of what the grid was showing — the answers, the
  * category, the sort, the search and how many cuts survived them. Change a
  * filter and 2,400px is not a scroll position any more, it is an arbitrary
- * point in a different list, so a mismatch is discarded rather than applied.
+ * point in a different list, so a mismatch is dropped and the catalogue opens
+ * at the top.
  *
- * **It waits for the page to be tall enough, and keeps waiting.** Restoring on
- * mount would scroll a document that is still eight skeleton cards tall, which
- * the browser clamps to its bottom — so the loop re-applies the target every
- * frame while the grid fills in and the plates load, up to `SETTLE_MS`. That
- * also settles the race with the router's own scroll-to-top, which happens on
- * arrival and would otherwise undo this a frame later.
- *
- * **Any real input wins immediately.** A visitor who starts scrolling during
- * that window is answering the question the loop was asking, so the loop stops
- * dead rather than dragging the page back under their finger — the same rule
- * the drifting rails follow about a pointer.
+ * **`sessionStorage`, which is the right lifetime.** A remembered offset is a
+ * fact about one visit in one tab; a new tab is a new browse and deserves the
+ * top of the catalogue. It is also the one storage this file can fail to reach
+ * — a private window, site data switched off — so every read and write is
+ * wrapped, and losing the position is the whole cost of failing.
  */
 
 import { useEffect, useLayoutEffect, useRef } from 'react';
 
 const PREFIX = 'luvo.scroll.v1:';
+const RESUME = 'luvo.scroll.resume';
 
-/** How long to keep re-applying the target while the grid fills in. */
-const SETTLE_MS = 1200;
+/**
+ * How long to keep waiting for a document tall enough to hold the offset.
+ *
+ * Normally zero frames: the grid's cards are fixed-aspect boxes, so the page is
+ * its full height the moment the catalogue renders and the restore lands in the
+ * first layout effect. This is the cold path — a hard load, where the catalogue
+ * is still in flight and the page is eight skeletons tall.
+ */
+const SETTLE_MS = 800;
 
 type Remembered = { y: number; signature: string };
 
@@ -74,6 +83,48 @@ function write(key: string, value: Remembered) {
 }
 
 /**
+ * "Take me back to where I was in `key`."
+ *
+ * Called by the control that means it — the style page's two ways back to the
+ * catalogue — rather than inferred from a referrer or from history length,
+ * neither of which can tell going back from going there.
+ */
+export function resumeScroll(key: string): void {
+  try {
+    window.sessionStorage.setItem(RESUME, key);
+  } catch {
+    // Same as `write`: the position is the only casualty.
+  }
+}
+
+/** Reads the flag and clears it, so one press restores exactly one arrival. */
+function claimResume(key: string): boolean {
+  try {
+    const claimed = window.sessionStorage.getItem(RESUME) === key;
+    if (claimed) window.sessionStorage.removeItem(RESUME);
+    return claimed;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Moves the window with the document's own smooth scrolling switched off.
+ *
+ * `globals.css` sets `scroll-behavior: smooth` so in-page anchors glide, and a
+ * restore that inherited it would animate the visitor back down a page they had
+ * already read. The same trick the router uses for its own scroll-to-top: force
+ * `auto`, move, put the rule back.
+ */
+function jump(top: number): void {
+  const html = document.documentElement;
+  const existing = html.style.scrollBehavior;
+  html.style.scrollBehavior = 'auto';
+  window.scrollTo(0, top);
+  html.style.scrollBehavior = existing;
+}
+
+/**
  * @param key       What is being remembered. One surface, one key.
  * @param signature What the page was showing when the position was taken. A
  *                  position is not restored against a different one.
@@ -83,52 +134,63 @@ function write(key: string, value: Remembered) {
  *                  then would aim at a page of skeletons.
  */
 export function useScrollMemory(key: string, signature: string, ready: boolean) {
-  /** The record as it was on arrival, read before this page can overwrite it. */
-  const arrival = useRef<Remembered | null>(null);
-  const restored = useRef(false);
+  /** Whether this arrival was asked for by a way back, and is still unanswered. */
+  const owed = useRef(false);
+  const target = useRef<Remembered | null>(null);
+  const claimed = useRef(false);
   const latest = useRef(signature);
   latest.current = signature;
 
-  // First, and before the recorder below can run: a layout effect on mount, so
-  // the value being restored is the one the previous visit left rather than
-  // whatever this page's own arrival scroll has already written over it.
+  // Claimed on mount, before the recorder below can overwrite the record and
+  // before anything is painted. A layout effect so a synchronous restore in the
+  // effect underneath it has something to restore.
   useLayoutEffect(() => {
-    arrival.current = read(key);
+    if (claimed.current) return;
+    claimed.current = true;
+    owed.current = claimResume(key);
+    target.current = owed.current ? read(key) : null;
   }, [key]);
 
-  // Put the window back.
-  useEffect(() => {
-    if (!ready || restored.current) return;
-    restored.current = true;
+  // Put the window back, before the paint.
+  useLayoutEffect(() => {
+    if (!owed.current || !ready) return;
 
-    const target = arrival.current;
-    if (!target || target.y < 1 || target.signature !== signature) return;
+    /**
+     * Every claimed arrival is answered, including with a zero.
+     *
+     * The ways back carry `scroll={false}`, so the router does not touch the
+     * window on this navigation — which is what lets the restore be invisible
+     * and is also why doing nothing here is not an option: the page would open
+     * holding whatever offset the *style page* was at. A remembered position or
+     * the top, but never an inherited one.
+     */
+    owed.current = false;
+    const goal = target.current;
+    if (!goal || goal.signature !== signature) {
+      jump(0);
+      return;
+    }
 
+    const room = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    if (room() >= goal.y) {
+      jump(goal.y);
+      return;
+    }
+
+    // The cold path only — see `SETTLE_MS`. Still instant when it lands; what
+    // is being waited for is a document tall enough to hold the offset.
     let frame = 0;
-    let live = true;
     const deadline = performance.now() + SETTLE_MS;
-
-    // Anything the visitor does themselves ends it — see the header.
-    const stop = () => {
-      live = false;
-      if (frame) cancelAnimationFrame(frame);
-    };
-    const events = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
-    for (const event of events) window.addEventListener(event, stop, { passive: true });
-
     const attempt = () => {
-      if (!live) return;
-      const room = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-      const top = Math.min(target.y, room);
-      if (Math.abs(window.scrollY - top) > 1) window.scrollTo(0, top);
-      if (performance.now() < deadline) frame = requestAnimationFrame(attempt);
+      const available = room();
+      if (available >= goal.y || performance.now() > deadline) {
+        jump(Math.min(goal.y, available));
+        return;
+      }
+      frame = requestAnimationFrame(attempt);
     };
     frame = requestAnimationFrame(attempt);
-
-    return () => {
-      stop();
-      for (const event of events) window.removeEventListener(event, stop);
-    };
+    return () => cancelAnimationFrame(frame);
   }, [ready, signature]);
 
   // Record, from the moment there is a real page to have a position in. One

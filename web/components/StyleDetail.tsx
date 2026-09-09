@@ -92,6 +92,7 @@ import { useVariantCycle } from '../lib/useVariantCycle';
 import { HAIR_TYPE_SHORT, Plate } from './Plate';
 import { SUGGESTION_COUNT, SuggestionShelf } from './SuggestionShelf';
 import { ShareButton } from './ShareButton';
+import { resumeScroll } from '../lib/useScrollMemory';
 import { FavouriteButton } from './FavouriteButton';
 import { SignInWall } from './SignInWall';
 import { TopUpDialog } from './TopUpDialog';
@@ -199,11 +200,20 @@ function AngleTiles({
  * nothing behind them. One destination serves both entry points: the catalogue
  * reads the same session answers the flow's chooser does, so a visitor who came
  * through the flow lands on the same cuts, narrowed the same way.
+ *
+ * What makes it *back* rather than merely a link there is the pair below.
+ * `resumeScroll` says this press means "carry on where I was", which is the
+ * only signal that can tell coming back from going there; `scroll={false}`
+ * keeps the router's hands off the window so the catalogue can put itself where
+ * it was before anything is painted. Neither works without the other — see
+ * `useScrollMemory`.
  */
 function BackToCatalogue() {
   return (
     <Link
       href="/styles"
+      scroll={false}
+      onClick={() => resumeScroll('styles')}
       className={
         // Drawn from `sm`. On a phone the same link is the arrow in the title
         // row below, because a row of its own is ~36px of a window the picture,
@@ -918,6 +928,8 @@ function Loaded({
                 costs no row of its own. */}
             <Link
               href="/styles"
+              scroll={false}
+              onClick={() => resumeScroll('styles')}
               aria-label="All cuts"
               className={
                 'mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ' +
