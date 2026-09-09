@@ -499,8 +499,8 @@ at a haircut on their own face is the most likely they will ever be to want a
 second one, and a suggestion under the fold is a suggestion most people never
 see. A phone has no "beside", so the same pieces interleave: the name above the
 picture, the actions under it, and the suggestions — drifting — directly beneath
-those. `CLAUDE.md` has the ordering and why the preview is
-capped at `42svh` there.
+those. `CLAUDE.md` has the ordering, and why the preview carries the same
+`58vh` cap the generating frame does rather than a shorter one of its own.
 
 The cards are seeded from the cut that was just generated (`relatedTo`, the
 same nearest-neighbour scoring the style page uses, asked for

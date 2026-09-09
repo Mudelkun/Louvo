@@ -70,20 +70,22 @@ export function BeforeAfter({
    */
   const FRAME = 'mx-auto w-fit overflow-hidden rounded-[24px] bg-surface ring-1 ring-inset ring-line';
   /**
-   * Shorter on a phone than the window allows, and that is a layout decision
-   * rather than a fit one.
+   * The same cap the generating frame uses, and on a phone that is the point.
    *
-   * At `72vh` the preview is the whole screen: the name of the cut is above the
-   * fold with it and *everything else* — compare, download, share, and the four
-   * cuts to try next — is below, which on a phone means most people never see
-   * any of it. The picture is still the largest thing on the page by a wide
-   * margin at `42svh`; what it stops being is the only thing on it.
+   * It was `42svh` here against `58vh` there, on the argument that a preview
+   * filling the screen pushes compare, download, share and the four cuts to try
+   * next below the fold. The argument was about the *page*; what it did to the
+   * *product* was worse. The wait shows somebody's photograph at the full width
+   * of the column, and then the finished preview — the thing a credit was
+   * actually spent on — arrived a third smaller in the same place. The picture
+   * visibly shrinking at the moment of payoff reads as the result being a
+   * lesser object than the placeholder that stood in for it, which is exactly
+   * backwards.
    *
-   * `svh` rather than `vh` so the cap is measured against the window with the
-   * browser's own chrome showing, which is the state the page is read in.
+   * So the preview lands at the size it was generated at. What pays for it is
+   * the scroll, and the row under it is one flick away rather than invisible.
    */
-  const AFTER =
-    'block max-h-[42svh] w-auto max-w-full object-contain sm:max-h-[58vh] lg:max-h-[72vh]';
+  const AFTER = 'block max-h-[58vh] w-auto max-w-full object-contain lg:max-h-[72vh]';
 
   // With nothing to wipe against there is no slider, and no pretence of one.
   if (!before) {
