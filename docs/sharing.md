@@ -180,6 +180,15 @@ its Open Graph tags before any human sees it, with **no JavaScript**. So the tit
 description and `og:image` are in the markup — and `og:image` is the cut's mannequin render, for
 the reason at the top of this document.
 
+**That render is resolved from every answer the link carries** — the gender, the declared hair
+type *and* the length — so the card is the picture the sharer was looking at when they pressed
+the button. The length was the half that was easy to lose: `resolveReference()` defaults to
+`ANCHOR_LENGTH`, so a `heroImageFor` that passed everything but the length served the anchor
+render silently, and somebody sharing a cut at its long setting put the medium one in their
+friend's chat. It is a wrong image rather than a partial one, which is why `check-shares.mjs`
+asserts the variant and the length in the resolved url rather than asserting the row that
+stores them — the row was always right.
+
 **A person.** Who either has the app, in which case the page's job is to get out of the way, or
 does not, in which case it is to be a small clear advertisement with one button.
 

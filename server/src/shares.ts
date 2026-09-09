@@ -51,7 +51,15 @@ import {
   type ShareEvent,
   type ShareLinkRow,
 } from './shareLinks.js';
-import { GENDERS, HAIR_LENGTH_IDS, HAIR_TYPE_IDS, type Gender, type HairLengthId, type HairTypeId } from './types.js';
+import {
+  ANCHOR_LENGTH,
+  GENDERS,
+  HAIR_LENGTH_IDS,
+  HAIR_TYPE_IDS,
+  type Gender,
+  type HairLengthId,
+  type HairTypeId,
+} from './types.js';
 
 const isGender = (value: unknown): value is Gender => GENDERS.includes(value as Gender);
 const isHairType = (value: unknown): value is HairTypeId => HAIR_TYPE_IDS.includes(value as HairTypeId);
@@ -112,13 +120,34 @@ function captionFor(hairstyleName: string, url: string): string {
   return `Trying the ${hairstyleName} ✂️\nTry this hairstyle on Louvo: ${url}`;
 }
 
-/** The mannequin render of the shared cut — the catalog's image, never the user's. */
+/**
+ * The mannequin render of the shared cut — the catalog's image, never the user's.
+ *
+ * **Every answer on the row is used, and the length was the one being dropped.**
+ * A share carries the texture *and* the length the sharer was looking at, and
+ * this is the only place either of them turns back into a picture. Resolving
+ * without the length quietly served the anchor render: somebody who shared a
+ * Textured Crop at coily/long put a coily/medium crop in their friend's chat,
+ * which is a different haircut wearing the right name. `resolveReference` has
+ * taken the length since lengths existed — it defaulted to `ANCHOR_LENGTH` and
+ * nothing here ever passed one.
+ *
+ * The anchor is still where an unshot length lands: `viewsFor` tries the asked
+ * length and then the anchor, which is the asymmetry the catalogue is built on
+ * (a length degrades, a declared texture does not).
+ */
 async function heroImageFor(link: ShareLinkRow): Promise<string | null> {
   try {
     const catalog = await getCatalog();
     const hairstyle = catalog.hairstyles.find((style) => style.id === link.hairstyle_id);
     if (!hairstyle) return null;
-    const reference = resolveReference(catalog, hairstyle, link.gender ?? 'male', link.hair_type);
+    const reference = resolveReference(
+      catalog,
+      hairstyle,
+      link.gender ?? 'male',
+      link.hair_type,
+      link.length_id ?? ANCHOR_LENGTH,
+    );
     // `half` is `HERO_ANGLE` — the image on the card the sharer tapped, so the
     // link unfurls as the same picture they were looking at when they shared it.
     return reference?.views.find((view) => view.angle === 'half')?.url ?? hairstyle.imageUrl ?? null;

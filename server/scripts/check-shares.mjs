@@ -313,6 +313,39 @@ for (const angle of ['front', 'half', 'side', 'back']) {
     [shot.id, variant, angle, `https://cdn.test/${shot.id}/${variant}/${angle}.webp`],
   );
 }
+
+// A second texture and a second length of the same cut, so the two answers a
+// share actually carries can be told apart in the picture it unfurls as. With
+// one row on disk every lookup lands on it and "the render honours the length"
+// is unfalsifiable.
+const twoWay = authored.hairstyles.find(
+  (style) => new Set(Object.values(style.variants).filter(Boolean)).size > 1,
+);
+const [firstVariant, secondVariant] = [
+  ...new Set(Object.values(twoWay.variants).filter(Boolean)),
+];
+const secondType = Object.keys(twoWay.variants).find(
+  (type) => twoWay.variants[type] === secondVariant,
+);
+for (const each of [firstVariant, secondVariant]) {
+  for (const length of ['medium', 'long']) {
+    for (const angle of ['front', 'half', 'side', 'back']) {
+      await client.query(
+        `insert into renders (hairstyle_id, variant_id, length_id, gender, angle, url, mask_url, width, height, bytes, mask_bytes, source_checksum)
+         values ($1, $2, $3, 'male', $4, $5, null, 600, 597, 17000, 0, 'deadbeef')
+         on conflict do nothing`,
+        [
+          twoWay.id,
+          each,
+          length,
+          angle,
+          `https://cdn.test/${twoWay.id}/${each}/${length}/${angle}.webp`,
+        ],
+      );
+    }
+  }
+}
+
 invalidateCatalog();
 
 const { default: Fastify } = await import('fastify');
@@ -366,6 +399,35 @@ assert.equal(resolved.statusCode, 200, 'resolving a link needs no device');
 assert.equal(resolved.json().share.hairstyleId, shot.id);
 assert.match(resolved.json().share.imageUrl, /\/half\.webp$/, 'the image is the hero render of the cut');
 
+// **The unfurled picture is the one the sharer was looking at, both answers.**
+// The texture was honoured from the start and the length was silently dropped:
+// `heroImageFor` resolved without one, so `resolveReference` fell back to its
+// `ANCHOR_LENGTH` default and somebody sharing a cut at its long setting put
+// the medium render in their friend's chat. Asserted on the url, which carries
+// the variant and the length, because the row storing them right was never the
+// half that was broken.
+const dressed = await app.inject({
+  method: 'POST',
+  url: '/v1/shares',
+  headers: device,
+  payload: {
+    hairstyleId: twoWay.id,
+    gender: 'male',
+    hairType: secondType,
+    lengthId: 'long',
+    clientRef: 'look_dressed',
+  },
+});
+assert.equal(dressed.statusCode, 201);
+const dressedImage = (
+  await app.inject({ method: 'GET', url: `/v1/shares/${dressed.json().share.code}` })
+).json().share.imageUrl;
+assert.match(
+  dressedImage,
+  new RegExp(`/${secondVariant}/long/half\.webp$`),
+  'the shared render is the declared texture at the shared length, not the anchor',
+);
+
 assert.equal((await app.inject({ method: 'GET', url: '/v1/shares/NotARealCode' })).statusCode, 404);
 
 const landing = await app.inject({ method: 'GET', url: `/s/${share.code}` });
@@ -415,5 +477,6 @@ console.log('  links: one press is one link, a retry returns the first, a second
 console.log('  funnel: opens counted on the row, events appended, unknown names never reach the table.');
 console.log('  attribution: first link wins, self-shares refused, a repeat arrival is not a second install.');
 console.log('  landing: og title/description/image in the markup, the cut’s render and never a photograph.');
+console.log('  picture: the declared texture at the shared length — what the sharer was looking at.');
 console.log('  routes: device-gated mint, public resolve, html landing that counts, well-knowns absent until set.');
 await client.end();
