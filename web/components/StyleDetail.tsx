@@ -129,7 +129,7 @@ function AngleTiles({
   if (!panels.some((panel) => panel.render)) return null;
 
   return (
-    <div className={`grid grid-cols-4 gap-2 sm:gap-3 ${className}`}>
+    <div className={`grid shrink-0 grid-cols-4 gap-2 sm:gap-3 ${className}`}>
       {panels.map((panel, index) => (
         <button
           key={panel.angle}
@@ -143,7 +143,12 @@ function AngleTiles({
             (angle === panel.angle ? 'ring-2 ring-violet' : 'ring-line hover:ring-white/25')
           }
         >
-          <div className="relative aspect-square w-full">
+          {/* Landscape on a phone, square from `sm`. These page a deck that is
+              already showing the cut at full width; what a tile has to carry is
+              which angle it is and enough of the silhouette to tell it from its
+              neighbours, and a square costs about 25px of the window per row to
+              say the same thing. */}
+          <div className="relative aspect-[7/5] w-full sm:aspect-square">
             <Plate
               render={panel.render}
               shape={style.shape}
@@ -251,6 +256,20 @@ export function StyleDetail({
         {
           '--plate': 'clamp(280px, 38svh, 440px)',
           '--measure': 'calc(var(--plate) + 3.5rem + 430px)',
+          /*
+            What stands above the phone's one-window column, so the column can
+            be `100svh` minus it: the sticky site header (68), the section's own
+            top padding (12), the breadcrumb and its margin (34), and this
+            page's back link (30). Only these four, because everything below is
+            inside the column and CSS measures it there — the deck is `flex-1`,
+            so a three-line footnote or a length row takes its space out of the
+            picture rather than off the bottom of the window.
+
+            Four numbers rather than a `calc` of tokens because that is what
+            they are: three of them belong to layouts this component cannot see.
+            A change to the site header's height is a change to this line.
+          */
+          '--above-fold': '144px',
         } as CSSProperties
       }
       className="lg:mx-auto lg:max-w-[var(--measure)]"
@@ -565,21 +584,26 @@ function Loaded({
         directly beneath it. One DOM, two arrangements, and no second copy of a
         control to fall out of step with the first.
 
-        **The button that spends a credit is above the fold on a phone, and the
-        two adjustments are what moved to buy it.** The order was name, deck,
-        adjustments, action — and on a 414pt screen that put the action about
-        250pt below the bottom of the window, behind the hair-type card and the
-        length row. A page whose entire purpose is one button should not require
-        a scroll to discover that the button exists. So the phone order is now
-        name, deck, **action**, the gender line that qualifies it, and then the
-        adjustments; the card's top edge still shows under the button, which is
-        what says there is more.
+        **The phone order is name, deck, adjustments, action — the order the
+        page is read in — and the whole of it is on one screen.**
 
-        Nothing is lost by the move. Hair type arrives declared from the setup
-        dialogue and length defaults to the anchor, so the controls refine a
-        request that is already complete rather than assembling one — which is
-        the difference between a control that must be seen and a control that
-        must be reachable.
+        It was name, deck, **action**, adjustments for a while, and that was a
+        fix for the right problem by the wrong means. The problem was real: with
+        the adjustments at their old size the button sat about 250pt below the
+        window, and a page whose entire purpose is one button must not require a
+        scroll to discover the button exists. But hoisting the action over the
+        two controls that decide what it generates puts the verb before the
+        sentence — somebody is asked to spend a credit above the rows that say
+        which texture and which length it will be spent on, and the controls
+        read as an afterthought to a decision already taken.
+
+        So the order is back and the *size* is what changed, which is what
+        should have changed in the first place: the column is one window tall
+        and the deck is the remainder (see the container below), the two cards
+        are tighter on a phone than on a laptop, and the footnote under the
+        hair-type row says the same four things in fewer words. The action ends
+        the column because it is the last thing decided, and it is in the window
+        rather than under it.
 
         `order-*` is inert above `lg`: the two column wrappers are `lg:block`,
         and order does nothing to the children of a block container. So this is a
@@ -587,7 +611,18 @@ function Loaded({
       */}
       <div
         className={
-          'flex flex-col gap-5 sm:gap-6 ' +
+          'flex flex-col gap-3 sm:gap-6 ' +
+          /*
+            On a phone the column is exactly one window tall and the deck is
+            what is left in it — the same budget the app's style screen makes in
+            arithmetic, made here by the browser, which is better at it. Every
+            other child is `shrink-0`, so the picture absorbs a wrapped footnote
+            or a length row instead of the page growing a scroll under the
+            button. A cut that offers lengths on a small phone hits the deck's
+            floor and the column overflows by that much, which is the one case
+            that scrolls and the least-bad way to lose.
+          */
+          'max-lg:h-[calc(100svh_-_var(--above-fold))] ' +
           // The picture column is the plate's own width — see `--plate` above.
           'lg:grid lg:gap-14 lg:grid-cols-[var(--plate)_minmax(0,430px)]'
         }
@@ -615,11 +650,18 @@ function Loaded({
             they say there are four, which a deck on its own cannot, and they are
             how somebody reaches the back view without four swipes.
           */}
-          <div className="order-2 lg:hidden">
+          <div className="order-2 flex min-h-0 flex-1 flex-col lg:hidden">
             <div
               className={
                 'relative overflow-hidden rounded-[24px] bg-plate ring-1 ring-inset ring-white/10 ' +
-                'shadow-[0_40px_90px_-45px_rgb(0_0_0/0.95)]'
+                'shadow-[0_40px_90px_-45px_rgb(0_0_0/0.95)] ' +
+                // The remainder of the window, floored so a cut with a length
+                // row on a small phone still shows a head rather than a sliver.
+                // The floor is low on purpose: a picture at the floor still
+                // reads, where a column that overflows it costs the button —
+                // and the render is `object-contain`, so a short box letterboxes
+                // the plate rather than cropping the top of somebody's head.
+                'min-h-[120px] flex-1'
               }
             >
               <div
@@ -629,7 +671,8 @@ function Loaded({
                 aria-roledescription="carousel"
                 aria-label={`${style.name}, four views — swipe sideways`}
                 className={
-                  'no-scrollbar flex h-[36svh] max-h-[340px] min-h-[216px] snap-x snap-mandatory ' +
+                  // Its height is the card's, which is the column's remainder.
+                  'no-scrollbar flex h-full snap-x snap-mandatory ' +
                   'overflow-x-auto overscroll-x-contain'
                 }
               >
@@ -716,7 +759,7 @@ function Loaded({
               color={color}
               gender={gender}
               onPick={(_view, index) => swipeTo(index)}
-              className="mt-3"
+              className="mt-2 sm:mt-3"
             />
           </div>
 
@@ -743,7 +786,14 @@ function Loaded({
             <div
               className={
                 'relative overflow-hidden rounded-[24px] bg-plate ring-1 ring-inset ring-white/10 ' +
-                'shadow-[0_40px_90px_-45px_rgb(0_0_0/0.95)]'
+                'shadow-[0_40px_90px_-45px_rgb(0_0_0/0.95)] ' +
+                // The remainder of the window, floored so a cut with a length
+                // row on a small phone still shows a head rather than a sliver.
+                // The floor is low on purpose: a picture at the floor still
+                // reads, where a column that overflows it costs the button —
+                // and the render is `object-contain`, so a short box letterboxes
+                // the plate rather than cropping the top of somebody's head.
+                'min-h-[120px] flex-1'
               }
             >
               <div className="relative aspect-[4/5] w-full sm:aspect-[5/5]">
@@ -812,10 +862,21 @@ function Loaded({
         {/* The detail                                                    */}
         {/* ------------------------------------------------------------ */}
         <div className="contents lg:block lg:sticky lg:top-[92px] lg:self-start">
-          <div className="order-1 flex items-start justify-between gap-4">
+          <div className="order-1 shrink-0 flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <Overline>{style.maintenance} upkeep</Overline>
-              <h1 className="mt-1.5 font-display text-[clamp(2.1rem,4.6vw,3rem)] leading-[1.02] tracking-[-0.02em] sm:mt-2.5">
+              {/* Drawn from `sm`. It is a true and pleasant fact about the cut
+                  and it is not what the top of a phone screen is for — 21px of
+                  a window the picture, both selectors and the button are all
+                  competing for. `<StyleAbout>` below the shelf still carries the
+                  full specification, upkeep included. */}
+              <div className="hidden sm:block">
+                <Overline>{style.maintenance} upkeep</Overline>
+              </div>
+              {/* The clamp's floor is what a phone reads, so it is the phone's
+                  number: 2.1rem was three lines of display serif for a name
+                  like "Textured Crop with Fringe" and about 40px of a window
+                  the picture below it is competing for. */}
+              <h1 className="mt-1.5 font-display text-[clamp(1.7rem,4.6vw,3rem)] leading-[1.05] tracking-[-0.02em] sm:mt-2.5">
                 {style.name}
               </h1>
             </div>
@@ -860,11 +921,27 @@ function Loaded({
             picture and controls now land on one screen, so a tap on `Coily` is
             answered in view.
           */}
-          <div className="order-6 overflow-hidden rounded-[20px] bg-surface/60 ring-1 ring-inset ring-line lg:mt-7">
-            <div className="p-5">
+          <div className="order-4 shrink-0 overflow-hidden rounded-[20px] bg-surface/60 ring-1 ring-inset ring-line lg:mt-7">
+            <div className="p-4 sm:p-5">
+              {/* The right of the heading row carries the verb until there is
+                  something better to put there. Once a texture is declared the
+                  useful control is the way back out of it, and it was a line of
+                  its own under the footnote — a whole row of the window for a
+                  link that is only ever the answer to the row above it. The two
+                  are never both true, so they never both cost anything. */}
               <div className="flex items-baseline justify-between gap-3">
                 <h2 className="text-[14px] font-bold text-ink">Hair type</h2>
-                <span className="text-[12px] text-muted">Pick yours</span>
+                {hairTypeDeclared ? (
+                  <button
+                    type="button"
+                    onClick={() => setHairType(null)}
+                    className="text-[12px] font-semibold text-violet-ink underline underline-offset-4"
+                  >
+                    Show all
+                  </button>
+                ) : (
+                  <span className="text-[12px] text-muted">Pick yours</span>
+                )}
               </div>
 
               {/*
@@ -882,7 +959,7 @@ function Loaded({
                 in this file, which is the constraint the whole catalogue is
                 built on.
               */}
-              <div className="mt-3.5 grid grid-cols-4 gap-2">
+              <div className="mt-2.5 grid grid-cols-4 gap-2 sm:mt-3.5">
                 {HAIR_TYPE_IDS.map((type) => {
                   const offeredHere = style.variants[type] != null;
                   // Offered *and* shot. A tile that resolves to no render answers
@@ -934,25 +1011,23 @@ function Loaded({
                   render at all must not be described as having one, and a
                   picture standing in for a texture that was never shot must say
                   which texture it really is. */}
-              <p className="mt-3 text-[12px] leading-relaxed text-muted">
+              {/* Shorter than it was, and still four cases rather than two —
+                  what was shortened is words, not facts. A cut with no render
+                  must not be described as having one, and a picture standing in
+                  for a texture that was never shot must say which texture it
+                  really is; both survive, and both still end on the sentence
+                  that matters most, which is that the *choice* decides what
+                  gets generated even when the picture cannot show it. */}
+              <p className="mt-2.5 text-[11.5px] leading-snug text-muted sm:mt-3 sm:text-[12px] sm:leading-relaxed">
                 {substituted && shownIn
-                  ? `${style.name} has not been shot in your texture yet, so the picture is its ${shownIn} version. Your choice still decides which version is generated.`
+                  ? `Not shot in your texture yet — shown in its ${shownIn} version. Your choice still decides what is generated.`
                   : hero.length > 1
-                    ? 'This cut is shot in more than one texture — the picture changes with your choice.'
+                    ? 'Shot in more than one texture — the picture follows your choice.'
                     : hero.length === 1
-                      ? 'This cut has one render, so the picture will not change when the selection moves.'
-                      : 'This cut has not been shot yet, so what you see is an illustration. Your choice still decides which version is generated.'}
+                      ? 'One render, so the picture will not change when the selection moves.'
+                      : 'Not shot yet, so this is an illustration. Your choice still decides what is generated.'}
               </p>
 
-              {hairTypeDeclared ? (
-                <button
-                  type="button"
-                  onClick={() => setHairType(null)}
-                  className="mt-2.5 text-[12px] font-semibold text-violet-ink underline underline-offset-4"
-                >
-                  Show all textures
-                </button>
-              ) : null}
             </div>
 
             {/* Length. Absent entirely for a cut that is not offered at more
@@ -960,28 +1035,37 @@ function Loaded({
             {offered ? (
               <>
                 <div aria-hidden className="h-px w-full bg-line" />
-                <div className="p-5">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <h2 className="text-[14px] font-bold text-ink">Hair Length</h2>
-                    <span className="text-[12px] text-muted">Drag to try</span>
-                  </div>
+                {/* On a phone the label sits *beside* the control rather than
+                    over it. The hair-type row above cannot do this — four tiles
+                    need the width — but three named stops do not, and a heading
+                    row of its own was 28px spent on repeating the word the
+                    segments are already an answer to. The verb goes with it:
+                    a segmented control is not dragged, and "Drag to try" was
+                    describing the app's slider rather than this. */}
+                <div className="px-4 py-3 sm:p-5">
+                  <div className="flex items-center gap-3 sm:block">
+                    <div className="flex shrink-0 items-baseline gap-3 sm:justify-between">
+                      <h2 className="text-[14px] font-bold text-ink">Length</h2>
+                      <span className="hidden text-[12px] text-muted sm:inline">Pick one</span>
+                    </div>
 
-                  <div className="mt-3.5 flex rounded-full bg-white/5 p-1 ring-1 ring-inset ring-line">
-                    {offered.map((entry) => (
-                      <button
-                        key={entry.id}
-                        type="button"
-                        onClick={() => setLengthId(entry.id)}
-                        aria-pressed={lengthId === entry.id}
-                        title={entry.description}
-                        className={
-                          'flex-1 rounded-full py-1.5 text-[12.5px] font-semibold transition-colors duration-200 ' +
-                          (lengthId === entry.id ? 'bg-ink text-canvas' : 'text-muted hover:text-ink')
-                        }
-                      >
-                        {entry.name}
-                      </button>
-                    ))}
+                    <div className="flex flex-1 rounded-full bg-white/5 p-1 ring-1 ring-inset ring-line sm:mt-3.5">
+                      {offered.map((entry) => (
+                        <button
+                          key={entry.id}
+                          type="button"
+                          onClick={() => setLengthId(entry.id)}
+                          aria-pressed={lengthId === entry.id}
+                          title={entry.description}
+                          className={
+                            'flex-1 rounded-full py-1.5 text-[12.5px] font-semibold transition-colors duration-200 ' +
+                            (lengthId === entry.id ? 'bg-ink text-canvas' : 'text-muted hover:text-ink')
+                          }
+                        >
+                          {entry.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {lengthMissing ? (
@@ -995,7 +1079,7 @@ function Loaded({
           </div>
 
           {notOfferedHere ? (
-            <p className="order-5 rounded-[16px] bg-amber/10 px-4 py-3 text-[13px] leading-relaxed text-amber ring-1 ring-inset ring-amber/25 lg:mt-5">
+            <p className="order-3 shrink-0 rounded-[16px] bg-amber/10 px-4 py-3 text-[13px] leading-relaxed text-amber ring-1 ring-inset ring-amber/25 lg:mt-5">
               This cut is not offered for the texture you have selected, so what you are seeing
               is an illustration rather than a studio render.
             </p>
@@ -1004,7 +1088,7 @@ function Loaded({
           {/* ---------------------------------------------------------- */}
           {/* The action                                                  */}
           {/* ---------------------------------------------------------- */}
-          <div className="order-3 lg:contents">
+          <div className="order-5 shrink-0 lg:contents">
             <TryOnAction
               style={style}
               gender={gender}
@@ -1032,7 +1116,7 @@ function Loaded({
               inches apart, is the "two places to change one thing" the summary
               row on the home page was cut for. */}
           {!gender && !photo ? (
-            <p className="order-4 text-[12.5px] text-muted lg:mt-4">
+            <p className="order-6 shrink-0 text-[12.5px] text-muted lg:mt-4">
               Showing every version of this cut.{' '}
               <button
                 type="button"
@@ -1253,8 +1337,8 @@ function TryOnAction({
           control beside it opens the picker again, on this page, for the reason
           the header gives. */}
       {photo ? (
-        <div className="mt-7 flex items-center gap-3">
-          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[12px] bg-surface ring-1 ring-inset ring-line">
+        <div className="mt-4 flex items-center gap-3 sm:mt-7">
+          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-[12px] bg-surface ring-1 ring-inset ring-line sm:h-14 sm:w-14">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={photo.objectUrl} alt="The photo this preview will be made from" className="h-full w-full object-cover" />
           </div>
@@ -1275,10 +1359,10 @@ function TryOnAction({
       {/* The one answer that has to exist before a render does, asked where it
           is needed rather than in a dialogue on another page. */}
       {photo && !gender ? (
-        <p className="mt-6 text-[13.5px] font-medium text-ink-soft">Whose version of this cut?</p>
+        <p className="mt-3.5 text-[13.5px] font-medium text-ink-soft sm:mt-6">Whose version of this cut?</p>
       ) : null}
 
-      <div className={(!photo ? 'mt-7' : !gender ? 'mt-3' : 'mt-4') + ' flex flex-wrap gap-3'}>
+      <div className={(!photo ? 'mt-4 sm:mt-7' : !gender ? 'mt-3' : 'mt-4') + ' flex flex-wrap gap-3'}>
         {!photo ? (
           <Button size="lg" className="flex-1 sm:flex-none" loading={busy} onClick={choose}>
             {busy ? 'Reading your photo…' : 'Try with your photo'}

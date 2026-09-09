@@ -732,6 +732,38 @@ skeleton standing in for prose that never arrives is the layout lying about itse
 controls now land on one screen, which is the same argument the app's `<ControlCard>` makes about
 its own fold, reached on a different device.
 
+**The phone column is exactly one window tall and the picture is what is left in it.** That is
+the mechanism behind the sentence above, and it is what let the page go back to being read in
+the order it is decided in: name, deck, adjustments, **action**. It ran name, deck, *action*,
+adjustments for a while, and that was a real fix by the wrong means — with the cards at their
+old size the button sat about 250pt below the window, and a page whose entire purpose is one
+button must not require a scroll to find out the button exists. But hoisting the action over the
+two controls that decide what it generates puts the verb before the sentence: somebody is asked
+to spend a credit above the rows saying which texture and which length it will be spent on, and
+the controls then read as an afterthought to a decision already taken. Size was what should have
+changed, so size is what changed.
+
+`max-lg:h-[calc(100svh - var(--above-fold))]` on the flex column, `flex-1 min-h-[120px]` on the
+deck, `shrink-0` on everything else. `--above-fold` is the four things standing above the column
+that it cannot see — the sticky header (68), the section's top padding (12), the breadcrumb and
+its margin (34), the back link (30) — and everything *inside* it is measured by the browser, so
+a wrapped footnote or a length row takes its space out of the picture rather than off the bottom
+of the window. **A change to `<SiteHeader>`'s height is a change to that line.** The deck's
+render is `object-contain`, so a short box letterboxes the plate rather than cropping the top of
+somebody's head, which is what makes a floor of 120px survivable at all.
+
+The parts got smaller to make the remainder worth having, and each of these is a phone-only
+`sm:` split rather than a change to the laptop page: the upkeep overline is drawn from `sm` (the
+full specification is in `<StyleAbout>` below the shelf), the name's clamp floor is 1.7rem, the
+angle tiles are `aspect-[7/5]`, both cards are `p-4`, the hair-type footnote says the same four
+cases in fewer words, *Show all textures* moved onto the hair-type heading row where the verb
+hint sits (the two are never both true), and the length row puts its label beside the segmented
+control instead of over it. The result: everything — picture, both selectors, and the button —
+is on one screen from a 6.1" phone up, on both the common cut and the minority that offer
+lengths. A 5.4" fits the common cut; a 4.7" fits neither, because 553px of visible viewport
+cannot hold two selectors, a button and a photograph of a haircut, and the picture is what it
+spends its scroll on.
+
 **On a laptop the picture column *is* the plate, and the plate is capped by the window's height**
 — the same argument as the phone's fold, reached on a different device. A square plate across a
 730px column is a 730px picture, and under it four angle tiles, a rule and a heading, so *In the
