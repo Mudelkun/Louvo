@@ -116,9 +116,11 @@ const check = process.argv.includes('--check');
  * A deployment has no app to sync from, and that is not an error.
  *
  * Railway builds with the root directory set to `server/`, so `../src` is
- * genuinely absent — the header above says so, and then `prebuild` ran this
- * anyway and failed every fresh deploy on `ENOENT: /src/lib/imageSize.ts`. The
- * outputs are committed precisely so the deployment does not need the sources.
+ * genuinely absent — the header above says so, and a `prebuild` hook ran this
+ * anyway and failed every fresh deploy on `ENOENT: /src/lib/imageSize.ts`. That
+ * hook is gone, which is the actual fix; this is what keeps the failure legible
+ * if the script is ever invoked in a deployment again. The outputs are committed
+ * precisely so a deployment does not need the sources.
  *
  * The staleness guarantee is not weakened by skipping here, because it was never
  * this build's to make: `--check` compares a copy against a source, and where

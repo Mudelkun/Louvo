@@ -22,7 +22,6 @@
     "sync:shared": "node scripts/sync-shared.mjs",
     "stripe:setup": "node --env-file-if-exists=.env --env-file-if-exists=../.env.local scripts/stripe-setup.mjs",
     "previews:cors": "node --env-file-if-exists=.env --env-file-if-exists=../.env.local scripts/preview-cors.mjs",
-    "prebuild": "node scripts/sync-shared.mjs",
     "sandbox": "npm run build --silent && node scripts/sandbox.mjs",
     "sandbox:drive": "node scripts/sandbox-cli.mjs"
   },
