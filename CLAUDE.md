@@ -853,7 +853,7 @@ the flow's chooser does.
 The assumption behind browsing a long grid is that the right cut has *not* been found yet:
 somebody scrolls, opens one, decides against it and comes back to carry on. A `<Link>` puts the
 window at the top every time, so forty cards down the one gesture meaning "not this one" threw
-the whole browse away. `useScrollMemory` in `web/lib/` is the fix and four things decide any
+the whole browse away. `useScrollMemory` in `web/lib/` is the fix and five things decide any
 change to it.
 
 - **It is invisible, and that is the requirement rather than a nicety.** The window is put back
@@ -869,6 +869,16 @@ change to it.
   touch the window on that navigation and there is nothing for the restore to race; the pair only
   works together, which is also why a claimed arrival with nothing to restore jumps to the top
   explicitly rather than inheriting the style page's offset.
+- **The position is taken when the visitor leaves, never while they scroll**, and that is the
+  fix that made the rest of this do anything. It was written from a `scroll` listener, and
+  pressing a card is a *forward* navigation, so the router scrolls the catalogue to the top on
+  its way out — with that listener still attached, because React tears a deleted tree's passive
+  effects down after the commit that scrolls. So every departure recorded the router's own 0, the
+  restore then worked perfectly, and it put somebody back exactly where the catalogue had just
+  been scrolled to: the top, which is the failure this whole file exists to prevent and is
+  indistinguishable from it never having run. A capturing `click` on the document is the honest
+  moment instead — the window is still where the visitor left it and nothing has navigated yet —
+  and it costs one write per press rather than one per frame of scrolling.
 - **A position is only restored against the grid it was taken on**, stored with a signature of
   the answers, the category, the sort, the search and the surviving count. After a filter change
   2,400px is an arbitrary point in a different list, so a mismatch opens at the top.

@@ -36,6 +36,18 @@
  * point in a different list, so a mismatch is dropped and the catalogue opens
  * at the top.
  *
+ * **The position is taken when the visitor leaves, never while they scroll.**
+ * That is a fix rather than an optimisation, and the bug it closes made the
+ * whole thing a no-op. Pressing a card is a forward navigation, so the router
+ * scrolls the catalogue to the top on its way out — and a `scroll` listener is
+ * still attached while it does, because React tears a deleted tree's passive
+ * effects down *after* the commit that scrolls. So the last thing recorded on
+ * every departure was the router's own 0, the restore then worked perfectly,
+ * and it put the visitor back exactly where the catalogue had just been
+ * scrolled to. A capturing `click` is the honest moment instead: the window is
+ * still where the visitor left it, nothing has navigated yet, and it costs one
+ * write per press rather than one per frame of scrolling.
+ *
  * **`sessionStorage`, which is the right lifetime.** A remembered offset is a
  * fact about one visit in one tab; a new tab is a new browse and deserves the
  * top of the catalogue. It is also the one storage this file can fail to reach
@@ -193,23 +205,21 @@ export function useScrollMemory(key: string, signature: string, ready: boolean) 
     return () => cancelAnimationFrame(frame);
   }, [ready, signature]);
 
-  // Record, from the moment there is a real page to have a position in. One
-  // write per frame at most: a scroll fires far faster than storage wants to be
-  // written, and the only value that matters is the last one.
+  // Record, from the moment there is a real page to have a position in. Taken
+  // at the press rather than on every scroll — see the note at the top of the
+  // file about which scroll is the visitor's.
   useEffect(() => {
     if (!ready) return;
-    let frame = 0;
-    const onScroll = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        write(key, { y: window.scrollY, signature: latest.current });
-      });
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
+    const remember = () => write(key, { y: window.scrollY, signature: latest.current });
+    // Capture, on the document, so this runs before the press reaches the link
+    // — React delegates its own listeners to a container inside `<body>`, and a
+    // capturing listener up here is ahead of all of them. `pagehide` is the
+    // other way out: a hard navigation, a reload, a closed tab.
+    document.addEventListener('click', remember, true);
+    window.addEventListener('pagehide', remember);
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (frame) cancelAnimationFrame(frame);
+      document.removeEventListener('click', remember, true);
+      window.removeEventListener('pagehide', remember);
     };
   }, [ready, key]);
 }
