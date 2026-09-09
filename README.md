@@ -1,4 +1,4 @@
-# Luvo
+# Louvo
 
 React Native / Expo app for trying hairstyles on your own photo, plus the API that serves its
 catalog.
@@ -318,11 +318,13 @@ by `npm run icons`:
 | `assets/favicon.png` | 48² RGBA, the same silhouette. |
 | `assets/android-icon-foreground.png` | 512² RGBA, opaque, subject inside the adaptive safe zone. |
 | `assets/android-icon-monochrome.png` | 432² RGBA, white silhouette for Android's themed icons. |
+| `web/app/icon.png` | 180² RGB, the browser tab. Cropped 8% past the rim so the figure reads at 16px. |
+| `web/app/apple-icon.png` | 180² RGB, full frame. An iOS home-screen bookmark, which iOS masks itself. |
 
 The artwork arrives as an icon *mockup* — the tile floats on transparency inside a soft glow,
 with a lot of padding around it — so the script's real job is to throw the mockup away and keep
 the tile: find it, crop it square, and either fill outside its rounded silhouette with the tile's
-own black or make it transparent, depending on which of the five is being cut. Shipped
+own black or make it transparent, depending on which of the seven is being cut. Shipped
 unprocessed, the mockup would give every platform a shrunken tile inside a halo, under a second
 corner mask.
 

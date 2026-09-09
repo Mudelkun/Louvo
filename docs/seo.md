@@ -143,7 +143,7 @@ Every one of those links is in the html.
   it, which is the single most destructive thing a site can do to its own index.
 - **`max-image-preview: large`**, which is the robots directive that matters most here. The
   product is a picture of a haircut; Google's default is a thumbnail, and `large` is the
-  difference between a result that demonstrates what Luvo does and one that describes it.
+  difference between a result that demonstrates what Louvo does and one that describes it.
 - **One `@graph` per page.** `Organization`, `WebSite` and `WebApplication` are emitted sitewide
   and referenced by `@id`; each page adds its own `WebPage`/`CollectionPage`, its
   `BreadcrumbList`, and an `ItemList` or a `FAQPage`. Thirty pages each carrying an anonymous

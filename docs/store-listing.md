@@ -9,17 +9,17 @@ watching.
 ## Name — 30 characters
 
 ```
-Luvo
+Louvo
 ```
 
 Four characters, and almost certainly contested. If it is taken, the fallback keeps the brand
 first because that is the half that survives truncation in search results:
 
 ```
-Luvo: Hairstyle Try-On
+Louvo: Hairstyle Try-On
 ```
 
-The home-screen name stays `Luvo` either way — that comes from `app.json`, not from this field.
+The home-screen name stays `Louvo` either way — that comes from `app.json`, not from this field.
 
 ## Subtitle — 30 characters
 
@@ -43,11 +43,11 @@ Two free previews to start. See any haircut on your own face before you sit in t
 ```
 See how a haircut looks on you before you sit in the chair.
 
-Luvo puts any hairstyle from its catalog onto your own photo, so you can decide with a picture instead of a description — and show your barber exactly what you mean.
+Louvo puts any hairstyle from its catalog onto your own photo, so you can decide with a picture instead of a description — and show your barber exactly what you mean.
 
 HOW IT WORKS
 • Take a selfie, or pick a photo you already have
-• Tell Luvo what your hair does — straight, wavy, curly or coily
+• Tell Louvo what your hair does — straight, wavy, curly or coily
 • Browse the catalog: short cuts, fades, medium and long, braids and updos, locs and twists
 • Generate a preview of yourself with that cut
 • Wipe between before and after, save it, share it
@@ -56,7 +56,7 @@ BROWSE THE CUT, NOT THE MODEL
 Every hairstyle is shown on a neutral, faceless mannequin — no face, no ethnicity, nobody to compare yourself against. The only thing on screen is the haircut, lit and shot the same way every time, so two styles side by side differ by the cut and nothing else.
 
 BUILT AROUND YOUR HAIR TYPE
-A cut does not fall the same way on straight hair as on coily hair, and some cuts are not offered for some types at all. Tell Luvo your hair type and the catalog shows you the version that applies to you — not a stock photo of somebody whose hair does something different.
+A cut does not fall the same way on straight hair as on coily hair, and some cuts are not offered for some types at all. Tell Louvo your hair type and the catalog shows you the version that applies to you — not a stock photo of somebody whose hair does something different.
 
 YOUR PHOTO STAYS YOURS
 Your photo is sent once, used to make your preview, and deleted the moment it is made. The finished preview is downloaded to your phone and removed from our servers — it lives on your device until you delete it. Nothing is posted anywhere, and your photo is never shared, sold, or used to train anything.
@@ -97,7 +97,7 @@ instead, which is why it is always right.
 Reviewers reject AI photo apps they do not understand, so say it plainly in the notes field:
 
 ```
-Luvo generates a preview of the user's own photo with a different hairstyle, using a
+Louvo generates a preview of the user's own photo with a different hairstyle, using a
 third-party image model (fal.ai).
 
 - The user's photo is uploaded to a private bucket, passed to the model once, and deleted as

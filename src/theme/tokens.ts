@@ -1,5 +1,5 @@
 /**
- * Luvo design tokens.
+ * Louvo design tokens.
  *
  * Violet-and-pink on near-white, and the same identity turned down after dark.
  * The palette is taken from the launcher artwork rather than chosen beside it:

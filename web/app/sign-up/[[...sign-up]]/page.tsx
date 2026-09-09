@@ -5,9 +5,9 @@ import { AuthScreen, AuthScreenSkeleton } from '../../../components/auth/AuthScr
 
 /** `/sign-up`. The catch-all and the robots rule are `/sign-in`'s — see there. */
 export const metadata: Metadata = {
-  title: 'Create your Luvo account',
+  title: 'Create your Louvo account',
   description:
-    'Create a Luvo account so the previews you buy are not lost with a browser. Signing up adds a free preview.',
+    'Create a Louvo account so the previews you buy are not lost with a browser. Signing up adds a free preview.',
   robots: { index: false, follow: false },
 };
 

@@ -88,7 +88,7 @@ export function styleFaq(
     {
       question: `Can I see the ${style.name} on my own photo?`,
       answer:
-        `Yes. Upload one clear, front-facing photograph and Luvo generates a preview of you in ` +
+        `Yes. Upload one clear, front-facing photograph and Louvo generates a preview of you in ` +
         `the ${style.name} in about a minute. The first two previews are free and need no account.`,
     },
     {
@@ -104,7 +104,7 @@ export function styleFaq(
       question: `How much upkeep is a ${style.name}?`,
       answer:
         `${style.maintenance} upkeep${style.bestFor.length ? `. It suits ${joinWords(style.bestFor).toLowerCase()}` : ''}. ` +
-        `It is a ${audience === 'men and women' ? "men's and women's" : `${GENDER_WORD[style.genders[0]]}`} cut in the Luvo catalogue.`,
+        `It is a ${audience === 'men and women' ? "men's and women's" : `${GENDER_WORD[style.genders[0]]}`} cut in the Louvo catalogue.`,
     },
     {
       question: `What does the ${style.name} look like from the back?`,

@@ -31,7 +31,7 @@ import {
  *
  * **The metadata is fetched.** A shared link has to unfurl into a chat card with
  * the cut's real name and the catalogue's own render of it — a card generated
- * from an empty client tree says "Luvo" and shows nothing. The image is
+ * from an empty client tree says "Louvo" and shows nothing. The image is
  * deliberately the *hero render*: public, CDN-hosted, identical for everybody
  * who ever shares this cut, and never a user's preview.
  *
@@ -74,7 +74,7 @@ export async function generateMetadata({
    * `summary` card even when `summary_large_image` is asked for, because they
    * will not fetch and measure an image before rendering. The alt text names
    * the cut rather than describing the frame: it is read aloud on a timeline
-   * and indexed by image search, and "Luvo render" is neither.
+   * and indexed by image search, and "Louvo render" is neither.
    */
   const images = image
     ? [
@@ -95,11 +95,11 @@ export async function generateMetadata({
     openGraph: og({
       type: 'article',
       path,
-      title: `${hairstyle.name} · Luvo`,
+      title: `${hairstyle.name} · Louvo`,
       description,
       images,
     }),
-    twitter: tw({ title: `${hairstyle.name} · Luvo`, description, images }),
+    twitter: tw({ title: `${hairstyle.name} · Louvo`, description, images }),
   };
 }
 

@@ -50,7 +50,7 @@ The requirement is that uninstalling and reinstalling must not hand out two more
 
 **iOS already worked, by accident of an earlier good decision.** `src/lib/deviceId.ts` keeps the
 device secret in `expo-secure-store`, which is the Keychain, and Keychain items outlive the app
-that wrote them. Delete Luvo, reinstall it, and the same 32 bytes come back — so the device is
+that wrote them. Delete Louvo, reinstall it, and the same 32 bytes come back — so the device is
 the same device to the server with nothing added. There is no iOS identifier worth layering on
 top: `identifierForVendor` *resets* once every app from the vendor is gone, which is strictly
 worse than the Keychain.

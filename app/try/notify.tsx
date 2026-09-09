@@ -102,7 +102,7 @@ export default function NotifyScreen() {
         <Reveal index={1}>
           <Text style={[type.display, styles.title]}>Your preview is on its way</Text>
           <Text style={[type.body, styles.subtitle]}>
-            It takes about a minute, and it carries on whether Luvo is open or not. We can tap you
+            It takes about a minute, and it carries on whether Louvo is open or not. We can tap you
             on the shoulder the moment it lands.
           </Text>
         </Reveal>

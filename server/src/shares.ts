@@ -109,7 +109,7 @@ function androidUrlFor(code: string): string | null {
  * and a post is the only version of this anybody will send twice.
  */
 function captionFor(hairstyleName: string, url: string): string {
-  return `Trying the ${hairstyleName} with Luvo ✂️\nWant to see how a haircut looks on you? Try Luvo: ${url}`;
+  return `Trying the ${hairstyleName} with Louvo ✂️\nWant to see how a haircut looks on you? Try Louvo: ${url}`;
 }
 
 /** The mannequin render of the shared cut — the catalog's image, never the user's. */

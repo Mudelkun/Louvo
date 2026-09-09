@@ -117,11 +117,11 @@ export const OPERATOR = {
   contactEmail: null as string | null,
   /** Where privacy requests go. The same inbox is fine; a real one is not optional. */
   privacyEmail: null as string | null,
-  website: 'https://luvo.app',
+  website: 'https://louvo.app',
 };
 
 /** The app's own name, wherever the prose needs it. */
-const APP = 'Luvo';
+const APP = 'Louvo';
 
 /**
  * The date both documents take effect.
@@ -151,10 +151,10 @@ const rows = (...entries: { term: string; detail: string }[]): LegalBlock => ({
 const contactAt = (address: string | null): string =>
   address
     ? `Email ${address}.`
-    : 'We will publish a contact address here before Luvo is released publicly.';
+    : 'We will publish a contact address here before Louvo is released publicly.';
 
 /**
- * "Luvo, <address>. Email <inbox>." — with as much of each as exists.
+ * "Louvo, <address>. Email <inbox>." — with as much of each as exists.
  *
  * The "on request" offer is made only when there is somewhere to make the
  * request: an invitation to write to us for our address, with no address to
@@ -174,7 +174,7 @@ export const PRIVACY_POLICY: LegalDocument = {
   slug: 'privacy',
   title: 'Privacy Policy',
   summary:
-    'What Luvo does with your photo, what we keep, and what we do not. Written to describe the app as it is actually built.',
+    'What Louvo does with your photo, what we keep, and what we do not. Written to describe the app as it is actually built.',
   effective: EFFECTIVE,
   sections: [
     {
@@ -199,7 +199,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       blocks: [
         p(`${contactLine()} We are the controller of the personal data described in this policy.`),
         p(
-          'This policy covers the Luvo mobile app, the Luvo API behind it, and the web page a shared Luvo link opens.',
+          'This policy covers the Louvo mobile app, the Louvo API behind it, and the web page a shared Louvo link opens.',
         ),
       ],
     },
@@ -410,7 +410,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         p(
           OPERATOR.privacyEmail
             ? 'You have the right to know what we collect, to delete it, to correct it, and not to be treated differently for exercising those rights. Use the contact address above; we will not ask you for more information than we need in order to find your record.'
-            : 'You have the right to know what we collect, to delete it, to correct it, and not to be treated differently for exercising those rights. Account deletion is in the app, under Settings, and a contact address for the rest will be published here before Luvo is released publicly.',
+            : 'You have the right to know what we collect, to delete it, to correct it, and not to be treated differently for exercising those rights. Account deletion is in the app, under Settings, and a contact address for the rest will be published here before Louvo is released publicly.',
         ),
       ],
     },
@@ -453,7 +453,7 @@ export const TERMS_OF_USE: LegalDocument = {
   slug: 'terms',
   title: 'Terms of Use',
   summary:
-    'The agreement between you and Luvo: what the app does, what your generations are, and what each of us is responsible for.',
+    'The agreement between you and Louvo: what the app does, what your generations are, and what each of us is responsible for.',
   effective: EFFECTIVE,
   sections: [
     {
@@ -466,7 +466,7 @@ export const TERMS_OF_USE: LegalDocument = {
       ],
     },
     {
-      heading: 'Who may use Luvo',
+      heading: 'Who may use Louvo',
       blocks: [
         p(
           'You must be at least 13 years old, and at least 16 in countries where that is the age of digital consent. If you are under 18, you may use the app only with the involvement of a parent or guardian who accepts these terms on your behalf.',
@@ -475,7 +475,7 @@ export const TERMS_OF_USE: LegalDocument = {
       ],
     },
     {
-      heading: 'What Luvo actually is',
+      heading: 'What Louvo actually is',
       blocks: [
         p(
           `${APP} generates an illustration of what a haircut might look like on you. It is a visualisation produced by an image model — not a photograph, not a prediction, and not professional advice.`,
@@ -560,7 +560,7 @@ export const TERMS_OF_USE: LegalDocument = {
       blocks: [
         list(
           'Upload a photo of somebody who has not agreed to it.',
-          'Use Luvo to create images intended to deceive, defame, harass or sexualise anyone.',
+          'Use Louvo to create images intended to deceive, defame, harass or sexualise anyone.',
           'Copy, scrape, redistribute or resell our catalog imagery, our mannequin renders, or any other part of the app.',
           'Reverse engineer, decompile, or attempt to extract the models, prompts or keys behind the app, except as far as the law says you may.',
           'Access the service by automated means, or use it to build or train a competing model or dataset.',
@@ -620,7 +620,7 @@ export const TERMS_OF_USE: LegalDocument = {
       ],
     },
     {
-      heading: 'If you downloaded Luvo from the App Store',
+      heading: 'If you downloaded Louvo from the App Store',
       blocks: [
         p(
           'These terms are between you and us, not Apple, and Apple is not responsible for the app or its contents. The licence granted here is limited to using the app on Apple-branded devices that you own or control, as permitted by the App Store Terms of Service.',
@@ -635,7 +635,7 @@ export const TERMS_OF_USE: LegalDocument = {
         p(
           OPERATOR.contactEmail
             ? `Questions, support requests and complaints about the app go to ${OPERATOR.contactEmail}.`
-            : 'Questions, support requests and complaints about the app come to us rather than to Apple. We will publish a contact address here before Luvo is released publicly.',
+            : 'Questions, support requests and complaints about the app come to us rather than to Apple. We will publish a contact address here before Louvo is released publicly.',
         ),
       ],
     },

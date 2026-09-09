@@ -58,7 +58,7 @@ export function AccountPanel() {
       <Notice
         tone="warn"
         title="This browser cannot be identified"
-        body="Luvo keeps a random key in this browser's storage so it knows which previews are yours. Storage is blocked here — a private window, or site data turned off — so previews cannot be generated. Everything else on the site works."
+        body="Louvo keeps a random key in this browser's storage so it knows which previews are yours. Storage is blocked here — a private window, or site data turned off — so previews cannot be generated. Everything else on the site works."
       />
     );
   }

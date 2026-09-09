@@ -1,4 +1,4 @@
-# Luvo on the web
+# Louvo on the web
 
 A Next.js app against the same API the phone app uses. It is not a port of the
 app — it is a second front end onto one backend, designed for a browser and for

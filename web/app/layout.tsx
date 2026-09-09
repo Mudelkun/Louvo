@@ -58,7 +58,7 @@ const grotesk = Inter({
  * smaller engines and by the answer engines that are now a real share of this
  * traffic.
  *
- * The title is the one change worth explaining. It was "Luvo — see the haircut
+ * The title is the one change worth explaining. It was "Louvo — see the haircut
  * before the chair", which is the brand line and is good writing, and is a
  * phrase nobody has ever typed into a search box. A title tag has two audiences
  * and the first is a query, so the category noun leads and the line follows it.
@@ -93,7 +93,7 @@ export const metadata: Metadata = {
    * The product is a picture of a haircut. Google's default is a thumbnail;
    * `large` is what allows the render to be shown at full width in a result and
    * in Discover, and it is the difference between a listing that demonstrates
-   * what Luvo does and one that describes it. The two snippet limits are set to
+   * what Louvo does and one that describes it. The two snippet limits are set to
    * unbounded for the same reason — there is nothing here we would rather have
    * truncated.
    */

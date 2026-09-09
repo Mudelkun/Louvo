@@ -26,18 +26,23 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#08060e',
     categories: ['lifestyle', 'photo', 'beauty'],
     /**
-     * The svg first, because it is the only one at a size an installer wants.
+     * The real mark, cut from the launcher artwork by `npm run icons`.
      *
-     * `luvo-mark.png` is 128px — the header's mark, not an app icon — and it is
-     * listed at its real size rather than at a flattering one. A manifest that
-     * claims 512 and serves 128 is an install prompt that either refuses or
-     * renders a blurred icon, which is worse than the browser falling back to
-     * the vector. A real 512px maskable PNG is what `npm run icons` cuts for the
-     * phone app; putting one here is a file to add, not a line to change.
+     * These were a hand-drawn `icon.svg` — a single gradient stroke, on the
+     * argument that the artwork is drawn for a rounded tile at 48px and arrives
+     * as a smudge at 16. The argument was sound and the result was not what
+     * anybody wanted in their tab: a letterform that is not the logo reads as a
+     * different product to somebody who has the app on their home screen, which
+     * is the whole thing a favicon is for.
+     *
+     * Both files are Next.js file conventions in `app/`, so the `<link>` tags
+     * are emitted for us and these entries only have to name them for an
+     * installed window. Sizes are the files' real ones — a manifest claiming 512
+     * and serving 180 is an install prompt that refuses or renders blurred.
      */
     icons: [
-      { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' },
-      { src: '/luvo-mark.png', sizes: '128x128', type: 'image/png', purpose: 'any' },
+      { src: '/icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
+      { src: '/apple-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
     ],
   };
 }

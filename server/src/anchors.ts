@@ -5,7 +5,7 @@
  * platform asymmetry rather than a design choice.
  *
  * On **iOS** the device secret lives in the Keychain, and Keychain items outlive
- * the app that wrote them. Delete Luvo, reinstall it, and `deviceId.ts` reads
+ * the app that wrote them. Delete Louvo, reinstall it, and `deviceId.ts` reads
  * back the same 32 bytes — so the device row is already stable across a
  * reinstall and nothing extra is needed.
  *

@@ -60,7 +60,7 @@ export class ApiError extends Error {
   }
 
   /** No network, no DNS, a CORS preflight refused — anything with no status. */
-  static offline(message = 'the Luvo service could not be reached'): ApiError {
+  static offline(message = 'the Louvo service could not be reached'): ApiError {
     return new ApiError(0, 'offline', message);
   }
 }
@@ -474,7 +474,7 @@ export const signInWithCode = (email: string, code: string): Promise<SignInResul
  * here, and nothing downstream of this call knows Clerk exists —
  * `Authorization: Device <secret>` remains the only credential this browser
  * holds, before and after. Clerk's own session cookie is Clerk's business, and
- * losing it signs somebody out of Clerk without signing them out of Luvo, which
+ * losing it signs somebody out of Clerk without signing them out of Louvo, which
  * is why `ClerkBridge` re-adopts rather than assuming.
  */
 export const signInWithClerk = (
@@ -685,7 +685,7 @@ export interface ShareRequest {
  *
  * **A share link names a hairstyle, never an image.** What unfurls in somebody
  * else's chat is the catalog's own mannequin render of that cut — public,
- * CDN-hosted, identical for everybody who shared it — and never a Luvo user's
+ * CDN-hosted, identical for everybody who shared it — and never a Louvo user's
  * face. `check-shares.mjs` asserts that server-side; it is restated here because
  * this call is the obvious place somebody would add a photo url, and it must
  * not be.

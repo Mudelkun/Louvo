@@ -5,7 +5,7 @@
  *
  * **A share link names a hairstyle, never an image.** What unfurls in somebody
  * else's chat is the catalogue's own mannequin render of that cut — public,
- * CDN-hosted, identical for everybody who shared it — and never a Luvo user's
+ * CDN-hosted, identical for everybody who shared it — and never a Louvo user's
  * face. That is the rule the whole feature is arranged around, it is asserted
  * server-side by `check-shares.mjs`, and it is why this button exists on a
  * *style* page and takes a style id.
@@ -76,7 +76,7 @@ export function ShareButton({
       }
     }
 
-    const title = `${hairstyleName} on Luvo`;
+    const title = `${hairstyleName} on Louvo`;
     const text = `${hairstyleName} — see it on yourself before the chair.`;
 
     try {
