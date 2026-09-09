@@ -71,7 +71,8 @@ import type {
   TextureKind,
   ViewAngle,
 } from '../lib/contract/catalog';
-import { HAIR_TYPE_IDS, relatedTo, textureFor, typesForVariant, variantCandidates } from '../lib/hairTypes';
+import { displayVariants } from '../lib/displayVariants';
+import { HAIR_TYPE_IDS, relatedTo, textureFor, typesForVariant } from '../lib/hairTypes';
 import {
   ANGLE_LABELS,
   ANCHOR_LENGTH,
@@ -328,7 +329,25 @@ function Loaded({
     length === 'short' || length === 'long' ? length : ANCHOR_LENGTH,
   );
 
-  const candidates = useMemo(() => variantCandidates(style, hairType), [style, hairType]);
+  /**
+   * The variants to draw — the declared texture's, or a stand-in for it.
+   *
+   * The tile row below still refuses to *offer* a texture this cut has not been
+   * shot in (`shotTypes`), so the only way to arrive here substituting is to
+   * land on the page with that texture already declared — from a filtered grid,
+   * a shared link or a finished preview. Showing the procedural drawing to
+   * somebody who followed a link to a specific haircut is the worst version of
+   * it: they came for this cut and the page answers with a cartoon. A real
+   * render of the same cut, captioned with the texture it actually is, is the
+   * better answer — see `displayVariants`.
+   *
+   * Resolved at the hero angle: it anchors the deck, exactly as `shotIn` does,
+   * so a swipe never lands on a different texture's version of the same cut.
+   */
+  const { variants: candidates, substituted } = useMemo(
+    () => displayVariants(manifest, style, hairType, { gender, angle: HERO_ANGLE, length: lengthId }),
+    [manifest, style, hairType, gender, lengthId],
+  );
   const texture = textureFor(style, hairType);
 
   /**
@@ -396,6 +415,18 @@ function Loaded({
    * resolves to the anchor, and the control says so instead of silently showing
    * the same picture at three settings.
    */
+  /**
+   * The texture the picture on screen really is, in the catalogue's own words.
+   *
+   * Only read while `substituted`, and composed from `catalog.hairTypes` rather
+   * than written down — no hair type is named anywhere in this file.
+   */
+  const shownIn = useMemo(() => {
+    if (!current) return '';
+    const [first] = typesForVariant(style, current.variant);
+    return (first ? hairTypes.find((row) => row.id === first)?.name : null)?.toLowerCase() ?? '';
+  }, [current, style, hairTypes]);
+
   const gotLength = current?.length ?? null;
   const lengthMissing = !!offered && gotLength !== null && gotLength !== lengthId;
 
@@ -898,15 +929,19 @@ function Loaded({
                 })}
               </div>
 
-              {/* Three cases, not two. The row cannot say any of them itself,
-                  which is the whole reason this line exists — and a cut with no
-                  render at all must not be described as having one. */}
+              {/* Four cases, not two. The row cannot say any of them itself,
+                  which is the whole reason this line exists — a cut with no
+                  render at all must not be described as having one, and a
+                  picture standing in for a texture that was never shot must say
+                  which texture it really is. */}
               <p className="mt-3 text-[12px] leading-relaxed text-muted">
-                {hero.length > 1
-                  ? 'This cut is shot in more than one texture — the picture changes with your choice.'
-                  : hero.length === 1
-                    ? 'This cut has one render, so the picture will not change when the selection moves.'
-                    : 'This cut has not been shot yet, so what you see is an illustration. Your choice still decides which version is generated.'}
+                {substituted && shownIn
+                  ? `${style.name} has not been shot in your texture yet, so the picture is its ${shownIn} version. Your choice still decides which version is generated.`
+                  : hero.length > 1
+                    ? 'This cut is shot in more than one texture — the picture changes with your choice.'
+                    : hero.length === 1
+                      ? 'This cut has one render, so the picture will not change when the selection moves.'
+                      : 'This cut has not been shot yet, so what you see is an illustration. Your choice still decides which version is generated.'}
               </p>
 
               {hairTypeDeclared ? (
