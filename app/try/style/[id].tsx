@@ -45,7 +45,14 @@ import {
 } from '@/lib/hairTypes';
 import { preloadVariants } from '@/lib/mannequinPreload';
 import { renderedVariants, renderLength, renderVariant } from '@/lib/mannequinRender';
-import { HERO_ART, HERO_PAGE, THUMB_HEIGHT, THUMB_WIDTH } from '@/lib/styleLayout';
+import {
+  HERO_ART,
+  HERO_PAD_BOTTOM,
+  HERO_PAD_TOP,
+  HERO_PAGE,
+  THUMB_HEIGHT,
+  THUMB_WIDTH,
+} from '@/lib/styleLayout';
 import { useAccount } from '@/state/AccountContext';
 import { useCatalog } from '@/state/CatalogContext';
 import { useGeneration } from '@/state/GenerationContext';
@@ -568,21 +575,63 @@ export default function StyleDetailScreen() {
             </View>
           ))}
         </ScrollView>
-
-        <View style={styles.dots}>
-          {VIEW_ANGLES.map((entry) => (
-            <View key={entry} style={[styles.dot, entry === angle && styles.dotActive]} />
-          ))}
-        </View>
       </View>
 
       <View style={styles.body}>
+        {/* The same style from four angles — the fringe reads dead-on, the taper
+            and the ear from the half turn, the fade in profile, the nape from
+            behind.
+
+            Directly under the hero rather than below the adjustments, which is
+            both the honest order and what pays for the row of dots that used to
+            sit inside the card. These *are* the pager's control: they say which
+            page you are on and, unlike a dot, what is on the others — which is
+            the whole of "what does the back look like". Together with the hero
+            they are the hairstyle section, and the adjustments below it are the
+            next question rather than an interruption of this one. */}
+        <View style={styles.angleRow}>
+          {VIEW_ANGLES.map((entry) => (
+            <Pressable
+              key={entry}
+              accessibilityRole="radio"
+              accessibilityLabel={ANGLE_LABELS[entry].long}
+              accessibilityState={{ selected: entry === angle }}
+              onPress={() => goToAngle(entry)}
+              style={({ pressed }) => [
+                styles.thumb,
+                entry === angle && styles.thumbSelected,
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <Mannequin
+                styleId={hairstyle.id}
+                shape={shape}
+                options={lengthOptions}
+                color={color}
+                gender={gender}
+                variants={variants}
+                angle={entry}
+                // The same crop the tile always had — a head about a fifth
+                // taller than the space above the caption, so it is cut at the
+                // collar rather than floated in the middle of the tile — scaled
+                // to the shorter tile. See `THUMB_HEIGHT`.
+                size={THUMB_WIDTH * 0.59}
+                backdrop={null}
+                style={{ marginTop: THUMB_HEIGHT * 0.04 }}
+              />
+              <Text style={[styles.thumbLabel, entry === angle && { color: onPlateAccent }]}>
+                {ANGLE_LABELS[entry].short}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
         {/* Both adjustments in one card, so both are on screen at once. They ask
             the same question — how should this cut be shown — and as two stacked
             cards the second one was always below the fold. `<ControlCard>` rules
             a hairline between whatever it is actually handed, so a cut with no
             length row is one section and no seam. */}
-        <ControlCard>
+        <ControlCard style={styles.controls}>
           {/* Which texture the cut is shown on — a choice, presented as one. All
               four types are on screen whether or not this cut is offered for
               them (see `<HairTypeChoice>`), and two types that share a render
@@ -616,63 +665,34 @@ export default function StyleDetailScreen() {
           ) : null}
         </ControlCard>
 
-        {/* The same style from four angles — the fringe reads dead-on, the taper
-            and the ear from the half turn, the fade in profile, the nape from
-            behind. */}
-        <View style={styles.angleRow}>
-          {VIEW_ANGLES.map((entry) => (
-            <Pressable
-              key={entry}
-              accessibilityRole="radio"
-              accessibilityLabel={ANGLE_LABELS[entry].long}
-              accessibilityState={{ selected: entry === angle }}
-              onPress={() => goToAngle(entry)}
-              style={({ pressed }) => [
-                styles.thumb,
-                entry === angle && styles.thumbSelected,
-                pressed && { opacity: 0.8 },
-              ]}
-            >
-              <Mannequin
-                styleId={hairstyle.id}
-                shape={shape}
-                options={lengthOptions}
-                color={color}
-                gender={gender}
-                variants={variants}
-                angle={entry}
-                size={THUMB_WIDTH * 0.82}
-                backdrop={null}
-                style={{ marginTop: THUMB_HEIGHT * 0.04 }}
-              />
-              <Text style={[styles.thumbLabel, entry === angle && { color: onPlateAccent }]}>
-                {ANGLE_LABELS[entry].short}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
         {/* The photo, in place — the cut and the face it goes on are the only
-            two things this screen asks for. */}
+            two things this screen asks for.
+
+            With one already chosen this is a strip rather than a card's worth
+            of copy: a thumbnail, what it is, and the way to swap it. The
+            sentence it used to carry ("this cut gets rendered onto this photo")
+            was explaining the button in the footer, which says the same thing
+            in a verb — and it cost the fold about the height of the length
+            slider. Nothing is explained twice and nothing is gone. The state
+            with *no* photo keeps every word of its own, including the promise
+            about storage: that is the one moment somebody is deciding whether
+            to hand over their face. */}
         <View style={styles.photoCard}>
           {photoUri ? (
             <View style={styles.photoRow}>
               <PhotoFrame
                 uri={photoUri}
-                rounded={radii.md}
+                rounded={radii.sm}
                 style={styles.photoThumb}
                 demo={{ shape: DEMO_BASE_SHAPE, color, gender }}
-                demoWidth={104}
+                demoWidth={72}
               />
-              <View style={styles.photoCopy}>
-                <Text style={[type.label, { color: colors.ink }]}>Your photo</Text>
-                <Text style={[type.caption, { color: colors.muted }]}>
-                  This cut gets rendered onto this photo.
-                </Text>
-                <Pressable accessibilityRole="button" hitSlop={8} disabled={busy} onPress={pickFromLibrary}>
-                  <Text style={styles.link}>Change photo</Text>
-                </Pressable>
-              </View>
+              <Text style={[type.label, styles.photoName]} numberOfLines={1}>
+                Your photo
+              </Text>
+              <Pressable accessibilityRole="button" hitSlop={12} disabled={busy} onPress={pickFromLibrary}>
+                <Text style={styles.link}>Change</Text>
+              </Pressable>
             </View>
           ) : (
             <View style={{ gap: spacing.md }}>
@@ -718,10 +738,12 @@ export default function StyleDetailScreen() {
           )}
         </View>
 
-        <Text style={[type.caption, styles.note]}>
-          Generating takes a few seconds. You can watch it happen on your photo, or leave the
-          screen — it keeps running and lands in My looks either way.
-        </Text>
+        {/* What used to close this page — "generating takes a few seconds, you
+            can leave the screen" — is now the first thing `/try/generating`
+            says, over the photo it is happening to, with both exits in its
+            footer. Said here as well it was two screens of copy for one fact,
+            and it was the two lines standing between the adjustments and the
+            fold on a small phone. */}
       </View>
     </Screen>
   );
@@ -745,25 +767,17 @@ const useStyles = makeStyles(({ colors, shadow }) => ({
     width: HERO_PAGE,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingTop: spacing.sm,
-    // Clears the dots underneath. The head is bottom-aligned in the page, so
-    // this is the only thing keeping the jaw off them.
-    paddingBottom: spacing.xl,
+    // Both from `styleLayout`, because both are terms in the budget that sizes
+    // the art between them: a pad changed here and not there is a picture that
+    // no longer fits the fold it was measured against.
+    paddingTop: HERO_PAD_TOP,
+    paddingBottom: HERO_PAD_BOTTOM,
   },
-  dots: {
-    pointerEvents: 'none',
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: spacing.sm,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.hairline },
-  dotActive: { width: 18, backgroundColor: colors.accent },
-  body: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
-  angleRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  body: { paddingHorizontal: spacing.xl, paddingTop: spacing.sm },
+  // First in the body now, directly under the hero it pages — see the comment
+  // at the row itself. Its gap off the hero is the body's own top padding.
+  angleRow: { flexDirection: 'row', gap: spacing.sm },
+  controls: { marginTop: spacing.md },
   thumb: {
     width: THUMB_WIDTH,
     height: THUMB_HEIGHT,
@@ -782,19 +796,27 @@ const useStyles = makeStyles(({ colors, shadow }) => ({
     // On the plate, so it comes from the light palette in both schemes.
     color: onPlateMuted,
     marginTop: 'auto',
-    marginBottom: spacing.xs,
-    fontSize: 11,
+    // 12 + 3 is the 15 points `THUMB_HEIGHT` budgets for the caption. A tile
+    // that is now a pager control rather than a second gallery can carry its
+    // name at 10pt; what has to stay legible at this size is the silhouette.
+    marginBottom: 3,
+    fontSize: 10,
+    lineHeight: 12,
   },
   photoCard: {
-    marginTop: spacing.md,
-    padding: spacing.lg,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderRadius: radii.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.hairline,
   },
-  photoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  photoThumb: { width: 64, height: 82 },
+  photoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  // 40x52 keeps the frame's 1.3 portrait, and the strip's height is this plus
+  // the card's padding — the `PHOTO_ROW` term of the budget in `styleLayout`.
+  photoThumb: { width: 40, height: 52 },
+  photoName: { color: colors.ink, flex: 1 },
   photoCopy: { flex: 1, gap: spacing.xs },
   photoBadge: {
     width: 52,
@@ -805,6 +827,5 @@ const useStyles = makeStyles(({ colors, shadow }) => ({
     justifyContent: 'center',
   },
   photoActions: { flexDirection: 'row', gap: spacing.sm },
-  link: { ...type.caption, color: colors.accent, fontWeight: '700' as const },
-  note: { color: colors.muted, marginTop: spacing.md, marginBottom: spacing.xl },
+  link: { ...type.label, color: colors.accent },
 }));

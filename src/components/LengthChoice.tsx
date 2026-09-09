@@ -61,9 +61,11 @@ export function LengthChoice({
   value: HairLengthId;
   onChange: (id: HairLengthId) => void;
   /**
-   * One line under the track for whatever is true of *this* cut. Left off when
-   * there is nothing to say, in which case the selected stop's own description
-   * from the catalog holds the line instead.
+   * One line under the track for whatever is true of *this* cut — today, that
+   * the cut has not been rendered at the length being asked for. Left off when
+   * there is nothing to say, and then the control carries no line at all: the
+   * stop's name is in the heading and its description is a sentence nobody
+   * needed to read to work out that "Long" is longer.
    */
   note?: string | null;
 }) {
@@ -138,7 +140,16 @@ export function LengthChoice({
 
   return (
     <View>
-      <ControlHeading title="Hair length" hint="Drag to preview" />
+      {/* The hint states the answer rather than the verb.
+          A line under the track carried the selected stop's own description
+          from the catalog on every render, and a second line carried the note
+          when there was one — so the control's quietest fact and its most
+          urgent one were the same shape, and the description was costing the
+          fold a row it spent on saying "worn short" under a slider whose label
+          already said "Short". The stop's *name* rides the heading, where every
+          other control on this page puts its state, and the line below is left
+          for the thing that is only sometimes true. */}
+      <ControlHeading title="Hair length" hint={selected.name} />
 
       <View
         style={styles.track}
@@ -202,7 +213,7 @@ export function LengthChoice({
         ))}
       </View>
 
-      <Text style={[type.caption, styles.note]}>{note ?? selected.description}</Text>
+      {note ? <Text style={[type.caption, styles.note]}>{note}</Text> : null}
     </View>
   );
 }

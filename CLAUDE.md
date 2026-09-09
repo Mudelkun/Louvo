@@ -884,17 +884,50 @@ Two consequences worth knowing:
     rules a full-bleed hairline between whatever it is actually handed, so a cut with no length
     row is one section and no seam, and a cut with neither renders nothing.
   - **The question and the verb on one line.** `<ControlHeading>` keeps both things that made the
-    row read as a control rather than a caption — the name in ink, a verb saying what to do with
-    it — and sets them side by side instead of stacked. Do not drop the verb to save the last few
-    points; that hint is what the paragraph above is about.
+    row read as a control rather than a caption — the name in ink, and a small muted line at the
+    right — and sets them side by side instead of stacked. That right-hand line is a *verb* on the
+    hair-type row ("Tap to compare") and the *selected stop's name* on the length slider, which is
+    the one place the two diverge: the slider's stops are already labelled on its track, so a verb
+    there said less than the state did, and the state had otherwise been living in a sentence
+    below the track. Do not drop it on the hair-type row to save the last few points; that hint is
+    what the paragraph above is about.
   - **The cut's name moved into the header.** `<Header>` takes `title` and `right`, and was
     carrying only a step counter, so the 24pt heading and the favourite heart cost a row of their
     own for something the header had an empty centre for.
 
-  `HERO_ART` is what the rest is budgeted against: capped by the window's *height* as well as its
-  width, since the height cap is the one that binds on a phone. The whole screen is arithmetic
-  against the fold — a change to the card's copy, the tile height or the hero fraction can put the
-  slider back under the footer on a small phone, so check a 4.7" viewport before shipping one.
+  **The screen is ordered hairstyle → adjustments → generate, and the hero is what the order
+  leaves over.** Those are one change. The order first: the four angle tiles sat *below* the
+  control card, so the page went picture, adjustments, more of the picture, photo — and the hero's
+  own pager was indicated by a row of dots inside the card, which say a panel exists and nothing
+  about what is on it. The tiles are the pager's control (the correction `<SuggestionShelf>`'s
+  neighbours record on the web, reached here from the other side), so they belong under the
+  picture they page; the dots are gone and the hero's bottom padding came back with them. What is
+  left below is one question — how should this cut be shown — and then the photo and the button
+  that spends the credit.
+
+  `HERO_ART` is then **measured rather than chosen**. It was `min(width * 0.56, height * 0.29 /
+  HEAD_RATIO)`: a fraction tuned by hand against one phone, and the wrong control, because what
+  the screen owes the user is that the picture, both adjustments and the button are on one screen
+  — which is a statement about the *sum*, not about the hero. So `styleLayout.ts` lists every part
+  that does not scale (the header with its step bar, the tiles, the tallest the control card gets,
+  the photo strip, the footer) and the hero is the remainder, clamped to a floor and to
+  `width * 0.56`. The parts got smaller to make the remainder worth having — a shorter angle tile,
+  `spacing.sm` inside `<ControlCard>`, a photo *strip* rather than a photo card once a photograph
+  is chosen, and no closing paragraph about generation taking a few seconds, which is the first
+  thing `/try/generating` says anyway. The whole page now lands above the fold on every phone from
+  a 5.4" upward; a 4.7" one keeps the hairstyle and both adjustments and lets the photo strip fall
+  under, which is the least-bad thing to lose because the footer button already announces a
+  missing photograph.
+
+  Two consequences. The insets are **assumed at their deepest** (62 top, 34 bottom) rather than
+  read, since this is a module constant and `useSafeAreaInsets` is a hook and the skeleton needs
+  the same answer before it renders — over-assuming costs a flat-topped phone a slightly smaller
+  picture and never costs anybody a control. And the card is budgeted at the **tallest** it gets,
+  both adjustments and a footnote, so the picture is the same size on a cut that offers lengths
+  and one that does not; sizing it per style would make the hero jump between haircuts and would
+  leave the skeleton, which does not know the style, with nothing to draw. **Anything added to
+  that stack comes out of the picture, silently** — so add it to `CHROME` in the same commit, and
+  check a 4.7" viewport.
 
 **Length is a slider, and `medium` is an anchor rather than a midpoint.**
 A minority of cuts are offered at two or three lengths (`lengths` on the hairstyle,

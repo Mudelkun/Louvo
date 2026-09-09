@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Skeleton, SkeletonGroup, SkeletonLine } from '@/components/Skeleton';
-import { HERO_HEIGHT, THUMB_HEIGHT, THUMB_WIDTH } from '@/lib/styleLayout';
+import { HERO_HEIGHT, HERO_PAD_BOTTOM, THUMB_HEIGHT, THUMB_WIDTH } from '@/lib/styleLayout';
 import { makeStyles, radii, spacing } from '@/theme/theme';
 
 /**
@@ -31,10 +31,17 @@ export function StyleScreenSkeleton({ label = 'Loading the style' }: { label?: s
       </View>
 
       <View style={styles.body}>
-        {/* The order the screen itself is in: the control card, then the angle
-            tiles, then the photo card. A placeholder in a different order is a
-            page that rearranges itself as it loads. */}
-        <View style={styles.card}>
+        {/* The order the screen itself is in: the angle tiles under the hero
+            they page, then the control card, then the photo strip. A
+            placeholder in a different order is a page that rearranges itself as
+            it loads. */}
+        <View style={styles.angleRow}>
+          {[0, 1, 2, 3].map((tile) => (
+            <Skeleton key={tile} width={THUMB_WIDTH} height={THUMB_HEIGHT} radius={radii.md} />
+          ))}
+        </View>
+
+        <View style={[styles.card, styles.controls]}>
           <View style={styles.headingRow}>
             <SkeletonLine width={78} height={13} />
             <SkeletonLine width={104} height={11} />
@@ -46,19 +53,15 @@ export function StyleScreenSkeleton({ label = 'Loading the style' }: { label?: s
           </View>
         </View>
 
-        <View style={styles.angleRow}>
-          {[0, 1, 2, 3].map((tile) => (
-            <Skeleton key={tile} width={THUMB_WIDTH} height={THUMB_HEIGHT} radius={radii.md} />
-          ))}
-        </View>
-
+        {/* The strip, at the height a chosen photo makes it: a 40x52 frame and
+            one line beside it. The screen's other state — no photo yet — is
+            taller, and standing in for the taller one would leave a hole under
+            the card for everybody who already has a photograph, which is who
+            arrives here from the flow. */}
         <View style={[styles.card, styles.photoCard]}>
           <View style={styles.photoRow}>
-            <Skeleton width={52} height={52} radius={radii.md} />
-            <View style={styles.photoCopy}>
-              <SkeletonLine width="42%" height={12} />
-              <SkeletonLine width="88%" height={10} />
-            </View>
+            <Skeleton width={40} height={52} radius={radii.sm} />
+            <SkeletonLine width="34%" height={12} />
           </View>
         </View>
       </View>
@@ -77,17 +80,18 @@ const useStyles = makeStyles(({ colors, shadow }) => ({
     borderColor: colors.hairline,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: spacing.xl,
+    paddingBottom: HERO_PAD_BOTTOM,
     overflow: 'hidden',
     ...shadow.card,
   },
-  body: { paddingHorizontal: spacing.xl, paddingTop: spacing.md },
-  angleRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  body: { paddingHorizontal: spacing.xl, paddingTop: spacing.sm },
+  angleRow: { flexDirection: 'row', gap: spacing.sm },
+  controls: { marginTop: spacing.md },
   // `<ControlCard>`'s box, and `styles.photoCard`'s below it: the two cards on
   // this screen are the same card.
   card: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: radii.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -97,7 +101,6 @@ const useStyles = makeStyles(({ colors, shadow }) => ({
   // `<HairTypeChoice>`'s row: four tiles sharing the width, 44 points tall.
   tileRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   tile: { flex: 1 },
-  photoCard: { marginTop: spacing.md, paddingVertical: spacing.lg },
-  photoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  photoCopy: { flex: 1, gap: spacing.sm },
+  photoCard: { marginTop: spacing.sm, paddingVertical: spacing.md },
+  photoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
 }));

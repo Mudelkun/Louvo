@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
 
@@ -24,13 +24,20 @@ import { makeStyles, radii, spacing, useColors, type } from '@/theme/theme';
  * `React.Children.toArray` drops the nulls the screen passes for an absent
  * control, so the divider count is always one fewer than what is actually shown.
  */
-export function ControlCard({ children }: { children: React.ReactNode }) {
+export function ControlCard({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  /** The gap off whatever is above it, which is the page's business, not the card's. */
+  style?: ViewStyle;
+}) {
   const styles = useStyles();
   const sections = React.Children.toArray(children);
   if (!sections.length) return null;
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, style]}>
       {sections.map((section, index) => (
         <React.Fragment key={index}>
           {index > 0 ? <View style={styles.divider} /> : null}
@@ -72,7 +79,12 @@ export function ControlHeading({ title, hint }: { title: string; hint?: string }
 const useStyles = makeStyles(({ colors }) => ({
   card: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    // Tighter than the page's other card on purpose: this one is a stack of
+    // controls, where padding is space between a control and a border, and the
+    // photo strip below is a block of content, where it is the block's own
+    // margin. Both are terms in the budget in `styleLayout` — a pad added here
+    // comes off the hero.
+    paddingVertical: spacing.sm,
     borderRadius: radii.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -85,7 +97,7 @@ const useStyles = makeStyles(({ colors }) => ({
    */
   divider: {
     height: StyleSheet.hairlineWidth,
-    marginVertical: spacing.md,
+    marginVertical: spacing.sm,
     marginHorizontal: -spacing.lg,
     backgroundColor: colors.hairline,
   },
