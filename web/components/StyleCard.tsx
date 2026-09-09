@@ -27,8 +27,9 @@ import { memo, useMemo } from 'react';
 
 import { useVariantCycle } from '../lib/useVariantCycle';
 import type { HairColor, HairType, HairTypeId, Hairstyle, RenderManifest } from '../lib/contract/catalog';
-import { textureFor, typesForVariant, variantCandidates } from '../lib/hairTypes';
-import { HERO_ANGLE, renderedVariants, resolveRender } from '../lib/renders';
+import { displayVariants } from '../lib/displayVariants';
+import { textureFor, typesForVariant } from '../lib/hairTypes';
+import { HERO_ANGLE, renderedVariants } from '../lib/renders';
 import { FavouriteButton } from './FavouriteButton';
 import { Plate } from './Plate';
 import { Skeleton } from './ui';
@@ -90,13 +91,25 @@ export const StyleCard = memo(function StyleCard({
   priority,
   tabIndex,
 }: StyleCardProps) {
-  const candidates = useMemo(() => variantCandidates(style, hairType), [style, hairType]);
+  /**
+   * The variants to draw — the declared texture's, or a stand-in for it.
+   *
+   * `displayVariants()` is what keeps the procedural drawing off a card whose
+   * cut *has* been shot, just not in the texture on the filter. It substitutes a
+   * real render of the same haircut and says so; the caption below is the
+   * "says so".
+   */
+  const { variants: candidates, substituted } = useMemo(
+    () => displayVariants(manifest, style, hairType, { gender, angle: HERO_ANGLE }),
+    [manifest, style, hairType, gender],
+  );
 
   /**
    * The renders worth cycling through — existing, and *different*.
    *
    * Deduped by url, since two candidates resolving to one file would read as a
-   * stutter rather than as a second version of the cut.
+   * stutter rather than as a second version of the cut. A substituted list holds
+   * exactly one, so a stand-in never becomes a slideshow.
    */
   const renders = useMemo(
     () => renderedVariants(manifest, { styleId: style.id, gender, angle: HERO_ANGLE, variants: candidates }),
@@ -104,12 +117,7 @@ export const StyleCard = memo(function StyleCard({
   );
 
   const index = useVariantCycle(renders.length);
-  const current = renders[index] ?? resolveRender(manifest, {
-    styleId: style.id,
-    gender,
-    angle: HERO_ANGLE,
-    variants: candidates,
-  });
+  const current = renders[index] ?? null;
 
   const texture = textureFor(style, hairType);
   const shownTypes = current ? typesForVariant(style, current.variant) : [];
@@ -194,12 +202,19 @@ export const StyleCard = memo(function StyleCard({
               render on screen stands for, so the cross-fade is visibly the
               catalogue showing the cut's other versions.
 
+              It carries a second job now. A card whose declared texture has
+              never been shot draws a stand-in render of the same cut rather than
+              the procedural drawing (`displayVariants`), and this is where that
+              is admitted: one still plate, captioned with the texture it really
+              is. Without it the substitution would be a silent claim that the
+              picture is the visitor's own texture.
+
               Ringed, because `bg-white/85` on a plate that is *itself* white is a
               chip with no edges — the words floated on the mannequin's shoulder
               and the pill they were supposed to sit in was invisible. The ring is
               plate ink at low alpha, so it draws the chip without darkening it.
             */}
-            {shownTypes.length && renders.length > 1 ? (
+            {shownTypes.length && (renders.length > 1 || substituted) ? (
               <span
                 className={
                   'absolute bottom-3 left-3 rounded-full bg-white/85 px-2.5 py-1 text-[10px] font-bold ' +

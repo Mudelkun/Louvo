@@ -22,7 +22,8 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 
-import { textureFor, variantCandidates } from '../../lib/hairTypes';
+import { displayVariants } from '../../lib/displayVariants';
+import { textureFor } from '../../lib/hairTypes';
 import { HERO_ANGLE, resolveRender } from '../../lib/renders';
 import { useCatalog } from '../../lib/state/CatalogContext';
 import { useSession } from '../../lib/state/SessionContext';
@@ -55,7 +56,7 @@ export function HeroPlates() {
           styleId: style.id,
           gender,
           angle: HERO_ANGLE,
-          variants: variantCandidates(style, hairType),
+          variants: displayVariants(catalog.renders, style, hairType, { gender }).variants,
         }),
       }))
       // Renders first, then popularity: a catalogue whose imagery has not been

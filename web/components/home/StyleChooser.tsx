@@ -57,7 +57,8 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 import type { Hairstyle } from '../../lib/contract/catalog';
-import { filterHairstyles, textureFor, variantCandidates, type SortId } from '../../lib/hairTypes';
+import { displayVariants } from '../../lib/displayVariants';
+import { filterHairstyles, textureFor, type SortId } from '../../lib/hairTypes';
 import { HERO_ANGLE, resolveRender } from '../../lib/renders';
 import { useCatalog } from '../../lib/state/CatalogContext';
 import { useSession } from '../../lib/state/SessionContext';
@@ -195,11 +196,14 @@ export function StyleChooser() {
         ) : (
           <div className={GRID}>
             {results.map((style, index) => {
+              // A stand-in render of the same cut rather than the procedural
+              // drawing when the declared texture has not been shot — see
+              // `displayVariants`.
               const render = resolveRender(catalog!.renders, {
                 styleId: style.id,
                 gender,
                 angle: HERO_ANGLE,
-                variants: variantCandidates(style, hairType),
+                variants: displayVariants(catalog!.renders, style, hairType, { gender }).variants,
               });
               return (
                 <div key={style.id} className="group/card relative">
