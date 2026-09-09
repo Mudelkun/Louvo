@@ -34,6 +34,7 @@
  * honestly re-point — is a hard error rather than a guess.
  */
 
+import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
@@ -110,6 +111,38 @@ function transpose(relative, source) {
 }
 
 const check = process.argv.includes('--check');
+
+/**
+ * A deployment has no app to sync from, and that is not an error.
+ *
+ * Railway builds with the root directory set to `server/`, so `../src` is
+ * genuinely absent — the header above says so, and then `prebuild` ran this
+ * anyway and failed every fresh deploy on `ENOENT: /src/lib/imageSize.ts`. The
+ * outputs are committed precisely so the deployment does not need the sources.
+ *
+ * The staleness guarantee is not weakened by skipping here, because it was never
+ * this build's to make: `--check` compares a copy against a source, and where
+ * there is no source there is nothing to compare. It is enforced where the
+ * sources exist — `npm run check` and `web:typecheck`, on a laptop and in CI.
+ *
+ * A checkout missing the outputs *as well* is a different thing entirely and
+ * still fails, loudly: that is a broken build context rather than a deployment.
+ */
+const sourcesPresent = existsSync(path.join(REPO_ROOT, SOURCES[0]));
+if (!sourcesPresent) {
+  const missing = SOURCES.filter((relative) => !existsSync(path.join(OUT_DIR, path.basename(relative))));
+  if (missing.length) {
+    console.error(
+      `No app sources at ${REPO_ROOT} and src/generated/ is incomplete — missing ` +
+        `${missing.map((relative) => path.basename(relative)).join(', ')}. ` +
+        'These are committed; this is a broken checkout, not a deployment.',
+    );
+    process.exit(1);
+  }
+  console.log('No app sources above server/ — using the committed src/generated/. (Deployment build.)');
+  process.exit(0);
+}
+
 await mkdir(OUT_DIR, { recursive: true });
 
 let stale = 0;
