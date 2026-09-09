@@ -453,9 +453,11 @@ export const TERMS_OF_USE: LegalDocument = {
       heading: 'Agreeing to these terms',
       blocks: [
         p(
-          `These terms are an agreement between you and ${contactLine()} They apply when you use the ${APP} app, our website, or a page opened from a shared ${APP} link. By using ${APP} you accept them; if you do not, please do not use the app.`,
+          `These terms are an agreement between you and ${contactLine()} They apply when you use the ${APP} app, our website, or a page opened from a shared ${APP} link — whether you are signed in or signed out, and whether or not you ever create an account. By using ${APP} you accept them; if you do not, please do not use the app.`,
         ),
-        p('Our Privacy Policy is part of this agreement, and it describes what happens to your photograph.'),
+        p(
+          'Our Privacy Policy is part of this agreement, and it describes what happens to your photograph. Accepting these terms accepts it as well, on the same footing: using Louvo without an account is still using Louvo.',
+        ),
       ],
     },
     {
