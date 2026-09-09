@@ -52,6 +52,22 @@ export const ANGLE_LABELS: Record<ViewAngle, string> = {
   back: 'Back',
 };
 
+/**
+ * The same four for a caption an inch wide.
+ *
+ * "Three-quarter" wrapped to two lines under an angle tile on a phone, which
+ * made that one tile taller than its three neighbours and took the extra row
+ * out of the picture above them. The long forms stay: they are what a screen
+ * reader announces and what the laptop's tiles carry, and "3/4" read aloud is
+ * not an angle.
+ */
+export const ANGLE_LABELS_SHORT: Record<ViewAngle, string> = {
+  front: 'Front',
+  half: '3/4',
+  side: 'Side',
+  back: 'Back',
+};
+
 /** When the caller does not know the gender, whichever exists — male first. */
 const GENDER_ORDER: Gender[] = ['male', 'female'];
 

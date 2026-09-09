@@ -780,19 +780,31 @@ plates and the words FRONT / THREE-QUARTER / PROFILE / BACK on top of "Hair type
 `min-height: auto` is the flex default and floors the box at its content, so a window that cannot
 fit everything overflows the page and scrolls, which is the honest way to lose.
 
-**The deck draws its render `cover-top`, and that is where the picture's size comes from.** The
-box is the window's remainder, so it is far wider than it is tall — and a square render
-*contained* in it is drawn at the box's **height**, which is a small head between two white
-margins the width of the phone. Covered from the top it is drawn at the box's **width** instead,
-and the crop comes off the bottom. Measured rather than assumed: a render's subject fills 95% of
-its height and 76% of its width, so there is no margin at the crown to spend, a CSS zoom would
-eat the hair, and downward — the display base and the lower neck — is the only safe direction to
-crop. On an iPhone 14 the picture went from a 193px box drawn at 193px to a 235px box drawn at
-350px. `fit` is a **prop on `<Plate>` and not a class the caller adds**, because the base `<img>`
-and the SVG carrying the colour grade are fitted independently: `object-top` and `xMidYMin slice`
-are one rule written twice, and a grade fitted `meet` over an image fitted `slice` is a recoloured
-hairline sitting an inch from the hair. The angle tiles take the same fit, which is a no-op on the
-laptop's square tile and the whole difference on the phone's landscape one.
+**The deck is `contain`, `cover-top` was tried there and was wrong, and the difference is worth
+keeping written down.** The picture felt small, and the reason is real: the box is the window's
+remainder, so it is much wider than it is tall, and a square render contained in it is drawn at
+the box's **height**, leaving two white margins the width of the phone. Covering from the top
+draws it at the box's **width** instead — which sounds like the fix and is not, because on a box
+twice as wide as it is tall that is not a crop of the display base, it is a crop of everything
+below the crown: the page showed the top of a head with no face under it. **The whole mannequin
+is the product.** A CSS zoom fails for the same reason from the other side — measured, a render's
+subject fills 95% of its height and 76% of its width, so there is no margin at the crown to eat
+into.
+
+So the picture is made bigger by making the **box taller**, never by cropping, and everything
+below is what pays for it: `--above-fold` is 80 on a phone (the sticky header and the section's
+padding, nothing else — the breadcrumb is not drawn there and the back link is an arrow inside
+the title row, so it is measured *in* the column), the tile captions are short so
+"Three-quarter" stops wrapping one tile taller than its neighbours, and the card, the tiles and
+the action are all a size smaller below `sm`. On the phone in the screenshot this came from a
+166px cropped box to a 255px uncropped one.
+
+`fit` survives as a **prop on `<Plate>` and not a class the caller adds**, used by the angle
+tiles — where a 7:5 box keeps the head whole and the crop takes only the base — because the base
+`<img>` and the SVG carrying the colour grade are fitted independently: `object-top` and
+`xMidYMin slice` are one rule written twice, and a grade fitted `meet` over an image fitted
+`slice` is a recoloured hairline sitting an inch from the hair. On the laptop's square tile it is
+a no-op, since the renders are square.
 
 The parts got smaller to make the remainder worth having, and each of these is a phone-only
 `sm:` split rather than a change to the laptop page: the upkeep overline is drawn from `sm` (the

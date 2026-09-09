@@ -75,6 +75,7 @@ import { displayVariants } from '../lib/displayVariants';
 import { HAIR_TYPE_IDS, relatedTo, textureFor, typesForVariant } from '../lib/hairTypes';
 import {
   ANGLE_LABELS,
+  ANGLE_LABELS_SHORT,
   ANCHOR_LENGTH,
   HERO_ANGLE,
   VIEW_ANGLES,
@@ -166,14 +167,19 @@ function AngleTiles({
               className="h-full w-full"
             />
           </div>
+          {/* Short below `sm` and never wrapping: "Three-quarter" broke onto a
+              second line on a phone, which made one tile taller than its three
+              neighbours and took the extra row out of the picture above them.
+              `aria-label` on the button carries the long form either way. */}
           <span
             className={
-              'block bg-white px-1 pb-1 text-[9px] font-bold uppercase tracking-[0.07em] ' +
+              'block truncate bg-white px-1 pb-1 text-[9px] font-bold uppercase tracking-[0.07em] ' +
               'sm:pb-1.5 sm:text-[9.5px] sm:tracking-[0.08em] ' +
               (angle === panel.angle ? 'text-on-plate-ink' : 'text-on-plate-muted')
             }
           >
-            {ANGLE_LABELS[panel.angle]}
+            <span className="sm:hidden">{ANGLE_LABELS_SHORT[panel.angle]}</span>
+            <span className="hidden sm:inline">{ANGLE_LABELS[panel.angle]}</span>
           </span>
         </button>
       ))}
@@ -199,8 +205,11 @@ function BackToCatalogue() {
     <Link
       href="/styles"
       className={
-        'mb-3 inline-flex items-center gap-2 rounded-full py-1 pr-3 text-[13px] font-semibold ' +
-        'sm:mb-6 ' +
+        // Drawn from `sm`. On a phone the same link is the arrow in the title
+        // row below, because a row of its own is ~36px of a window the picture,
+        // both selectors and the button are already sharing. See `--above-fold`.
+        'hidden items-center gap-2 rounded-full py-1 pr-3 text-[13px] font-semibold ' +
+        'sm:mb-6 sm:inline-flex ' +
         'text-muted transition-colors hover:text-ink focus-visible:outline-none ' +
         'focus-visible:ring-2 focus-visible:ring-violet'
       }
@@ -267,11 +276,13 @@ export function StyleDetail({
       className={
         /*
           What stands above the phone's one-window column, so the column can be
-          `100svh` minus it. Below `sm`: the sticky site header (68), the
-          section's own top padding (12), and this page's back link (30) — the
-          breadcrumb is not in it because it is not drawn at that width (see
-          `app/styles/[id]/page.tsx`). From `sm` the section's padding grows,
-          the breadcrumb returns and both margins widen, which is the 206.
+          `100svh` minus it. Below `sm` it is only the sticky site header
+          (68) and the section's own top padding (12): the breadcrumb is not
+          drawn at that width (see `app/styles/[id]/page.tsx`), and the back
+          link is the arrow inside the title row, which is *in* the column and
+          measured with it rather than standing above it. From `sm` both come
+          back as rows of their own, the section's padding grows and the margins
+          widen, which is the 206.
 
           These are numbers rather than a `calc` of tokens because that is what
           they are: they belong to layouts this component cannot see. **A change
@@ -284,7 +295,7 @@ export function StyleDetail({
           Over-estimating is the safe direction: it costs the picture a few
           points. Under-estimating pushes the button off the screen.
         */
-        '[--above-fold:110px] sm:[--above-fold:206px] ' +
+        '[--above-fold:80px] sm:[--above-fold:206px] ' +
         'lg:mx-auto lg:max-w-[var(--measure)]'
       }
     >
@@ -625,7 +636,7 @@ function Loaded({
       */}
       <div
         className={
-          'flex flex-col gap-3 sm:gap-6 ' +
+          'flex flex-col gap-2.5 sm:gap-6 ' +
           /*
             On a phone the column is exactly one window tall and the deck is
             what is left in it — the same budget the app's style screen makes in
@@ -657,17 +668,19 @@ function Loaded({
             the control, and the gesture is the one every photograph on the
             device already answers to.
 
-            **It is drawn `cover-top`, and that is where the picture's size
-            actually comes from.** The box is the window's remainder, so it is
-            far wider than it is tall — and a square render contained in it is
-            drawn at the box's *height*, which is a small head sitting between
-            two white margins the width of the phone. Covered from the top it is
-            drawn at the box's *width* instead and the crop comes off the
-            bottom, which on these renders is the display base and the lower
-            neck. Measured, not assumed: the subject fills 95% of a render's
-            height and 76% of its width, so there is no margin at the crown to
-            spend and downward is the only safe direction to crop. See `fit` on
-            `<Plate>` for why it is a prop and not a class.
+            **It is `contain`, and `cover-top` was tried here and was wrong.**
+            The box is the window's remainder, so it is far wider than it is
+            tall, and a square render contained in it is drawn at the box's
+            *height* — which is what makes the picture feel small. Covering from
+            the top draws it at the box's *width* instead, and on a box twice as
+            wide as it is tall that is not a crop of the display base, it is a
+            crop of everything below the crown: the page showed the top of a
+            head with no face under it. The whole mannequin is the product here.
+            So the size comes from the box being **taller** — see
+            `--above-fold`, the short tile captions and the phone-only `sm:`
+            splits, all of which exist to give this element more room — and
+            never from cropping it. The angle tiles keep `cover-top` because a
+            tile is 7:5 rather than 2:1 and the head survives it whole.
 
             Scroll snapping rather than a hand-written pan: it is the browser's
             own paging, so momentum, rubber-banding and the platform's pointer
@@ -696,7 +709,7 @@ function Loaded({
                 // reads, where a column that overflows it costs the button —
                 // and the render is `object-contain`, so a short box letterboxes
                 // the plate rather than cropping the top of somebody's head.
-                'min-h-[168px] flex-1'
+                'min-h-[200px] flex-1'
               }
             >
               <div
@@ -736,7 +749,6 @@ function Loaded({
                             angle={panel.angle}
                             alt={`${style.name}, ${ANGLE_LABELS[panel.angle].toLowerCase()}`}
                             priority={panel.angle === HERO_ANGLE && index === 0}
-                            fit="cover-top"
                             className="h-full w-full"
                           />
                         </div>
@@ -751,7 +763,6 @@ function Loaded({
                         angle={panel.angle}
                         alt={`${style.name}, ${ANGLE_LABELS[panel.angle].toLowerCase()}`}
                         priority={panel.angle === HERO_ANGLE}
-                        fit="cover-top"
                         className="h-full w-full"
                       />
                     )}
@@ -830,7 +841,7 @@ function Loaded({
                 // reads, where a column that overflows it costs the button —
                 // and the render is `object-contain`, so a short box letterboxes
                 // the plate rather than cropping the top of somebody's head.
-                'min-h-[168px] flex-1'
+                'min-h-[200px] flex-1'
               }
             >
               <div className="relative aspect-[4/5] w-full sm:aspect-[5/5]">
@@ -899,8 +910,25 @@ function Loaded({
         {/* The detail                                                    */}
         {/* ------------------------------------------------------------ */}
         <div className="contents lg:block lg:sticky lg:top-[92px] lg:self-start">
-          <div className="order-1 shrink-0 flex items-start justify-between gap-4">
-            <div className="min-w-0">
+          <div className="order-1 flex shrink-0 items-start justify-between gap-3">
+            {/* The way back, on a phone, in the row that was already here. Same
+                destination and same argument as `<BackToCatalogue>` — `/styles`
+                rather than the browser's Back, because a search result and a
+                shared link both land here with nothing behind them — and it
+                costs no row of its own. */}
+            <Link
+              href="/styles"
+              aria-label="All cuts"
+              className={
+                'mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ' +
+                'text-[17px] leading-none text-muted ring-1 ring-inset ring-line ' +
+                'transition-colors hover:text-ink focus-visible:outline-none ' +
+                'focus-visible:ring-2 focus-visible:ring-violet sm:hidden'
+              }
+            >
+              <span aria-hidden>&larr;</span>
+            </Link>
+            <div className="min-w-0 flex-1">
               {/* Drawn from `sm`. It is a true and pleasant fact about the cut
                   and it is not what the top of a phone screen is for — 21px of
                   a window the picture, both selectors and the button are all
@@ -959,7 +987,7 @@ function Loaded({
             answered in view.
           */}
           <div className="order-4 shrink-0 overflow-hidden rounded-[20px] bg-surface/60 ring-1 ring-inset ring-line lg:mt-7">
-            <div className="p-4 sm:p-5">
+            <div className="px-4 py-3 sm:p-5">
               {/* The right of the heading row carries the verb until there is
                   something better to put there. Once a texture is declared the
                   useful control is the way back out of it, and it was a line of
@@ -1016,7 +1044,7 @@ function Loaded({
                       onClick={() => setHairType(type)}
                       aria-pressed={active}
                       className={
-                        'rounded-[14px] px-1 py-1.5 transition-colors duration-200 ' +
+                        'rounded-[14px] px-1 py-1 transition-colors duration-200 sm:py-1.5 ' +
                         'ring-1 ring-inset ' +
                         (!pickable
                           ? 'cursor-not-allowed border-dashed text-faint ring-line opacity-55'
@@ -1055,7 +1083,7 @@ function Loaded({
                   really is; both survive, and both still end on the sentence
                   that matters most, which is that the *choice* decides what
                   gets generated even when the picture cannot show it. */}
-              <p className="mt-2.5 text-[11.5px] leading-snug text-muted sm:mt-3 sm:text-[12px] sm:leading-relaxed">
+              <p className="mt-2 text-[11.5px] leading-[1.35] text-muted sm:mt-3 sm:text-[12px] sm:leading-relaxed">
                 {substituted && shownIn
                   ? `Not shot in your texture yet — shown in its ${shownIn} version. Your choice still decides what is generated.`
                   : hero.length > 1
@@ -1374,8 +1402,8 @@ function TryOnAction({
           control beside it opens the picker again, on this page, for the reason
           the header gives. */}
       {photo ? (
-        <div className="mt-4 flex items-center gap-3 sm:mt-7">
-          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-[12px] bg-surface ring-1 ring-inset ring-line sm:h-14 sm:w-14">
+        <div className="mt-3 flex items-center gap-3 sm:mt-7">
+          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-[12px] bg-surface ring-1 ring-inset ring-line sm:h-14 sm:w-14">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={photo.objectUrl} alt="The photo this preview will be made from" className="h-full w-full object-cover" />
           </div>
@@ -1399,7 +1427,7 @@ function TryOnAction({
         <p className="mt-3.5 text-[13.5px] font-medium text-ink-soft sm:mt-6">Whose version of this cut?</p>
       ) : null}
 
-      <div className={(!photo ? 'mt-4 sm:mt-7' : !gender ? 'mt-3' : 'mt-4') + ' flex flex-wrap gap-3'}>
+      <div className={(!photo ? 'mt-4 sm:mt-7' : !gender ? 'mt-3' : 'mt-3 sm:mt-4') + ' flex flex-wrap gap-3'}>
         {!photo ? (
           <Button size="lg" className="flex-1 sm:flex-none" loading={busy} onClick={choose}>
             {busy ? 'Reading your photo…' : 'Try with your photo'}
@@ -1443,16 +1471,16 @@ function TryOnAction({
       </div>
 
       {!photo ? (
-        <p className="mt-3 text-[12.5px] text-muted">
+        <p className="mt-2 text-[12.5px] text-muted sm:mt-3">
           One photo, then this cut on it — about forty seconds. Two previews are free.
         </p>
       ) : !gender ? (
-        <p className="mt-3 text-[12.5px] text-muted">
+        <p className="mt-2 text-[12.5px] text-muted sm:mt-3">
           Men&rsquo;s and women&rsquo;s cuts are shot separately, so this picks the render your
           preview is made from.
         </p>
       ) : ready && canGenerate ? (
-        <p className="mt-3 text-[12.5px] text-muted">
+        <p className="mt-2 text-[12.5px] text-muted sm:mt-3">
           <span className="tnum font-semibold text-ink-soft">{credits.total}</span>{' '}
           {credits.total === 1 ? 'preview' : 'previews'} left
           {credits.free > 0 ? ` · ${credits.free} free` : ''} · about forty seconds
@@ -1463,7 +1491,7 @@ function TryOnAction({
            This is the sentence that means the dialogue is not a surprise, so it
            has to name the dialogue that is actually coming: the packs for
            somebody with an account, and sign-in for somebody without one. */
-        <p className="mt-3 text-[12.5px] text-muted">
+        <p className="mt-2 text-[12.5px] text-muted sm:mt-3">
           No previews left ·{' '}
           {credits.signedIn ? 'Generate opens the packs' : 'sign in to keep generating'}
         </p>
