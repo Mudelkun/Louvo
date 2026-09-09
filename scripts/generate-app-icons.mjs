@@ -36,10 +36,21 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { decodePng, encodePng } from './lib/png.mjs';
+import { cropImage, decodePng, encodePng, resizeImage } from './lib/png.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const assets = join(root, 'assets');
+/**
+ * The website's icons are cut here too, from the same artwork.
+ *
+ * `web/app/icon.png` and `web/app/apple-icon.png` are Next.js file conventions:
+ * dropping them in `app/` is what emits the `<link rel="icon">`. They belong in
+ * this script rather than beside the site because they are the *same mark* — a
+ * favicon hand-exported once is a favicon that silently stops matching the app
+ * the first time the artwork is redrawn, which is the whole reason nothing here
+ * is exported by hand.
+ */
+const webApp = join(root, 'web', 'app');
 const SOURCE = join(assets, 'Luvo-icon.png');
 
 /** Alpha at or above this is the tile itself. */
@@ -438,10 +449,35 @@ function adaptiveLayer(square, coverage, subject, size, mode) {
   return { width: size, height: size, channels: 4, colorType: 6, pixels };
 }
 
-function write(name, image) {
-  writeFileSync(join(assets, name), encodePng(image));
-  console.log(`  ${name.padEnd(30)} ${image.width}x${image.height} ${image.channels === 4 ? 'RGBA' : 'RGB'}`);
+function write(name, image, dir = assets) {
+  writeFileSync(join(dir, name), encodePng(image));
+  const where = dir === assets ? name : `web/app/${name}`;
+  console.log(`  ${where.padEnd(30)} ${image.width}x${image.height} ${image.channels === 4 ? 'RGBA' : 'RGB'}`);
 }
+
+/**
+ * How far past the tile's rim the browser-tab icon is cropped.
+ *
+ * A launcher icon is drawn with the figure sitting inside the tile, and both
+ * platforms then mask it — so the internal margin is the design. A favicon has
+ * no such mask and is seen at 16 CSS pixels, where that margin is most of what
+ * you can see: the figure lands in the middle third and the rest is a dark
+ * square. Eight per cent off each edge drops the outer glow, which carries no
+ * information at that size, and enlarges the figure by about a fifth while
+ * leaving the tile's corners still reading as a tile.
+ *
+ * It is measured rather than chosen: at 16% the head starts to clip and the
+ * rounded corner is gone, and at 0% the strands close up into a smudge. Look at
+ * the 32px output after any change to the artwork — this is the one number here
+ * that is about legibility rather than about geometry.
+ */
+const WEB_TAB_ZOOM = 0.08;
+/**
+ * Both website icons at 180px: large enough for an iOS home-screen bookmark,
+ * which is the biggest thing that asks for either, and small enough that the
+ * browser downscaling to 16 or 32 has plenty to work with.
+ */
+const WEB_ICON_SIZE = 180;
 
 const source = decodePng(readFileSync(SOURCE));
 const tile = findTile(source);
@@ -477,5 +513,21 @@ write('android-icon-foreground.png', adaptiveLayer(flooded, coverage, subject, 5
 // about 85%, so a kept rim would print the tile's outline into the silhouette
 // alongside the figure, and a themed icon is supposed to be the figure alone.
 write('android-icon-monochrome.png', adaptiveLayer(flooded, coverage, subject, 432, 'silhouette'));
+
+// The website, from the same square. Both are opaque and full-bleed for the
+// reason `icon.png` is: a browser draws the tab icon on its own chrome and iOS
+// masks a bookmarked one itself, so the tile's corners are filled rather than
+// cut out. Only the tab icon is zoomed — see `WEB_TAB_ZOOM`.
+const appIcon = toRgb(downsample(edged, coverage, 1024));
+const webInset = Math.round(appIcon.width * WEB_TAB_ZOOM);
+write(
+  'icon.png',
+  resizeImage(
+    cropImage(appIcon, webInset, webInset, appIcon.width - webInset * 2, appIcon.height - webInset * 2),
+    WEB_ICON_SIZE,
+  ),
+  webApp,
+);
+write('apple-icon.png', resizeImage(appIcon, WEB_ICON_SIZE), webApp);
 
 console.log(`\nandroid.adaptiveIcon.backgroundColor should be ${hex}`);

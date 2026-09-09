@@ -1,7 +1,7 @@
 /**
  * Who is asking, in the absence of accounts.
  *
- * There are no accounts in Luvo yet — favourites and saved looks are
+ * There are no accounts in Louvo yet — favourites and saved looks are
  * device-local and always have been. A preview backend still needs to know whose
  * job is whose, and inventing a login screen to answer that would be building
  * the wrong feature first.

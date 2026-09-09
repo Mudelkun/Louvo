@@ -1,4 +1,4 @@
-# Luvo on the web
+# Louvo on the web
 
 A second front end onto the backend the phone app already uses. `web/` is a
 Next.js app; nothing on the server changed to support it.
@@ -46,7 +46,7 @@ There is a second reason, and it is the one that decided the visual design.
 somebody opens in a queue at a barber's — it follows the phone's light/dark
 setting because it is being used, not looked at. The site is a shopfront: opened
 once, deliberately, often on a large screen, with about four seconds to say what
-kind of thing Luvo is. So it commits to one dark look, sets its display type in a
+kind of thing Louvo is. So it commits to one dark look, sets its display type in a
 serif, and puts the white studio plates on near-black where they read as lit
 objects rather than as pictures on a page.
 
@@ -132,7 +132,7 @@ server already treats an absent anchor as the device's own id.
 What was here first was a hero, three explanatory sections, a privacy essay and a
 closing call to action, with the product one click away behind a button — the
 shape borrowed from software that has to convince somebody before it can show
-them anything. Luvo does not have to: the whole proposition is a forty-second
+them anything. Louvo does not have to: the whole proposition is a forty-second
 demonstration and a visitor is one photograph away from it. So `/` **is** the
 flow (`components/home/TryOnFlow.tsx`), and `/how-it-works` and `/pricing` are
 deleted, with permanent redirects in `next.config.ts` because both were in the
@@ -809,7 +809,7 @@ to consume it and is deleted when that job settles. `lib/idb.ts` now owns the
 connection and the version, because two modules opening one database with two
 version numbers is a `VersionError` waiting for whichever loads second.
 
-**One column, centred.** There was a second beside the form — what Luvo is, in
+**One column, centred.** There was a second beside the form — what Louvo is, in
 three points — on the argument that a sign-in page is often the first page
 somebody sees and a lone card says nothing about what is being signed into. It
 is gone and the copy that goes there is still being decided; the page is the
@@ -820,7 +820,7 @@ there belongs in `AuthScreen`'s own column, never inside Clerk's card.
 title, subtitle and back link between steps, so there is no heading of ours above
 it — and hiding Clerk's `header` element to remove the duplication would take the
 back link on the verification step with it. `appearance` is set once on
-`<ClerkProvider>`, in Luvo's palette; the page passes nothing but the two layout
+`<ClerkProvider>`, in Louvo's palette; the page passes nothing but the two layout
 boxes. `[[...sign-in]]` is an optional catch-all because the card is not one
 screen: verification, factor two and the SSO tail are child paths under it.
 `signInUrl`/`signUpUrl` are set on the provider rather than through

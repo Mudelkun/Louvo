@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Luvo",
+    "name": "Louvo",
     "slug": "luvo",
     "scheme": "luvo",
     "version": "0.1.0",
@@ -11,11 +11,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.luvoai.luvo",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Luvo needs access to your photos so you can try hairstyles on your own picture.",
-        "NSCameraUsageDescription": "Luvo needs your camera so you can take a selfie to try hairstyles on."
+        "NSPhotoLibraryUsageDescription": "Louvo needs access to your photos so you can try hairstyles on your own picture.",
+        "NSCameraUsageDescription": "Louvo needs your camera so you can take a selfie to try hairstyles on."
       },
       "associatedDomains": [
-        "applinks:luvo.app"
+        "applinks:louvo.app"
       ],
       "usesAppleSignIn": true
     },
@@ -34,7 +34,7 @@
           "data": [
             {
               "scheme": "https",
-              "host": "luvo.app",
+              "host": "louvo.app",
               "pathPrefix": "/s"
             }
           ],
@@ -68,22 +68,22 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Luvo needs access to your photos so you can try hairstyles on your own picture.",
-          "cameraPermission": "Luvo needs your camera so you can take a selfie to try hairstyles on."
+          "photosPermission": "Louvo needs access to your photos so you can try hairstyles on your own picture.",
+          "cameraPermission": "Louvo needs your camera so you can take a selfie to try hairstyles on."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Luvo needs your camera so you can take a selfie to try hairstyles on.",
+          "cameraPermission": "Louvo needs your camera so you can take a selfie to try hairstyles on.",
           "recordAudioAndroid": false
         }
       ],
       [
         "expo-media-library",
         {
-          "photosPermission": "Luvo needs access to your photos so you can try hairstyles on your own picture.",
-          "savePhotosPermission": "Luvo needs permission to save hairstyle previews to your photos.",
+          "photosPermission": "Louvo needs access to your photos so you can try hairstyles on your own picture.",
+          "savePhotosPermission": "Louvo needs permission to save hairstyle previews to your photos.",
           "isAccessMediaLocationEnabled": false
         }
       ],

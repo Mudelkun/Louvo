@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * A whole Luvo backend, on your laptop, with nothing behind it.
+ * A whole Louvo backend, on your laptop, with nothing behind it.
  *
  *   npm run build && npm run sandbox
  *
@@ -371,7 +371,7 @@ app.get('/__stripe/invoice/:id', async (request, reply) => {
 <div class="sheet">
   <h1>Invoice ${invoice.number}</h1>
   <p class="n">${new Date(invoice.created * 1000).toDateString()} &middot; ${invoice.customer_email ?? 'no email on file'}</p>
-  <div class="row"><span>Luvo credits</span><span>$${amount}</span></div>
+  <div class="row"><span>Louvo credits</span><span>$${amount}</span></div>
   <div class="row total"><span>Paid</span><span>$${amount}</span></div>
   <p class="note">A sandbox stand-in for the PDF Stripe issues. No money moved and this is
      not a document anybody should file.</p>
@@ -789,7 +789,7 @@ await app.listen({ port: PORT, host: '0.0.0.0' });
 const products = await sql('select id, credits from credit_products order by sort_order');
 
 console.log(`
-  Luvo sandbox
+  Louvo sandbox
   ${'─'.repeat(60)}
   API            ${ORIGIN}
   Database       in memory (pg-mem) — empty, and gone when this stops

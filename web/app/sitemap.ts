@@ -9,7 +9,7 @@ import { LEGAL_DOCUMENTS } from '../lib/contract/legal';
  * The sitemap: every hairstyle, every collection, and the render each one is
  * illustrated by.
  *
- * This is the whole SEO argument for putting Luvo on the web before an app
+ * This is the whole SEO argument for putting Louvo on the web before an app
  * store, stated as a file. A catalogue of several dozen named haircuts, each on
  * its own indexable page with its own studio render, is several dozen entry
  * points that a mobile binary does not have — plus the shelves under

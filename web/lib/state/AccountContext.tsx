@@ -310,7 +310,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
    * state first makes that branch a no-op by the time it is evaluated.
    *
    * The external half is allowed to fail without failing the sign-out. Being
-   * signed out of Luvo and still signed into Clerk is recoverable — the bridge
+   * signed out of Louvo and still signed into Clerk is recoverable — the bridge
    * notices and the next sign-in adopts — whereas a rejection here would leave
    * the button spinning over a sign-out that had, in fact, already happened.
    */

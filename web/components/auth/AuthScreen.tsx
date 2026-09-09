@@ -32,7 +32,7 @@
  *
  * ## One column, centred
  *
- * There was a second column beside the form — what Luvo is, in three points —
+ * There was a second column beside the form — what Louvo is, in three points —
  * on the argument that a sign-in page is often the first page somebody sees and
  * a lone card says nothing about what is being signed into. It is gone, and the
  * copy that goes there is still being decided; the page is the form alone,
@@ -45,7 +45,7 @@
  * steps, so there is no heading of ours above it — two headings would be one
  * question asked twice, and hiding Clerk's `header` element to fix that would
  * also hide the back link on the verification step. `appearance` is set once on
- * `<ClerkProvider>` in `app/providers.tsx`, in Luvo's palette, and this passes
+ * `<ClerkProvider>` in `app/providers.tsx`, in Louvo's palette, and this passes
  * nothing but the two layout boxes. The page's own `h1` is the right column's.
  */
 
@@ -135,7 +135,7 @@ function AuthCard({ mode, next }: { mode: AuthMode; next: string }) {
       <Notice
         tone="warn"
         title="This browser cannot be identified"
-        body="Luvo keeps a random key in this browser's storage so it knows which previews are yours, and signing in attaches an account to that key. Storage is blocked here — a private window, or site data turned off — so there is nothing to attach."
+        body="Louvo keeps a random key in this browser's storage so it knows which previews are yours, and signing in attaches an account to that key. Storage is blocked here — a private window, or site data turned off — so there is nothing to attach."
       />
     );
   }

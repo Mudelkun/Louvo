@@ -184,7 +184,7 @@ export function SiteHeader() {
           and the group is the difference between fitting and the door being
           squeezed. Nothing above `sm` changes. */}
       <div className="mx-auto flex h-[68px] w-full max-w-[1240px] items-center gap-3 px-5 sm:gap-6 sm:px-8 lg:px-12">
-        <Link href="/" className="shrink-0" aria-label="Luvo, home">
+        <Link href="/" className="shrink-0" aria-label="Louvo, home">
           <Logo />
         </Link>
 

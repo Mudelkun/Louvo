@@ -204,7 +204,7 @@ export function Pricing({ compact = false }: { compact?: boolean } = {}) {
       <Notice
         tone="warn"
         title="Packs are not available in this build"
-        body="This deployment has no connection to the Luvo service, so there is nothing to quote. Every visitor still gets their free previews once it does."
+        body="This deployment has no connection to the Louvo service, so there is nothing to quote. Every visitor still gets their free previews once it does."
       />
     );
   }
@@ -361,7 +361,7 @@ export function Pricing({ compact = false }: { compact?: boolean } = {}) {
           className={`text-center text-[12.5px] leading-relaxed text-amber ${compact ? 'mt-5' : 'mt-8'}`}
         >
           Checkout is not open on this deployment, so nothing here can be bought yet. The packs
-          are what Luvo sells; the till is not connected.
+          are what Louvo sells; the till is not connected.
         </p>
       ) : null}
 
@@ -394,7 +394,7 @@ export function Pricing({ compact = false }: { compact?: boolean } = {}) {
             <>Secure by Stripe</>
           ) : (
             <>
-              Payment is handled by Stripe on their own page — no card details ever reach Luvo.
+              Payment is handled by Stripe on their own page — no card details ever reach Louvo.
               One payment, no subscription, nothing renews, and a generation that fails is
               refunded automatically.
             </>

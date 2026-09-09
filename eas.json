@@ -7,8 +7,8 @@
     "base": {
       "node": "24.14.0",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.luvo.app",
-        "EXPO_PUBLIC_SHARE_URL": "https://luvo.app"
+        "EXPO_PUBLIC_API_URL": "https://api.louvo.app",
+        "EXPO_PUBLIC_SHARE_URL": "https://louvo.app"
       }
     },
     "development": {

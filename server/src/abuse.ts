@@ -308,7 +308,7 @@ export async function reportIfSuspicious(decision: AnonDecision, db: Queryer = q
   const hours = Math.round(env.anon.windowSeconds / 360) / 10;
   return sendMail({
     to,
-    subject: `Luvo: ${decision.devices} anonymous devices from one bucket`,
+    subject: `Louvo: ${decision.devices} anonymous devices from one bucket`,
     text: [
       `One rate-limit bucket has presented ${decision.devices} distinct device secrets`,
       `in the last ${hours}h, against an alert threshold of ${env.anon.alertDevices}.`,

@@ -117,7 +117,7 @@ module-scope palette read.
 Reference material: `project.md` (product spec) and `App-reference.png` (the original flow
 mockup — treated as inspiration, not a spec; the implemented design departs from it).
 
-## What Luvo is
+## What Louvo is
 
 A React Native / Expo mobile app for virtually trying hairstyles. The user flow: upload a photo → pick gender → pick hair type → browse the catalog → generate an AI preview of themselves with that style → compare before/after, save, share.
 
@@ -180,7 +180,7 @@ worth anything, and a client-only bundle cannot.
 The second reason decided the visual design. **The app and the site are not addressed to the
 same moment.** The app follows the phone's light/dark setting because it is a tool somebody
 opens in a queue at a barber's — it is being *used*. The site is a shopfront: opened once,
-deliberately, often on a large screen, with about four seconds to say what kind of thing Luvo
+deliberately, often on a large screen, with about four seconds to say what kind of thing Louvo
 is. So it commits to one dark look, sets its display type in a serif, and puts the catalog's
 white plates on near-black where they read as lit objects rather than as pictures on a page.
 `plate` is `#FFFFFF` there for exactly the reason it is here, and `--color-on-plate` is taken
@@ -189,7 +189,7 @@ from the light palette for the same one.
 **`/` is the try-on, and there is no landing page in front of it.** The site opened on a hero,
 three explanatory sections, a privacy essay and a closing call to action, with the product one
 click away behind a button — and separate `/how-it-works` and `/pricing` pages beside it. That
-is the shape of software that has to argue before it can demonstrate. Luvo does not have to: the
+is the shape of software that has to argue before it can demonstrate. Louvo does not have to: the
 whole proposition is a forty-second demonstration and a visitor is one photograph away from it,
 so the upload box is the first thing on the page and the argument for the product is the
 product. Both marketing pages are deleted and `next.config.ts` redirects them permanently,
@@ -521,7 +521,7 @@ database for ever. The alternative — uploading it early so it survives — was
 photograph reaches a bucket when there is a job to consume it and is deleted when that job
 settles.
 
-**The page is one centred column.** A second one beside the form — what Luvo is, in three
+**The page is one centred column.** A second one beside the form — what Louvo is, in three
 points — was written and then removed: the copy that belongs there is still being decided, and
 whatever lands there goes in `AuthScreen`'s own column rather than inside Clerk's card. Clerk
 draws that card and **is not restyled**: it carries its own title and its own back link
@@ -1122,7 +1122,7 @@ The three things that made this more than swapping a hex map:
   flat white, so a dark ground under one would frame a bright rectangle of the render's own white
   — `plate` is that ground and it is a constant, not a palette entry. `<ShareCard>` is the one
   component that reads `lightColors` directly and on purpose: it is captured as an image and
-  posted somewhere else, so what it looks like is a fact about Luvo's branding rather than
+  posted somewhere else, so what it looks like is a fact about Louvo's branding rather than
   about the phone that made it. Two people sharing the same look must produce the same picture.
 
 **`plate` is `#FFFFFF`, and every surface that holds a render is one.** That was the open design
@@ -1499,8 +1499,14 @@ already thinks that name means and a different one each run — that is the thin
 
 **The launcher icon is cut from the artwork, not hand-exported.** `assets/Luvo-icon.png` is
 the only icon file anyone edits; `npm run icons` (`scripts/generate-app-icons.mjs`) derives all
-five files the platforms load — `icon.png`, `splash-icon.png`, `favicon.png` and the two Android
-adaptive layers — and `app.json` points at those. It is free, needs no key, and takes about a
+seven files the platforms load — `icon.png`, `splash-icon.png`, `favicon.png` and the two Android
+adaptive layers, which `app.json` points at, plus **`web/app/icon.png` and
+`web/app/apple-icon.png`**, which are the website's. The site's tab icon was a hand-drawn
+gradient stroke for a while, on the sound argument that a tile drawn for 48px arrives as a smudge
+at 16 — but a letterform that is not the logo reads as a different product to somebody who has
+the app on their home screen, which is the one thing a favicon is for. The tab icon is the only
+output that is *zoomed* (`WEB_TAB_ZOOM`, 8% off each edge): a launcher icon's internal margin is
+the design, because both platforms mask it, and at 16px that margin is most of what you can see. It is free, needs no key, and takes about a
 second, so re-run it rather than editing an output by hand.
 
 The work it does is not resizing. The artwork arrives as an icon *mockup*: a rounded near-black
@@ -1561,7 +1567,7 @@ that, so it is not done. Four consequences, and `docs/sharing.md` has the rest:
 - **A share link names a hairstyle, not an image.** So the landing page's `og:image` — the picture
   a scraper renders into a chat card before any human sees it — is the catalog's own mannequin
   render of that cut, public and CDN-hosted and identical for everybody who shared it. Never a
-  Luvo user's face. `check-shares.mjs` asserts no local file uri can reach that page.
+  Louvo user's face. `check-shares.mjs` asserts no local file uri can reach that page.
 - **The three named buttons are shortcuts into the OS share sheet, and the screen says so.**
   Neither platform lets managed Expo code target a specific app with an image: iOS has no
   targeting API at all, and Android's needs an intent with `setPackage` plus a `FileProvider`

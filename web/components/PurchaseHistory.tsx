@@ -57,7 +57,7 @@ const formatDate = (at: number): string =>
  * Where the money went in, named as the buyer would name it.
  *
  * `stripe` is drawn as "Card" rather than as "Stripe": the visitor bought from
- * Luvo and paid by card, and the processor's name on a line of their own history
+ * Louvo and paid by card, and the processor's name on a line of their own history
  * is an implementation detail wearing a brand. The store rows say the store,
  * because there the store genuinely is where the purchase lives — and where its
  * receipt lives, which is why those rows have no button.
@@ -246,7 +246,7 @@ export function PurchaseHistory() {
     <section id="payments" className="mt-20 scroll-mt-24 text-left sm:mt-24">
       <h2 className="font-display text-[24px] leading-tight text-ink">Payments</h2>
       <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
-        Every pack you have bought, and the invoice for each. Nothing is stored on file — Luvo keeps
+        Every pack you have bought, and the invoice for each. Nothing is stored on file — Louvo keeps
         no card, so there is nothing here to manage or cancel.
       </p>
 
@@ -274,7 +274,7 @@ export function PurchaseHistory() {
 
       {history && history.purchases.length > 0 ? (
         <p className="mt-4 text-[12px] leading-relaxed text-faint">
-          Invoices are issued by Stripe and open on their site. A payment taken before Luvo started
+          Invoices are issued by Stripe and open on their site. A payment taken before Louvo started
           issuing them opens Stripe&rsquo;s receipt for that charge instead, which the row will say.
         </p>
       ) : null}

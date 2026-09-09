@@ -251,7 +251,7 @@ const auth = {
   emailCodeAttempts: integer('EMAIL_CODE_ATTEMPTS', 5),
   /** Resend, or nothing. With nothing, email sign-in answers 503 rather than pretending. */
   resendApiKey: optional('RESEND_API_KEY'),
-  emailFrom: process.env.EMAIL_FROM ?? 'Luvo <hello@luvo.app>',
+  emailFrom: process.env.EMAIL_FROM ?? 'Louvo <hello@louvo.app>',
   /**
    * Returns the code in the API response instead of sending it.
    *

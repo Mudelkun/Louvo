@@ -54,7 +54,7 @@ const TRAIL = [
 
 const TITLE = 'Hairstyles — every cut you can try on your own photo';
 const DESCRIPTION =
-  "Every haircut in the Luvo catalogue, by texture, length and gender — men's and " +
+  "Every haircut in the Louvo catalogue, by texture, length and gender — men's and " +
   "women's, straight to coily. Pick one, upload a photo, and see it on your own face.";
 
 export const metadata: Metadata = {
@@ -144,7 +144,7 @@ export default async function HairstylesIndex() {
             inLanguage: 'en',
           },
           breadcrumbLd(TRAIL),
-          styles.length ? itemListLd(styles, 'Every hairstyle in the Luvo catalogue') : null,
+          styles.length ? itemListLd(styles, 'Every hairstyle in the Louvo catalogue') : null,
           faqLd(FAQ),
         )}
       />
@@ -156,7 +156,7 @@ export default async function HairstylesIndex() {
           Hairstyles
         </h1>
         <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
-          Every cut Luvo can put on you, shot the same way — one neutral mannequin, one light,
+          Every cut Louvo can put on you, shot the same way — one neutral mannequin, one light,
           four angles — and rendered for straight, wavy, curly and coily hair rather than for
           one of them. Pick a shelf below, or upload a photograph and start from your own face.
         </p>

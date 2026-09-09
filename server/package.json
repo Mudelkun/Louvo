@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Luvo API \u2014 the hairstyle catalog, and the preview generation queue behind it.",
+  "description": "Louvo API \u2014 the hairstyle catalog, and the preview generation queue behind it.",
   "engines": {
     "node": ">=20"
   },
