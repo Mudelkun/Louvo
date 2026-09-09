@@ -49,6 +49,7 @@ import type {
   Hairstyle,
   RenderManifest,
 } from '../lib/contract/catalog';
+import { useDriftingRail } from '../lib/useDriftingRail';
 import { useOnScreen } from '../lib/useOnScreen';
 import { useReducedMotion } from '../lib/useReducedMotion';
 import { StyleCard, StyleCardSkeleton } from './StyleCard';
@@ -158,6 +159,18 @@ export function SuggestionShelf({
    */
   const [rail, onScreen] = useOnScreen<HTMLDivElement>();
 
+  /**
+   * The drift, and the reason a finger can push the row along instead of only
+   * stopping it. See `useDriftingRail` — the rail is a real scroller now and the
+   * animation is its scroll position, so a drag is the platform's own scrolling.
+   */
+  useDriftingRail(rail, {
+    secondsPerLoop: Math.max(shelf.length, 1) * SECONDS_PER_CARD,
+    // Left to right, which is what this shelf has always done.
+    reverse: true,
+    active: onScreen,
+  });
+
   const pending = loading || !manifest;
 
   if (!pending && styles.length === 0) return null;
@@ -221,16 +234,13 @@ export function SuggestionShelf({
       ) : (
         <div
           ref={rail}
-          data-offscreen={onScreen ? undefined : ''}
-          className={`marquee mt-6 overflow-hidden ${BLEED}`}
+          /* A scroller, not a clipped box: the drift is this element's
+             `scrollLeft`, so the same gesture that scrolls any row on the page
+             pushes this one along. `no-scrollbar` hides the bar; the mask on
+             `.marquee` still fades both ends. */
+          className={`marquee no-scrollbar mt-6 overflow-x-auto overscroll-x-contain ${BLEED}`}
         >
-          <div
-            className="marquee-track"
-            /* Left to right, which is the front page's women's shelf: the same
-               keyframes run backwards rather than a second animation. */
-            data-direction="reverse"
-            style={{ animationDuration: `${(shelf.length * SECONDS_PER_CARD).toFixed(1)}s` }}
-          >
+          <div className="flex w-max">
             {/* Two copies travelling half the track's own width, which lands the
                 second exactly where the first started. The second is furniture:
                 a screen reader and the tab order see the row once. */}

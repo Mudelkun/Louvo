@@ -62,6 +62,7 @@ import { useCatalog } from '../../lib/state/CatalogContext';
 import { useSession } from '../../lib/state/SessionContext';
 import { typesForVariant, variantsOf } from '../../lib/hairTypes';
 import { HERO_ANGLE, renderedVariants, type ResolvedRender } from '../../lib/renders';
+import { useDriftingRail } from '../../lib/useDriftingRail';
 import { useOnScreen } from '../../lib/useOnScreen';
 import { useReducedMotion } from '../../lib/useReducedMotion';
 import { useVariantCycle } from '../../lib/useVariantCycle';
@@ -211,6 +212,18 @@ function StripRow({
   }, [row.picks]);
 
   /**
+   * The drift, and what makes the shelf pushable rather than merely stoppable.
+   * See `useDriftingRail`. `DIRECTION` still decides which way each gender's
+   * shelf runs — women left to right, men right to left, so the two rails read
+   * as two shelves rather than as one escalator.
+   */
+  useDriftingRail(rail, {
+    secondsPerLoop: Math.max(shelf.length, 1) * SECONDS_PER_PLATE,
+    reverse: DIRECTION[row.gender] === 'reverse',
+    active: onScreen,
+  });
+
+  /**
    * Still, and scrollable by hand, for anybody who has asked for less motion.
    *
    * Not merely the animation switched off: a paused marquee is a rail somebody
@@ -240,14 +253,12 @@ function StripRow({
     <Shelf gender={row.gender}>
       <div
         ref={rail}
-        data-offscreen={onScreen ? undefined : ''}
-        className="marquee -mx-5 overflow-hidden px-5 sm:-mx-8 sm:px-8"
+        /* A scroller, not a clipped box — see `useDriftingRail`. A finger on a
+           shelf of haircuts is asking to see more of them, and until this it
+           could only stop the three that were in front of it. */
+        className="marquee no-scrollbar -mx-5 overflow-x-auto overscroll-x-contain px-5 sm:-mx-8 sm:px-8"
       >
-        <div
-          className="marquee-track"
-          data-direction={DIRECTION[row.gender]}
-          style={{ animationDuration: `${(shelf.length * SECONDS_PER_PLATE).toFixed(1)}s` }}
-        >
+        <div className="flex w-max">
           {/* Two copies. The second is furniture: it is the same shelf a few
               seconds later, so a screen reader and the tab order see it once. */}
           {[0, 1].map((copy) => (

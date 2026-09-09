@@ -732,6 +732,26 @@ skeleton standing in for prose that never arrives is the layout lying about itse
 controls now land on one screen, which is the same argument the app's `<ControlCard>` makes about
 its own fold, reached on a different device.
 
+**The drifting shelves are scrollers, and a finger pushes them instead of stopping them.**
+The front page's two catalogue strips and `<SuggestionShelf>` were a `transform` animation on a
+track inside an `overflow-hidden` box. That drifts beautifully and cannot be touched: there is no
+scroller, so a finger on a rail did nothing, and the row's only answer to being touched was to
+stop — the wrong answer to somebody asking to see more haircuts, and on a phone it made a rail
+whose far end did not exist. The drift is **scroll position** now: a real `overflow-x: auto` rail
+whose `scrollLeft` `useDriftingRail` advances a few tenths of a pixel a frame, so a drag is the
+platform's own scrolling, with its momentum and its rubber-banding, and nothing here implements a
+gesture. Four things decide any change to it. The **loop wraps under the finger as well as under
+the animation** — the track is two copies and half its scroll width is one, so crossing that and
+subtracting it lands on the identical plate; without it a drag hits a wall at the seam and the
+shelf is a list again. The **user is detected by disagreement, not by events**: the loop remembers
+the value it wrote, and a `scroll` to any other position was somebody else — which covers a drag,
+a wheel, a trackpad and a keyboard without enumerating them, and handles iOS momentum for free
+since each momentum event pushes the resume time out. **A mouse still pauses it**, because every
+plate is a link and a link that slides out from under a cursor cannot be clicked; so does focus
+landing inside. And **reduced motion means no drift, never no scrolling** — the rule that was
+already written for the still branch, now true of both. `luvo-marquee`, the play-state rules and
+`data-direction` are gone from `globals.css`; `.marquee` is the end-fade mask and nothing else.
+
 **The phone column is exactly one window tall and the picture is what is left in it.** That is
 the mechanism behind the sentence above, and it is what let the page go back to being read in
 the order it is decided in: name, deck, adjustments, **action**. It ran name, deck, *action*,
@@ -750,15 +770,39 @@ its margin (34), the back link (30) — and everything *inside* it is measured b
 a wrapped footnote or a length row takes its space out of the picture rather than off the bottom
 of the window. **A change to `<SiteHeader>`'s height is a change to that line.** The deck's
 render is `object-contain`, so a short box letterboxes the plate rather than cropping the top of
-somebody's head, which is what makes a floor of 120px survivable at all.
+somebody's head, which is what makes a floor of 168px survivable at all.
+
+**`min-h-0` on that deck wrapper was a bug, and the symptom is worth recognising.** `flex-1` sets
+`flex-basis: 0`; `min-h-0` additionally licenses the box to shrink *below its own content*. So on
+a window too short for the fixed rows the wrapper collapsed to nothing and the deck and its
+captioned tiles carried on drawing straight over the hair-type card underneath — four white
+plates and the words FRONT / THREE-QUARTER / PROFILE / BACK on top of "Hair type" and "Show all".
+`min-height: auto` is the flex default and floors the box at its content, so a window that cannot
+fit everything overflows the page and scrolls, which is the honest way to lose.
+
+**The deck draws its render `cover-top`, and that is where the picture's size comes from.** The
+box is the window's remainder, so it is far wider than it is tall — and a square render
+*contained* in it is drawn at the box's **height**, which is a small head between two white
+margins the width of the phone. Covered from the top it is drawn at the box's **width** instead,
+and the crop comes off the bottom. Measured rather than assumed: a render's subject fills 95% of
+its height and 76% of its width, so there is no margin at the crown to spend, a CSS zoom would
+eat the hair, and downward — the display base and the lower neck — is the only safe direction to
+crop. On an iPhone 14 the picture went from a 193px box drawn at 193px to a 235px box drawn at
+350px. `fit` is a **prop on `<Plate>` and not a class the caller adds**, because the base `<img>`
+and the SVG carrying the colour grade are fitted independently: `object-top` and `xMidYMin slice`
+are one rule written twice, and a grade fitted `meet` over an image fitted `slice` is a recoloured
+hairline sitting an inch from the hair. The angle tiles take the same fit, which is a no-op on the
+laptop's square tile and the whole difference on the phone's landscape one.
 
 The parts got smaller to make the remainder worth having, and each of these is a phone-only
 `sm:` split rather than a change to the laptop page: the upkeep overline is drawn from `sm` (the
 full specification is in `<StyleAbout>` below the shelf), the name's clamp floor is 1.7rem, the
 angle tiles are `aspect-[7/5]`, both cards are `p-4`, the hair-type footnote says the same four
 cases in fewer words, *Show all textures* moved onto the hair-type heading row where the verb
-hint sits (the two are never both true), and the length row puts its label beside the segmented
-control instead of over it. The result: everything — picture, both selectors, and the button —
+hint sits (the two are never both true), the length row puts its label beside the segmented
+control instead of over it, and **the breadcrumb is drawn from `sm`** — on a phone it is a second
+way back sitting directly above `<StyleDetail>`'s own, and the `BreadcrumbList` in the JSON-LD is
+what a crawler reads and is untouched. The result: everything — picture, both selectors, and the button —
 is on one screen from a 6.1" phone up, on both the common cut and the minority that offer
 lengths. A 5.4" fits the common cut; a 4.7" fits neither, because 553px of visible viewport
 cannot hold two selectors, a button and a photograph of a haircut, and the picture is what it
