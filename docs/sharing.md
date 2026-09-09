@@ -133,8 +133,8 @@ closed". That is a platform limit, and it is written down rather than papered ov
 The image gets attention; the caption tells a stranger what to do about it. The caption is:
 
 ```
-Trying the Textured Crop with Louvo ✂️
-Want to see how a haircut looks on you? Try Louvo: https://louvo.app/s/aB3dEf9hJk
+Trying the Textured Crop ✂️
+Try this hairstyle on Louvo: https://louvo.app/s/aB3dEf9hJk
 ```
 
 Two sentences. The first is the sharer talking about their own haircut, which is what their

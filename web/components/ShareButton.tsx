@@ -77,7 +77,7 @@ export function ShareButton({
     }
 
     const title = `${hairstyleName} on Louvo`;
-    const text = `${hairstyleName} — see it on yourself before the chair.`;
+    const text = `${hairstyleName} — try this hairstyle on Louvo.`;
 
     try {
       if (typeof navigator !== 'undefined' && navigator.share) {

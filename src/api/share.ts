@@ -79,9 +79,9 @@ export interface ShareLink {
  * is the only version of this anybody sends twice.
  */
 export function captionFor(hairstyleName: string, url: string): string {
-  const opening = `Trying the ${hairstyleName} with Louvo ✂️`;
-  if (!url) return `${opening}\nWant to see how a haircut looks on you? Try Louvo.`;
-  return `${opening}\nWant to see how a haircut looks on you? Try Louvo: ${url}`;
+  const opening = `Trying the ${hairstyleName} ✂️`;
+  if (!url) return `${opening}\nTry this hairstyle on Louvo.`;
+  return `${opening}\nTry this hairstyle on Louvo: ${url}`;
 }
 
 const TIMEOUT_MS = 8000;
