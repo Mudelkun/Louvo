@@ -63,6 +63,7 @@ import { useAccount } from '../../lib/state/AccountContext';
 import { useSession } from '../../lib/state/SessionContext';
 import { CatalogueCount, CatalogueStrip } from '../landing/CatalogueStrip';
 import { HeroCompare, type HeroImages } from './HeroCompare';
+import { HeroHeading } from './HeroHeading';
 import { HeroPlates } from './HeroPlates';
 import { PhotoChooser } from './PhotoChooser';
 import { SetupDialog, type SetupStep } from './SetupDialog';
@@ -170,17 +171,10 @@ export function TryOnFlow({ hero }: { hero: HeroImages[] }) {
             <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:gap-16">
               {/* The words and the one control, on the left. */}
               <div className="animate-rise">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-violet-ink">
-                  Virtual hairstyle try-on
-                </p>
-                <h1 className="mt-4 font-display text-[clamp(2.3rem,5.4vw,3.7rem)] leading-[1.02] tracking-[-0.02em] text-ink">
-                  Try any Hairstyle on{' '}
-                  <span className="text-gradient italic">your own</span> photo.
-                </h1>
-                <p className="mt-4 max-w-[52ch] text-[15.5px] leading-relaxed text-ink-soft">
-                  Upload one selfie and see yourself in any cut in the catalogue — bobs, fades,
-                  pixies, braids and the rest.
-                </p>
+                {/* Shared with the static fallback in `app/page.tsx`, which is
+                    the only reason this page has a heading in its served html
+                    at all — `<HeroHeading>` has the argument. */}
+                <HeroHeading />
 
                 <div className="mt-7">
                   <PhotoChooser />

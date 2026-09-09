@@ -41,11 +41,12 @@ export const SITE_NAME = 'Louvo';
 /**
  * What Louvo is, in the words somebody would actually type.
  *
- * "See the haircut before the chair" is the brand line and it is good writing;
- * it is also a phrase nobody searches for. A title tag has two audiences and the
- * first one is a query — so the category noun leads and the brand line follows,
- * rather than the other way round. The line survives; it has stopped being asked
- * to do the whole job alone.
+ * "See the haircut before the chair" was the brand line and it is good writing;
+ * it is also a phrase nobody searches for, and it is gone from every title, card
+ * and description on the site. A title tag has two audiences and the first one
+ * is a query, so the category noun leads — and what follows it is the promise
+ * the `<h1>` on `/` makes rather than a slogan, because the words a result
+ * offers and the words the page opens with should be the same words.
  */
 export const TAGLINE = 'Virtual hairstyle try-on';
 

@@ -266,3 +266,49 @@ export function encodePng(image) {
     chunk('IEND', Buffer.alloc(0)),
   ]);
 }
+
+/**
+ * A Windows `.ico` container holding one or more PNGs.
+ *
+ * It exists for exactly one output — `web/app/favicon.ico`, which is the file
+ * Google fetches when it decides which picture to draw beside a search result.
+ * A `<link rel="icon">` alone is not reliably enough: Next serves that one from
+ * a content-hashed url, and a favicon Google cannot find at the well-known path
+ * is a favicon Google replaces with a grey globe.
+ *
+ * The entries carry PNG payloads rather than the format's original BMP ones.
+ * That is legal in the ICO container and every browser released since Vista
+ * reads it, which is why nothing here has to encode a bottom-up bitmap with a
+ * separate AND mask. Several sizes go in one file because the consumers ask for
+ * different ones — a browser tab wants 16 or 32 and Google wants a multiple of
+ * 48 — and picking wrong is the difference between a sharp mark and a smudge.
+ *
+ * @param {{ size: number, png: Buffer }[]} entries smallest first
+ */
+export function encodeIco(entries) {
+  const HEADER = 6;
+  const DIRECTORY = 16;
+  const header = Buffer.alloc(HEADER);
+  header.writeUInt16LE(0, 0); // reserved
+  header.writeUInt16LE(1, 2); // 1 = icon, 2 = cursor
+  header.writeUInt16LE(entries.length, 4);
+
+  let offset = HEADER + DIRECTORY * entries.length;
+  const directory = [];
+  for (const entry of entries) {
+    const record = Buffer.alloc(DIRECTORY);
+    // 256 is written as 0: the field is one byte and the format predates it.
+    record.writeUInt8(entry.size >= 256 ? 0 : entry.size, 0);
+    record.writeUInt8(entry.size >= 256 ? 0 : entry.size, 1);
+    record.writeUInt8(0, 2); // palette size, 0 for truecolour
+    record.writeUInt8(0, 3); // reserved
+    record.writeUInt16LE(1, 4); // colour planes
+    record.writeUInt16LE(32, 6); // bits per pixel
+    record.writeUInt32LE(entry.png.length, 8);
+    record.writeUInt32LE(offset, 12);
+    directory.push(record);
+    offset += entry.png.length;
+  }
+
+  return Buffer.concat([header, ...directory, ...entries.map((entry) => entry.png)]);
+}

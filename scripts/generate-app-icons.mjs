@@ -36,7 +36,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { cropImage, decodePng, encodePng, resizeImage } from './lib/png.mjs';
+import { cropImage, decodePng, encodeIco, encodePng, resizeImage } from './lib/png.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const assets = join(root, 'assets');
@@ -529,5 +529,82 @@ write(
   webApp,
 );
 write('apple-icon.png', resizeImage(appIcon, WEB_ICON_SIZE), webApp);
+
+/**
+ * `web/app/favicon.ico`, which is the one output here that is about a *search
+ * result* rather than about a device.
+ *
+ * Next already emits a `<link rel="icon">` for `app/icon.png`, and that is what
+ * fills a browser tab. It was not enough for Google, whose listing for the site
+ * drew a grey globe: the crawler's favicon pass looks for the well-known path
+ * first, and `/favicon.ico` was a 404 — Next serves the PNG from a
+ * content-hashed url instead. This file is the well-known path, and it is the
+ * whole fix.
+ *
+ * The sizes are not a hedge. 16 and 32 are what a tab and a bookmark bar ask
+ * for; 48 is there because Google's own guidance is a square that is a multiple
+ * of 48, and it is the one that gets downscaled into a result. All three are cut
+ * from the same zoomed square the tab icon uses — see `WEB_TAB_ZOOM`, which is
+ * the reason the figure is legible at 16 at all.
+ */
+const favicon = cropImage(
+  appIcon,
+  webInset,
+  webInset,
+  appIcon.width - webInset * 2,
+  appIcon.height - webInset * 2,
+);
+const icoSizes = [16, 32, 48];
+writeFileSync(
+  join(webApp, 'favicon.ico'),
+  encodeIco(icoSizes.map((size) => ({ size, png: encodePng(opaqueRgba(shrink(favicon, size))) }))),
+);
+console.log(`  ${'favicon.ico'.padEnd(30)} ${icoSizes.join('/')} RGBA`);
+
+/**
+ * The same pixels with a fully opaque alpha channel bolted on.
+ *
+ * The tile is opaque, so this adds no information — and it is not optional.
+ * Next decodes `app/favicon.ico` at build time to emit its metadata, through a
+ * Rust decoder that **rejects a PNG-in-ICO entry that is not RGBA**: an RGB one
+ * fails the build outright with "The PNG is not in RGBA format!". The directory
+ * entries this file writes already declare 32 bits per pixel, so this is also
+ * what makes the container describe its own contents honestly.
+ */
+function opaqueRgba(image) {
+  if (image.channels === 4) return image;
+  const pixels = Buffer.alloc(image.width * image.height * 4);
+  for (let i = 0; i < image.width * image.height; i += 1) {
+    pixels[i * 4] = image.pixels[i * image.channels];
+    pixels[i * 4 + 1] = image.pixels[i * image.channels + 1];
+    pixels[i * 4 + 2] = image.pixels[i * image.channels + 2];
+    pixels[i * 4 + 3] = 255;
+  }
+  return { width: image.width, height: image.height, channels: 4, colorType: 6, pixels };
+}
+
+/**
+ * A large reduction, done by halving rather than in one step.
+ *
+ * `resizeImage` is bilinear, which reads four source pixels per output pixel.
+ * That is right for the modest reductions everything else here asks of it and
+ * badly wrong at these sizes: 884px down to 16 means each output pixel is
+ * decided by four of the roughly three thousand under it, and every other one is
+ * simply not looked at. The mark is a figure drawn in thin strokes on black, so
+ * what comes back is not a soft 16px icon — it is a scatter of whichever pixels
+ * happened to fall on a sample point, and it looks like a corrupted file.
+ *
+ * Halving repeatedly fixes it because at exactly half scale bilinear *is* an
+ * average of the four pixels being merged, so nothing is skipped: each pass
+ * folds the whole image into the next one down. The last step lands on the
+ * requested size from within a factor of two, where bilinear is honest again.
+ */
+function shrink(image, size) {
+  let current = image;
+  while (current.width >= size * 2) {
+    current = resizeImage(current, Math.max(size, Math.round(current.width / 2)));
+  }
+  return resizeImage(current, size);
+}
 
 console.log(`\nandroid.adaptiveIcon.backgroundColor should be ${hex}`);
