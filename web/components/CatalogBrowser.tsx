@@ -35,6 +35,7 @@ import { useSearchParams } from 'next/navigation';
 import { useDeferredValue, useMemo, useState } from 'react';
 
 import { filterHairstyles, type SortId } from '../lib/hairTypes';
+import { useScrollMemory } from '../lib/useScrollMemory';
 import { useCatalog } from '../lib/state/CatalogContext';
 import { useAdoptedAnswers, useSession } from '../lib/state/SessionContext';
 import { CatalogFilters } from './CatalogFilters';
@@ -110,6 +111,23 @@ export function CatalogBrowser() {
         ? filterHairstyles(catalog.hairstyles, { gender, hairType, categoryId, sort, search: typed })
         : [],
     [catalog, gender, hairType, categoryId, sort, typed],
+  );
+
+  /**
+   * Where this grid was left, so the back arrow on a style page comes back to
+   * it rather than to the top of the catalogue.
+   *
+   * The signature is *what the grid was showing*, not merely which page it was:
+   * the answers, the category, the sort, the search and how many cuts survived
+   * them. An offset taken on one result set means nothing on another, so a
+   * changed filter discards it and the catalogue opens at the top, which is the
+   * honest answer to a different list of haircuts. `useScrollMemory` has the
+   * rest of the argument.
+   */
+  useScrollMemory(
+    'styles',
+    `${gender ?? ''}|${hairType ?? ''}|${categoryId ?? ''}|${sort}|${typed}|${results.length}`,
+    !loading && Boolean(catalog),
   );
 
   // Carried into every style page so it opens on the view the grid was showing.

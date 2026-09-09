@@ -849,6 +849,35 @@ browser's own Back, since a search result and a shared link both land there with
 them, and one destination serves both entry points — the catalog reads the same session answers
 the flow's chooser does.
 
+**And the catalogue remembers where it was left, because that link is a forward navigation.**
+The assumption behind browsing a long grid is that the right cut has *not* been found yet:
+somebody scrolls, opens one, decides against it and comes back to carry on. A `<Link>` puts the
+window at the top every time, so forty cards down the one gesture meaning "not this one" threw
+the whole browse away. `useScrollMemory` in `web/lib/` is the fix and four things decide any
+change to it. It is **`sessionStorage`**, which is the right lifetime — a remembered offset is a
+fact about one visit in one tab, and a new tab deserves the top of the catalogue. A position is
+**only restored against the grid it was taken on**: it is stored with a signature of the
+answers, the category, the sort, the search and the surviving count, and a mismatch is discarded
+rather than applied, because after a filter change 2,400px is an arbitrary point in a different
+list. It **keeps re-applying the target for `SETTLE_MS`** while the grid fills in and the plates
+load, which is also what settles the race with the router's own scroll-to-top on arrival. And
+**any real input ends it immediately** — a visitor who starts scrolling has answered the question
+the loop was asking, the same rule the drifting rails follow about a pointer.
+
+**Saving a cut is answered on four channels, and removing one on a single quiet one.** The heart
+used to reply to a press with a 200ms colour fade, under the thumb that was covering the button
+while it happened — so the commonest way to find out whether a save had landed was to press
+again, which undid it. `<FavouriteButton>` now fills the heart from the bottom, pops it, sends a
+ring out of it, throws eight sparks off it and taps the phone (`navigator.vibrate`, which iOS
+Safari does not have and which nothing depends on). All four are drawn in `currentColor`, so the
+burst is the palette's violet on a panel and the plate-legible deep violet on a card standing on
+a white render, with no second set of colours to keep in step. **Un-saving gets one small
+compression and nothing else** — removing something from a list is not an achievement, and the
+asymmetry is itself the feedback: a burst means saved. The burst is keyed on a press counter
+rather than on the saved state, since an animation that restarts only when a class changes plays
+once and then sits still; and reduced motion renders none of the nodes at all, leaving the fill
+and the colour, which are the state rather than a performance of it.
+
 The honesty rules carry over intact and are worth not re-deriving: the footer reports whether
 the catalog came from the API or from the browser's offline copy; nothing on the generating page
 invents progress (the countdown ratchets earlier only, a queued job shows its real position

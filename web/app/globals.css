@@ -403,6 +403,135 @@
   }
 }
 
+/**
+ * Saving a cut, and it is deliberately the loudest thing on the catalogue.
+ *
+ * The heart used to answer a press with a two-hundred-millisecond colour fade
+ * from bone to violet — on a phone, under a thumb that is covering the button
+ * at the moment it changes. So the one gesture that says *keep this one* gave
+ * back less feedback than a hover, and the commonest way to find out whether it
+ * had worked was to press it again, which undid it.
+ *
+ * What replaces it is four channels at once, because a confirmation that can be
+ * missed is not a confirmation: the heart **fills** from the bottom, the icon
+ * **pops** past its own size and settles, a **ring** leaves the button, and
+ * **sparks** go out with it. All four are drawn in `currentColor`, so the burst
+ * is the palette's violet on the style page and the plate-legible deep violet on
+ * a card sitting on a white render, with no second set of colours to keep in
+ * step. A fifth channel is not CSS: `navigator.vibrate` where the device has it.
+ *
+ * **Un-saving gets one of the four**, a small compression and nothing else.
+ * Removing something from a list is not an achievement and a celebration of it
+ * reads as the button not knowing which way it went. The asymmetry is the
+ * feedback: a burst means saved.
+ *
+ * Reduced motion opts out in the component rather than here — none of it is
+ * rendered at all, so what is left is the colour and the fill, which is the
+ * state and not a performance of it.
+ */
+@keyframes luvo-like-pop {
+  0% {
+    transform: scale(1);
+  }
+  22% {
+    transform: scale(0.78);
+  }
+  48% {
+    transform: scale(1.32);
+  }
+  72% {
+    transform: scale(0.94);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes luvo-like-drop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.82);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes luvo-like-ring {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+/** `--a` is the direction, `--d` the distance (already negative, so the
+ *  keyframe is a plain `translateY`), `--s` the size. Set per spark. */
+@keyframes luvo-like-spark {
+  0% {
+    transform: rotate(var(--a)) translateY(-1px) scale(0.4);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--a)) translateY(var(--d)) scale(0.15);
+    opacity: 0;
+  }
+}
+
+/** The heart filling rather than switching. Clipped from the bottom, so it
+ *  reads as being poured in over the outline that was already there. */
+@keyframes luvo-like-fill {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.luvo-like-pop {
+  animation: luvo-like-pop 520ms ease-out;
+}
+
+.luvo-like-drop {
+  animation: luvo-like-drop 320ms ease-out;
+}
+
+.luvo-like-fill {
+  animation: luvo-like-fill 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.luvo-like-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  opacity: 0;
+  animation: luvo-like-ring 520ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+.luvo-like-spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--s);
+  height: var(--s);
+  /* Centred by margin so the transform is free to carry the rotation. */
+  margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0;
+  animation: luvo-like-spark 560ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
 .animate-rise {
   animation: luvo-rise 0.6s var(--ease-out-quint) both;
 }
