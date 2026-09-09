@@ -854,15 +854,35 @@ The assumption behind browsing a long grid is that the right cut has *not* been 
 somebody scrolls, opens one, decides against it and comes back to carry on. A `<Link>` puts the
 window at the top every time, so forty cards down the one gesture meaning "not this one" threw
 the whole browse away. `useScrollMemory` in `web/lib/` is the fix and four things decide any
-change to it. It is **`sessionStorage`**, which is the right lifetime — a remembered offset is a
-fact about one visit in one tab, and a new tab deserves the top of the catalogue. A position is
-**only restored against the grid it was taken on**: it is stored with a signature of the
-answers, the category, the sort, the search and the surviving count, and a mismatch is discarded
-rather than applied, because after a filter change 2,400px is an arbitrary point in a different
-list. It **keeps re-applying the target for `SETTLE_MS`** while the grid fills in and the plates
-load, which is also what settles the race with the router's own scroll-to-top on arrival. And
-**any real input ends it immediately** — a visitor who starts scrolling has answered the question
-the loop was asking, the same rule the drifting rails follow about a pointer.
+change to it.
+
+- **It is invisible, and that is the requirement rather than a nicety.** The window is put back
+  in a *layout* effect, before the paint, with `scroll-behavior` forced to `auto` for the one
+  statement that moves it — the document is `smooth`, so a plain `scrollTo` animates the visitor
+  back down a page they have already read, which is a journey nobody should have to watch. The
+  catalogue is simply where it was.
+- **It only fires when somebody asked to come back.** `resumeScroll('styles')` is called by the
+  two ways back on the style page and the flag is consumed by the next mount. Restoring on every
+  arrival would drop a visitor who deliberately opened the catalogue from the menu into the
+  middle of a browse they had finished with — coming back and going there are two intentions and
+  only one of them is this. Both links also carry **`scroll={false}`**, so the router does not
+  touch the window on that navigation and there is nothing for the restore to race; the pair only
+  works together, which is also why a claimed arrival with nothing to restore jumps to the top
+  explicitly rather than inheriting the style page's offset.
+- **A position is only restored against the grid it was taken on**, stored with a signature of
+  the answers, the category, the sort, the search and the surviving count. After a filter change
+  2,400px is an arbitrary point in a different list, so a mismatch opens at the top.
+- **`sessionStorage`, which is the right lifetime.** A remembered offset is a fact about one
+  visit in one tab; a new tab is a new browse and deserves the top of the catalogue.
+
+**`data-scroll-behavior="smooth"` on `<html>` is load-bearing, and its absence was a bug.**
+`globals.css` sets `scroll-behavior: smooth` so an in-page anchor glides, and the router's
+scroll-to-top on a navigation inherited it: pressing a hairstyle left the new page painted at the
+old page's offset and glided it up over half a second, which reads as the site scrolling at you
+and *then* answering the tap. Next disables smooth scrolling around its own route-transition
+scroll but only for a document that declares the rule here — without the attribute it cannot know
+the rule came from a stylesheet rather than from something it would be wrong to override. Anchors
+keep their glide; route changes are instant.
 
 **Saving a cut is answered on four channels, and removing one on a single quiet one.** The heart
 used to reply to a press with a 200ms colour fade, under the thumb that was covering the button
@@ -871,7 +891,12 @@ again, which undid it. `<FavouriteButton>` now fills the heart from the bottom, 
 ring out of it, throws eight sparks off it and taps the phone (`navigator.vibrate`, which iOS
 Safari does not have and which nothing depends on). All four are drawn in `currentColor`, so the
 burst is the palette's violet on a panel and the plate-legible deep violet on a card standing on
-a white render, with no second set of colours to keep in step. **Un-saving gets one small
+a white render, with no second set of colours to keep in step. **The button itself declares no
+`position`** — every caller places it, `<StyleCard>` hangs it off the plate's corner, and a
+`relative` in the base class does not lose to that: Tailwind emits both rules and the winner is
+their order in the stylesheet, not in the attribute, so the cards' hearts fall out of their
+corners and into the flow. The burst takes its positioning context from the span around the icon
+instead, which needs one anyway and cannot be overridden from outside. **Un-saving gets one small
 compression and nothing else** — removing something from a list is not an achievement, and the
 asymmetry is itself the feedback: a burst means saved. The burst is keyed on a press counter
 rather than on the saved state, since an animation that restarts only when a class changes plays

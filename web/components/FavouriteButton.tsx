@@ -145,8 +145,20 @@ export function FavouriteButton({
       onClick={press}
       aria-pressed={saved}
       aria-label={saved ? `Remove ${subject} from your list` : `Save ${subject} to your list`}
+      /*
+        No `position` here, and that is not a detail.
+
+        Every caller of this button places it — `<StyleCard>` hangs it off the
+        plate's top-right corner with `absolute`. A `relative` in this base
+        class does not lose to that: Tailwind emits both rules and the winner is
+        their order in the stylesheet, not their order in the attribute. So the
+        cards' hearts fell out of their corners and into the flow, each one
+        landing in the gap under its own card. The burst gets its positioning
+        context from the span inside instead, which needs one anyway and cannot
+        be overridden from outside.
+      */
       className={
-        'relative grid shrink-0 place-items-center rounded-full ring-1 ring-inset ' +
+        'grid shrink-0 place-items-center rounded-full ring-1 ring-inset ' +
         'transition-colors duration-200 ' +
         shell.base +
         ' ' +
@@ -155,34 +167,38 @@ export function FavouriteButton({
         className
       }
     >
-      {/* The ring and the sparks leave the button, so they are drawn outside its
-          own bounds and must never take a press aimed at it. */}
-      {bursting ? (
-        <span aria-hidden className="pointer-events-none absolute inset-0">
-          <span key={`ring-${beat?.n}`} className="luvo-like-ring" />
-          {SPARKS.map((spark, index) => (
-            <span key={`spark-${beat?.n}-${index}`} className="luvo-like-spark" style={spark} />
-          ))}
-        </span>
-      ) : null}
+      <span className={`relative block ${shell.icon}`}>
+        {/* The ring and the sparks travel past the button's own edge, so they
+            are centred on the icon and drawn under it. Both carry
+            `pointer-events: none` in their own rule: a spark two centimetres
+            out is not a target. */}
+        {bursting ? (
+          <span aria-hidden>
+            <span key={`ring-${beat?.n}`} className="luvo-like-ring" />
+            {SPARKS.map((spark, index) => (
+              <span key={`spark-${beat?.n}-${index}`} className="luvo-like-spark" style={spark} />
+            ))}
+          </span>
+        ) : null}
 
-      <span
-        key={beat ? `icon-${beat.n}` : 'icon'}
-        className={
-          `relative block ${shell.icon} ` +
-          (beat ? (beat.saving ? 'luvo-like-pop' : 'luvo-like-drop') : '')
-        }
-      >
         {/* The outline is always drawn. The fill is a second copy over it, so
             saving is a heart being filled in rather than one icon swapped for
             another — and so the sweep has something to clip. */}
-        <Heart className="absolute inset-0 h-full w-full" />
-        {saved ? (
-          <Heart
-            filled
-            className={`absolute inset-0 h-full w-full ${bursting ? 'luvo-like-fill' : ''}`}
-          />
-        ) : null}
+        <span
+          key={beat ? `icon-${beat.n}` : 'icon'}
+          className={
+            'absolute inset-0 ' +
+            (beat ? (beat.saving ? 'luvo-like-pop' : 'luvo-like-drop') : '')
+          }
+        >
+          <Heart className="absolute inset-0 h-full w-full" />
+          {saved ? (
+            <Heart
+              filled
+              className={`absolute inset-0 h-full w-full ${bursting ? 'luvo-like-fill' : ''}`}
+            />
+          ) : null}
+        </span>
       </span>
     </button>
   );
