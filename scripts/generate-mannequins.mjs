@@ -75,7 +75,7 @@ import {
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
- * The approved look, cropped out of `App-reference.png`. Base heads are produced
+ * The approved look, cropped out of the original app mockup. Base heads are produced
  * by editing this image, so the material, lighting and crop are inherited rather
  * than re-described; `--reference` swaps it and deleting it falls back to a
  * text-only prompt.

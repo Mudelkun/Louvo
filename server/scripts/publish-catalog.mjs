@@ -2,7 +2,7 @@
 /**
  * Publishes the catalog: metadata into Postgres, imagery into R2.
  *
- * This is the command the whole architecture exists for. `project.md` asks that
+ * This is the command the whole architecture exists for. The product brief asks that
  * "new hairstyles and mannequin images can be added or replaced easily without
  * requiring an app update", and this is what makes that sentence true — a
  * hairstyle reaches every phone by running this, not by shipping a binary.

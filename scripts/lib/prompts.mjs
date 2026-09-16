@@ -136,9 +136,9 @@ const HAIR_SENTENCE = [
  * same material, the same light, the same crop — only the hair differs. This
  * block is repeated verbatim in every prompt and must not be edited per style.
  *
- * The material, lighting and crop are matched to `App-reference.png`: a matte
+ * The material, lighting and crop are matched to the original app mockup: a matte
  * white display head cut off at the base of the neck, lit high-key from the
- * upper left on white. Colours below are sampled from that file — highlight
+ * upper left on white. Colours below are sampled from that mockup — highlight
  * #E9E8E6, mid-tone #E2E1DE, shadow #D4D1CD, background #FFFFFF.
  */
 /**
@@ -337,7 +337,7 @@ export function describeHair(style, variant = 'any') {
  * The preferred way to make a base head: edit the approved reference image, so
  * the material, lighting, crop and background are *carried over* rather than
  * described in words. `scripts/reference-head.png` is cropped straight out of
- * `App-reference.png`, which is why the catalog matches the mockup.
+ * the original app mockup, which is why the catalog matches the mockup.
  */
 export function baseHeadFromReferencePrompt(gender, angle) {
   return [

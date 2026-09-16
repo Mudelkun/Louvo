@@ -18,7 +18,7 @@ scripts/
   lib/png.mjs                    dependency-free PNG decode / crop / resize / encode
   lib/renders.mjs                writes src/api/mannequinRenders.generated.ts
   lib/variants.mjs               reads the hairstyle x hair type matrix out of the catalog
-  reference-head.png             the approved look, cropped out of App-reference.png
+  reference-head.png             the approved look, cropped out of the original app mockup
   mannequin-overrides.json       optional per-style prompt nudges (not created by default)
 ```
 
@@ -109,7 +109,7 @@ nicety: the catalog only reads as one catalog if 36 styles are modelled on one h
 So generation is two-stage:
 
 1. **Base heads** — one bald, faceless mannequin per gender × angle (6 images), made by
-   *editing* `reference-head.png` (cropped straight out of `App-reference.png`) down to a bald
+   *editing* `reference-head.png` (cropped straight out of the original app mockup) down to a bald
    head. The material, lighting, crop and background are inherited from the mockup rather than
    described in words, which is the only reliable way to hit them. Delete or replace that file
    (`--reference`) and the script falls back to a text-only prompt.
@@ -148,7 +148,7 @@ npm run mannequins -- --style low-taper-fade --gender male --angle front --force
 ```
 
 Compare `assets/mannequins/low-taper-fade/curly/male-front.png` against the hero shot in
-`App-reference.png` — note that `_base/male-front.png` is the bald foundation, not the image the
+the original app mockup — note that `_base/male-front.png` is the bald foundation, not the image the
 app shows. The target is a matte white head and neck ending in the mannequin's wide flat display
 base — a sculpted plate cut by the bottom of the frame, never a rounded bust and never real
 shoulders — turned three-quarters so the taper, the ear and the nape all read, under high-key

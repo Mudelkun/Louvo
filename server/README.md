@@ -170,7 +170,7 @@ Two operational notes worth knowing before the first burst:
 
 ## Publishing
 
-`npm run publish` is the command the whole architecture exists for. `project.md` asks that
+`npm run publish` is the command the whole architecture exists for. The product brief asks that
 "new hairstyles and mannequin images can be added or replaced easily without requiring an app
 update"; this is what makes that sentence true.
 

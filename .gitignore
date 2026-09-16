@@ -42,3 +42,15 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# local-only: planning notes, design reference, database dumps, env backups
+/project.md
+/b-model.md
+/App-reference.png
+/backups/
+*.bak
+*.bak-*
+.env.bak*
+
+# mannequin renders live in Cloudflare R2; the local copy is a working cache
+/assets/mannequins/

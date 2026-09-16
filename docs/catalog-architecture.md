@@ -80,7 +80,7 @@ reason about. First paint is instant. There is no failure mode between a user an
 
 **Against, and this is what kills it:**
 
-- **The spec forbids it.** `project.md`: "new hairstyles and mannequin images can be added or
+- **The spec forbids it.** The product brief: "new hairstyles and mannequin images can be added or
   replaced easily **without requiring an app update**." `CLAUDE.md` restates it as the first
   architectural constraint. A bundled catalog means every new haircut, every re-shoot of a bad
   sheet, every popularity re-order and every seasonal set is an App Store review — a 1–3 day
