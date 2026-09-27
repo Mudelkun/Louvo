@@ -266,23 +266,27 @@ Two services in one project: **Postgres** (from the template) and this directory
 | --- | --- |
 | Root directory | `server` |
 | Build command | `npm ci && npm run build` |
-| Start command | `npm run start` |
+| Start command | `node dist/index.js` |
 | Health check path | `/health` |
-| Variables | `DATABASE_URL=${{Postgres.DATABASE_URL}}` |
+| Variables | `DATABASE_URL=${{Postgres.DATABASE_URL}}`, and for previews `WORKER_IN_API=true`, `FAL_KEY`, `PREVIEW_BUCKET`, `R2_*` |
 
-For previews, a **third** service off the same directory:
+**The start command is `node`, not `npm run start`.** Railway bills RAM by the minute, and
+`npm run` keeps an npm process resident beside the server for its whole life — tens of MB per
+service, all day, doing nothing.
 
-| Setting | Value |
-| --- | --- |
-| Root directory | `server` |
-| Build command | `npm ci && npm run build` |
-| Start command | `npm run start:worker` |
-| Health check | none — it is not an HTTP service |
-| Variables | `DATABASE_URL`, `FAL_KEY`, `PREVIEW_BUCKET`, `R2_*` |
+**The preview worker runs inside the API** while the queue is this small (`WORKER_IN_API=true`).
+A separate service was a second Node process held in memory around the clock for a queue that is
+empty nearly all the time. It ticks every `WORKER_POLL_MS` (2s) while a job is in flight and every
+`WORKER_IDLE_POLL_MS` (5 min in-process) when none is, and a finished upload wakes it directly,
+so idle costs nothing in latency. It used to tick every 2s regardless: ~200,000 queries a day
+against an empty table, which is also what stopped anything on the project from ever idling.
 
-Separate because the two have different scaling curves: the API must answer in milliseconds under
-a burst, and the worker's pace is set by fal. Scale the worker by replicas; they coordinate
-through the job table and do not need to know about each other.
+When the queue outgrows one process, split it back out as a **third** service off the same
+directory, start command `node dist/workerMain.js`, no health check, the same preview variables,
+and drop `WORKER_IN_API` from the API. Its idle tick defaults to 15s there, because nothing in its
+process can wake it. Separate is the right shape at scale because the two have different curves:
+the API must answer in milliseconds under a burst, and the worker's pace is set by fal. Scale the
+worker by replicas; they coordinate through the job table and do not need to know about each other.
 
 Use the **internal** database host for the service (`postgres.railway.internal`) — no egress
 charge and no TLS — and the public proxy host from a laptop when publishing. `src/db.ts`

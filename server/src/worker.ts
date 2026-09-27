@@ -2,8 +2,9 @@
  * The worker: the only process that holds the generator key, and the only one
  * that ever touches an image.
  *
- * Deploy it as a second Railway service off this same directory, with the start
- * command `npm run start:worker`. It is separate from the API on purpose. The
+ * It runs either inside the API (`WORKER_IN_API=true`, the right shape while the
+ * queue is small) or as a second Railway service with the start command
+ * `node dist/workerMain.js`. The case for separating them, once it is not: the
  * API must answer in milliseconds under a burst; the worker's pace is set by
  * fal's concurrency limit and a generation takes the better part of a minute.
  * Those are two different scaling curves, and running them in one process means
@@ -349,27 +350,100 @@ async function sweep(): Promise<void> {
   }
 }
 
-async function tick(): Promise<void> {
-  if (ticking) return;
+/**
+ * Whether anything could need attention within the next fast tick.
+ *
+ * `awaiting_upload` counts because the phone is uploading right now and the job
+ * turns `queued` the moment it lands — a standalone worker that went idle there
+ * would add its whole idle interval to that user's wait. A `ready` job does not:
+ * the only thing left to do to it is expire it, days from now.
+ */
+async function busy(): Promise<boolean> {
+  const rows = await query(
+    `select 1 from preview_jobs where status in ('awaiting_upload', 'queued', 'running') limit 1`,
+  );
+  return rows.length > 0;
+}
+
+/** Returns whether the loop should come back quickly. */
+async function tick(): Promise<boolean> {
+  if (ticking) return true;
   ticking = true;
   try {
     await recover();
     await poll();
     await dispatch();
     await sweep();
+    return await busy();
   } catch (error) {
     // One bad tick must not end the worker: the next one re-reads every piece of
     // state it needs from Postgres, so there is nothing to recover in memory.
     log('tick failed', { error: error instanceof Error ? error.message : String(error) });
+    return true;
   } finally {
     ticking = false;
   }
 }
 
-async function main(): Promise<void> {
+// ---------------------------------------------------------------------------
+// Scheduling
+// ---------------------------------------------------------------------------
+
+/**
+ * A timer that re-arms itself rather than an interval.
+ *
+ * Fast while a job is in flight, slow while none is — see `idlePollMs`. A
+ * `setInterval` at the fast rate was 43,000 ticks a day on an empty queue, which
+ * held this process, the API and Postgres awake and resident for nobody.
+ */
+let timer: NodeJS.Timeout | null = null;
+
+function schedule(ms: number): void {
+  if (!running) return;
+  if (timer) clearTimeout(timer);
+  timer = setTimeout(() => void run(), ms);
+}
+
+async function run(): Promise<void> {
+  timer = null;
+  const again = await tick();
+  // A wake that arrived mid-tick already re-armed the timer; keep the sooner.
+  if (!timer) schedule(again ? env.previews.pollMs : env.previews.idlePollMs);
+}
+
+/**
+ * Ask for a tick now.
+ *
+ * Called by the API when a job becomes `queued`, so a worker running in the same
+ * process never waits out its idle interval. Harmless when nothing is started.
+ */
+export function wakeWorker(): void {
+  if (!started || !running) return;
+  schedule(0);
+}
+
+export function stopWorker(): void {
+  running = false;
+  if (timer) clearTimeout(timer);
+  timer = null;
+}
+
+let started = false;
+
+/**
+ * Starts the loop. With `ownsProcess` it exits on a missing bucket and handles
+ * its own signals, which is the standalone service; without it, it is a guest in
+ * the API process and reports rather than exits.
+ */
+export async function startWorker({ ownsProcess }: { ownsProcess: boolean }): Promise<boolean> {
+  const fail = (message: string): false => {
+    console.error(message);
+    if (ownsProcess) process.exit(1);
+    return false;
+  };
+
   if (!storage || !env.previews.falKey) {
-    console.error('the worker needs FAL_KEY and a PREVIEW_BUCKET — see server/.env.example');
-    process.exit(1);
+    return fail('the worker needs FAL_KEY and a PREVIEW_BUCKET — see server/.env.example');
   }
   /**
    * The bucket, checked before anything is claimed.
@@ -385,16 +459,14 @@ async function main(): Promise<void> {
    */
   try {
     if (!(await storage.bucketExists())) {
-      console.error(
+      return fail(
         `the bucket "${env.previews.storage?.bucket}" does not exist (PREVIEW_BUCKET). ` +
           'Create it in R2 — private, with no public domain and no CDN in front of it — ' +
           'and make sure the R2 token has Object Read & Write on it.',
       );
-      process.exit(1);
     }
   } catch (error) {
-    console.error(`could not reach the bucket: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
+    return fail(`could not reach the bucket: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   log('worker started', {
@@ -403,22 +475,24 @@ async function main(): Promise<void> {
     maxInflight: env.previews.maxInflight,
     retentionDays: env.previews.retentionDays,
     bucket: env.previews.storage?.bucket,
+    pollMs: env.previews.pollMs,
+    idlePollMs: env.previews.idlePollMs,
+    inApi: !ownsProcess,
   });
 
-  const timer = setInterval(() => void tick(), env.previews.pollMs);
-
-  for (const signal of ['SIGTERM', 'SIGINT'] as const) {
-    process.on(signal, () => {
-      log('shutting down', { signal });
-      running = false;
-      clearInterval(timer);
-      // Nothing to drain: a claimed job that was never submitted is recovered by
-      // its lease, and a submitted one is at fal with its request id in Postgres.
-      setTimeout(() => process.exit(0), 1000).unref();
-    });
+  if (ownsProcess) {
+    for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+      process.on(signal, () => {
+        log('shutting down', { signal });
+        stopWorker();
+        // Nothing to drain: a claimed job that was never submitted is recovered by
+        // its lease, and a submitted one is at fal with its request id in Postgres.
+        setTimeout(() => process.exit(0), 1000).unref();
+      });
+    }
   }
 
-  await tick();
+  started = true;
+  schedule(0);
+  return true;
 }
-
-await main();

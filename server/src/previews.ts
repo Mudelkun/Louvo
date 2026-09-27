@@ -38,6 +38,7 @@ import {
   type JobRow,
 } from './jobs.js';
 import { storage } from './storage.js';
+import { wakeWorker } from './worker.js';
 import { GENDERS, HAIR_LENGTH_IDS, HAIR_TYPE_IDS, type Gender, type HairLengthId, type HairTypeId } from './types.js';
 
 /**
@@ -426,6 +427,8 @@ export async function previewRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const queued = (await markUploaded(job.id)) ?? job;
+    // A worker in this process would otherwise find it on its next idle tick.
+    wakeWorker();
     return { job: view(queued, { queuePosition: await queuePosition(queued) }) };
   });
 

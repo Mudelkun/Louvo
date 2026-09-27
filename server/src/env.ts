@@ -108,8 +108,34 @@ const previews = {
   /** Refused above this, before a signature is minted. */
   maxUploadBytes: integer('PREVIEW_MAX_UPLOAD_BYTES', 12 * 1024 * 1024),
 
-  /** How often the worker looks for something to do. */
+  /** How often the worker looks for something to do while a job is in flight. */
   pollMs: integer('WORKER_POLL_MS', 2000),
+
+  /**
+   * How often it looks when nothing is.
+   *
+   * A two-second tick with no jobs is ~200,000 queries a day against an empty
+   * table, and it is what kept every service on Railway resident and billed for
+   * memory around the clock. Idle, the only work left is the sweep, whose
+   * deadlines are minutes to days away. Inside the API a new job wakes the loop
+   * directly, so this is not a latency; as a separate process it is the longest
+   * a fresh submission waits to be noticed, hence the shorter default there.
+   */
+  idlePollMs: process.env.WORKER_IDLE_POLL_MS
+    ? integer('WORKER_IDLE_POLL_MS', 0)
+    : process.env.WORKER_IN_API === 'true'
+      ? 5 * 60 * 1000
+      : 15 * 1000,
+
+  /**
+   * Run the worker loop inside the API process rather than as its own service.
+   *
+   * At a handful of users a second Node process is a second ~100 MB held all
+   * day for a queue that is empty almost all of it. The loop coordinates through
+   * Postgres either way, so turning this on and deleting the worker service is
+   * safe to do in either order.
+   */
+  inApi: process.env.WORKER_IN_API === 'true',
 
   /** Expo's push service. Nothing here talks to APNs or FCM directly. */
   expoPushUrl: process.env.EXPO_PUSH_URL ?? 'https://exp.host/--/api/v2/push/send',

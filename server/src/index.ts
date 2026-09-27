@@ -10,7 +10,7 @@
  *
  * Deploy on Railway with the root directory set to `server/`:
  *   build   npm ci && npm run build
- *   start   npm run start
+ *   start   node dist/index.js   (not `npm run start`: npm stays resident beside it)
  *   health  /health
  */
 
@@ -24,6 +24,7 @@ import { env } from './env.js';
 import { routes } from './routes.js';
 import { storage } from './storage.js';
 import { stripeConfigured } from './stripe.js';
+import { startWorker, stopWorker } from './worker.js';
 
 const app = Fastify({
   logger: { level: env.logLevel },
@@ -73,6 +74,7 @@ app.setErrorHandler((error: FastifyError, request, reply) => {
 
 async function shutdown(signal: string): Promise<void> {
   app.log.info({ signal }, 'shutting down');
+  stopWorker();
   await app.close();
   await pool.end();
   process.exit(0);
@@ -101,6 +103,8 @@ try {
     },
     'ready',
   );
+  // One process instead of two while the queue is this small — see `env.previews.inApi`.
+  if (env.previews.inApi) await startWorker({ ownsProcess: false });
 } catch (error) {
   app.log.error({ err: error }, 'failed to start');
   process.exit(1);
