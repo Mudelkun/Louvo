@@ -9,6 +9,7 @@ import { ButtonLink, Rule, Section } from '../../../components/ui';
 import { loadCatalog } from '../../../lib/catalogServer';
 import { allCollections, parseCollection, stylesIn, type Collection } from '../../../lib/collections';
 import { DEFAULT_HAIR_COLOR_ID } from '../../../lib/colorGrade';
+import { cardManifest } from '../../../lib/renders';
 import { abs, breadcrumbLd, graph, itemListLd, og, ORG_ID, SITE_ID, tw } from '../../../lib/seo';
 
 /**
@@ -176,7 +177,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
         <CollectionGrid
           styles={styles}
           hairTypes={catalog.hairTypes}
-          manifest={catalog.renders}
+          manifest={cardManifest(catalog.renders, styles.map((style) => style.id))}
           gender={collection.gender}
           hairType={collection.hairType}
           color={color}

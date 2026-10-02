@@ -111,7 +111,7 @@ export function clamp(text: string, limit: number): string {
 // ---------------------------------------------------------------------------
 
 /**
- * The default card image: the generated one in `app/opengraph-image.tsx`.
+ * The default card image: the generated one in `app/og-card.jpg/route.tsx`.
  *
  * Named here rather than left to the file convention, because **`openGraph` is
  * replaced wholesale, not merged.** A page that declares `openGraph` to set its
@@ -121,7 +121,7 @@ export function clamp(text: string, limit: number): string {
  * helpers below exist so that cannot happen by omission.
  */
 export const OG_IMAGE = {
-  url: abs('/opengraph-image'),
+  url: abs('/og-card.jpg'),
   width: 1200,
   height: 630,
   alt: `${SITE_NAME} — ${TAGLINE.toLowerCase()}`,

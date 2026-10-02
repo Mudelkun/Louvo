@@ -440,7 +440,13 @@ revalidation) and renders the words. Six things decide any change to it:
   reason `openGraph` is **replaced rather than merged** — a page declaring it to set a title
   loses `siteName`, `locale` and the file-based image with it, silently, and the link posted into
   a chat is a bare grey row. `og()` and `tw()` in `web/lib/seo.ts` exist so that cannot happen by
-  omission, and `app/opengraph-image.tsx` is the generated card behind them.
+  omission, and `app/og-card.jpg/route.tsx` is the generated card behind them. **It is a JPEG
+  route and not the `opengraph-image` file convention on purpose**: the convention served a
+  529 KB PNG with `max-age=0` at a path with no extension, which Cloudflare does not cache, so
+  every unfurl and crawler fetch of it was Railway egress. The `.jpg` path is cached at the edge
+  and the card is ~60 KB. For the same reason a server component never hands a client component
+  the whole render manifest — props are serialised into the html, and `cardManifest()` in
+  `web/lib/renders.ts` is the slice a grid of cards actually reads.
 - **The renders are in the sitemap and the AI crawlers are let in.** 103 urls and 64 image
   entries: "what does a taper fade look like from the back" is answered by a picture, and an
   image sitemap is the one thing that puts a render url in front of a crawler without waiting on

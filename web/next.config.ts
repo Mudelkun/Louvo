@@ -51,6 +51,9 @@ const nextConfig: NextConfig = {
     return [
       { source: '/how-it-works', destination: '/', permanent: true },
       { source: '/pricing', destination: '/account', permanent: true },
+      // The link card moved from a 529 KB uncacheable PNG to a cached JPEG —
+      // see `app/og-card.jpg/route.tsx`. Scrapers hold the old url for a while.
+      { source: '/opengraph-image', destination: '/og-card.jpg', permanent: true },
     ];
   },
 };

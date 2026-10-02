@@ -9,6 +9,7 @@ import { API_URL, SITE_URL } from '../lib/config';
 import {
   applicationLd,
   graph,
+  OG_IMAGE,
   organizationLd,
   SITE_DESCRIPTION,
   SITE_NAME,
@@ -83,11 +84,14 @@ export const metadata: Metadata = {
     url: SITE_URL,
     title: `${SITE_NAME} — ${TAGLINE.toLowerCase()}`,
     description: SITE_DESCRIPTION,
+    // Named, not inherited from a file convention — see `app/og-card.jpg/route.tsx`.
+    images: [OG_IMAGE],
   },
   twitter: {
     card: 'summary_large_image',
     title: `${SITE_NAME} — ${TAGLINE.toLowerCase()}`,
     description: SITE_DESCRIPTION,
+    images: [OG_IMAGE.url],
   },
   /**
    * `max-image-preview: large` is the one that matters on this site.

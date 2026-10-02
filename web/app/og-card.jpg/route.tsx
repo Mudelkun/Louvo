@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 
-import { SITE_NAME } from '../lib/seo';
+import { SITE_NAME } from '../../lib/seo';
 
 /**
  * The card every page without one of its own unfurls into.
@@ -27,6 +27,17 @@ import { SITE_NAME } from '../lib/seo';
  * the title tag. Next renders this once at build time and serves it as a static
  * file, so the composition below costs nothing per request.
  *
+ * **It is a JPEG route rather than `app/opengraph-image.tsx`, and that is a
+ * bandwidth fix.** The file convention served a 529 KB PNG at
+ * `/opengraph-image` with `max-age=0, must-revalidate`, and with no extension
+ * Cloudflare does not cache it — so every scraper and link unfurl that asked for
+ * it was half a megabyte of Railway egress, on the image every page but the
+ * style pages points at. The same composition encoded as a JPEG is about a
+ * sixth of that, the `.jpg` in the path is what puts it in Cloudflare's default
+ * cache, and the headers below let it stay there. `OG_IMAGE` in `lib/seo.ts`
+ * names this path, and the layout carries it explicitly because the file
+ * convention no longer supplies it.
+ *
  * No custom font is loaded. Fetching one at build time is a network dependency
  * in the build for a difference nobody comparing two chat cards would name, and
  * the site's own display serif is loaded by `next/font` in a way this renderer
@@ -46,14 +57,47 @@ const HEADLINE = 'Try any Hairstyle with your photo';
 const SUBLINE =
   'Upload one selfie and see yourself in any cut in the catalogue — bobs, fades, pixies, braids and the rest.';
 
-export const alt = `${SITE_NAME} — one photograph, shown before and after a haircut`;
-export const size = { width: 1200, height: 630 };
-export const contentType = 'image/png';
+const size = { width: 1200, height: 630 };
 
 /** The photograph panel's own width; the words take the rest of the card. */
 const PANEL = 470;
 
-export default async function OpengraphImage() {
+/** Rendered once at build and served as a file; never per request. */
+export const dynamic = 'force-static';
+
+/**
+ * A day in the browser, a week at the edge. The url carries no content hash, so
+ * the edge lifetime is what bounds how long a re-shot card takes to appear —
+ * and a stale card in a chat unfurl for a few days is harmless.
+ */
+const CACHE_CONTROL = 'public, max-age=86400, s-maxage=604800';
+
+export async function GET(): Promise<Response> {
+  const png = Buffer.from(await (await card()).arrayBuffer());
+  try {
+    const sharp = await loadSharp();
+    const jpeg = await sharp(png).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
+    return new Response(new Uint8Array(jpeg), {
+      headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': CACHE_CONTROL },
+    });
+  } catch (error) {
+    // A card that is a PNG behind a `.jpg` path still unfurls — every scraper
+    // trusts the content type over the extension — so a missing `sharp` costs
+    // bytes, not the picture.
+    console.warn(`[og-card] serving PNG, JPEG encode failed: ${String(error)}`);
+    return new Response(new Uint8Array(png), {
+      headers: { 'Content-Type': 'image/png', 'Cache-Control': CACHE_CONTROL },
+    });
+  }
+}
+
+/** See `heroSplit` for why the interop is written this way. */
+async function loadSharp() {
+  const loaded = await import('sharp');
+  return (loaded.default ?? loaded) as unknown as typeof loaded.default;
+}
+
+async function card(): Promise<ImageResponse> {
   const split = await heroSplit();
 
   return new ImageResponse(
@@ -233,8 +277,7 @@ async function heroSplit(): Promise<string | null> {
     // lands on `.default` or on the namespace itself is decided by the bundler
     // rather than by this file. Getting it wrong throws below, and the only
     // symptom is a card with no photograph in it.
-    const loaded = await import('sharp');
-    const sharp = (loaded.default ?? loaded) as unknown as typeof loaded.default;
+    const sharp = await loadSharp();
 
     const cut = async (file: string, side: 'left' | 'right') => {
       const covered = await sharp(join(dir, file))
@@ -268,7 +311,7 @@ async function heroSplit(): Promise<string | null> {
     // round: a card with no photograph in it is still a usable card, and a
     // renamed hero file is not something anybody would notice by looking at a
     // deploy. A fresh checkout has no `public/hero` and logs this once.
-    console.warn(`[opengraph-image] no before/after photograph in the card: ${String(error)}`);
+    console.warn(`[og-card] no before/after photograph in the card: ${String(error)}`);
     return null;
   }
 }

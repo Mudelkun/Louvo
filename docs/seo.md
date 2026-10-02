@@ -183,7 +183,7 @@ Every one of those links is in the html.
 
 ## The card a link unfurls into
 
-`app/opengraph-image.tsx` is the picture that appears when somebody pastes a Louvo link into
+`app/og-card.jpg/route.tsx` is the picture that appears when somebody pastes a Louvo link into
 WhatsApp, Slack, a timeline or a message, and the same picture Google draws beside a result at
 about 92px. It was six lines of type on the brand's violet gradient: correct, on brand, and an
 advertisement for an entirely visual product carrying **no evidence that the product works**.
@@ -246,7 +246,7 @@ the try-on is reachable, which is the line that matters: a preview is somebody's
 - **The 512px square render as an `og:image`.** It is the right picture and the wrong shape for a
   `summary_large_image` card, which letterboxes it. A composed 1200×630 card per cut — the
   render on the site's own dark ground, with the name set in the display serif — is the
-  improvement, and it is `next/og` plus the work already done in `app/opengraph-image.tsx`.
+  improvement, and it is `next/og` plus the work already done in `app/og-card.jpg/route.tsx`.
 - **Verification is manual.** `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` takes the html-tag token; a
   DNS record is better and does not depend on a deploy. Submitting `/sitemap.xml` in Search
   Console once is still a human step.

@@ -167,5 +167,37 @@ export function renderedVariants(
   return found;
 }
 
+/**
+ * The part of the manifest a grid of `<StyleCard>`s can read, and nothing else.
+ *
+ * A card resolves the hero angle at the anchor length — through
+ * `resolveRender`'s defaults, in both `displayVariants` and `renderedVariants` —
+ * so that is all a server-rendered grid has to hand its client component. It
+ * matters because a client component's props are serialised into the html: a
+ * collection page passing the whole manifest carried all 1,220 renders and their
+ * masks, ~320 KB of flight data on every page a crawler fetched, to draw cards
+ * that look at about one in ten of them.
+ */
+export function cardManifest(manifest: RenderManifest, styleIds: string[]): RenderManifest {
+  const out: RenderManifest = {};
+  for (const id of styleIds) {
+    const byVariant = manifest[id];
+    if (!byVariant) continue;
+    const slim: RenderManifest[string] = {};
+    for (const [variant, byLength] of Object.entries(byVariant)) {
+      const byGender = byLength?.[ANCHOR_LENGTH];
+      if (!byGender) continue;
+      const genders: NonNullable<typeof byGender> = {};
+      for (const [gender, byAngle] of Object.entries(byGender)) {
+        const ref = byAngle?.[HERO_ANGLE];
+        if (ref) genders[gender as Gender] = { [HERO_ANGLE]: ref };
+      }
+      if (Object.keys(genders).length) slim[variant as VariantId] = { [ANCHOR_LENGTH]: genders };
+    }
+    if (Object.keys(slim).length) out[id] = slim;
+  }
+  return out;
+}
+
 /** Whether the catalog has any imagery at all for a style. */
 export const hasRender = (manifest: RenderManifest, styleId: string): boolean => !!manifest[styleId];
