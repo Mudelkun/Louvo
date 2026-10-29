@@ -24,7 +24,7 @@ import { env } from './env.js';
 import { routes } from './routes.js';
 import { storage } from './storage.js';
 import { stripeConfigured } from './stripe.js';
-import { startWorker, stopWorker } from './worker.js';
+import { nudgeWorker, startWorker, stopWorker } from './worker.js';
 
 const app = Fastify({
   logger: { level: env.logLevel },
@@ -61,6 +61,17 @@ await app.register(etag, { weak: true });
 await app.register(compress, { global: true, threshold: 1024 });
 
 await app.register(routes);
+
+/**
+ * The in-process worker's idle sweep rides on traffic rather than on a timer,
+ * so a deployment nobody is calling makes no queries and Railway can sleep it
+ * and Postgres — see `idlePollMs` in `env.ts`. Throttled inside `nudgeWorker`.
+ */
+if (env.previews.inApi) {
+  app.addHook('onRequest', async () => {
+    nudgeWorker();
+  });
+}
 
 app.setErrorHandler((error: FastifyError, request, reply) => {
   request.log.error({ err: error }, 'request failed');

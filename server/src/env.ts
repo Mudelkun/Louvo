@@ -120,12 +120,23 @@ const previews = {
    * deadlines are minutes to days away. Inside the API a new job wakes the loop
    * directly, so this is not a latency; as a separate process it is the longest
    * a fresh submission waits to be noticed, hence the shorter default there.
+   *
+   * **Inside the API the default is 0, meaning no idle timer at all.** Any timer
+   * is a query, and a query every five minutes is outbound traffic every five
+   * minutes — which is exactly what stops Railway putting the API *and* Postgres
+   * to sleep, since a service only sleeps after ten minutes with none. So the
+   * idle sweep is driven by requests instead (`nudgeWorker`, throttled to
+   * `idleNudgeMs`): a deployment nobody is calling has nothing to sweep that
+   * anybody is waiting on, and the first request after a quiet spell catches up.
    */
   idlePollMs: process.env.WORKER_IDLE_POLL_MS
     ? integer('WORKER_IDLE_POLL_MS', 0)
     : process.env.WORKER_IN_API === 'true'
-      ? 5 * 60 * 1000
+      ? 0
       : 15 * 1000,
+
+  /** At most one request-driven idle tick per this many ms — see `idlePollMs`. */
+  idleNudgeMs: integer('WORKER_IDLE_NUDGE_MS', 5 * 60 * 1000),
 
   /**
    * Run the worker loop inside the API process rather than as its own service.

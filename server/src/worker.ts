@@ -404,11 +404,32 @@ function schedule(ms: number): void {
   timer = setTimeout(() => void run(), ms);
 }
 
+/** When the last tick began; what `nudgeWorker` throttles against. */
+let lastTick = 0;
+
 async function run(): Promise<void> {
   timer = null;
+  lastTick = Date.now();
   const again = await tick();
   // A wake that arrived mid-tick already re-armed the timer; keep the sooner.
-  if (!timer) schedule(again ? env.previews.pollMs : env.previews.idlePollMs);
+  // An idle interval of 0 means no idle timer — see `idlePollMs`.
+  if (!timer) {
+    if (again) schedule(env.previews.pollMs);
+    else if (env.previews.idlePollMs > 0) schedule(env.previews.idlePollMs);
+  }
+}
+
+/**
+ * A request arrived; tick if the loop has been idle long enough to owe a sweep.
+ *
+ * This is what replaces the idle timer inside the API, so that a deployment
+ * with no traffic makes no queries and Railway can sleep it and its database.
+ * Throttled, and a no-op while a tick or a fast poll is already pending.
+ */
+export function nudgeWorker(): void {
+  if (!started || !running || ticking || timer) return;
+  if (Date.now() - lastTick < env.previews.idleNudgeMs) return;
+  schedule(0);
 }
 
 /**
@@ -445,6 +466,11 @@ export async function startWorker({ ownsProcess }: { ownsProcess: boolean }): Pr
   if (!storage || !env.previews.falKey) {
     return fail('the worker needs FAL_KEY and a PREVIEW_BUCKET — see server/.env.example');
   }
+  // Nothing nudges a standalone worker, so with no idle timer it would never
+  // notice a submission at all.
+  if (ownsProcess && env.previews.idlePollMs <= 0) {
+    return fail('a standalone worker needs WORKER_IDLE_POLL_MS above 0');
+  }
   /**
    * The bucket, checked before anything is claimed.
    *
@@ -477,6 +503,7 @@ export async function startWorker({ ownsProcess }: { ownsProcess: boolean }): Pr
     bucket: env.previews.storage?.bucket,
     pollMs: env.previews.pollMs,
     idlePollMs: env.previews.idlePollMs,
+    idleNudgeMs: env.previews.idlePollMs > 0 ? null : env.previews.idleNudgeMs,
     inApi: !ownsProcess,
   });
 

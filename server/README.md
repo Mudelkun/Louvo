@@ -276,10 +276,13 @@ service, all day, doing nothing.
 
 **The preview worker runs inside the API** while the queue is this small (`WORKER_IN_API=true`).
 A separate service was a second Node process held in memory around the clock for a queue that is
-empty nearly all the time. It ticks every `WORKER_POLL_MS` (2s) while a job is in flight and every
-`WORKER_IDLE_POLL_MS` (5 min in-process) when none is, and a finished upload wakes it directly,
-so idle costs nothing in latency. It used to tick every 2s regardless: ~200,000 queries a day
-against an empty table, which is also what stopped anything on the project from ever idling.
+empty nearly all the time. It ticks every `WORKER_POLL_MS` (2s) while a job is in flight, a
+finished upload wakes it directly, and when nothing is in flight in-process it has **no timer at
+all**: the idle sweep runs on the next request, at most once per `WORKER_IDLE_NUDGE_MS` (5 min).
+It used to tick every 2s regardless — ~200,000 queries a day against an empty table — and then
+every 5 minutes, which was still outbound traffic often enough that Railway could never sleep the
+API or Postgres. With no idle timer both can be put on **Serverless** (app sleeping) in the
+service settings, and a deployment nobody is calling stops being billed for memory.
 
 When the queue outgrows one process, split it back out as a **third** service off the same
 directory, start command `node dist/workerMain.js`, no health check, the same preview variables,
